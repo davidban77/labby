@@ -1,16 +1,12 @@
 import typer
-import labby.utils as utils
 from enum import Enum
 from pathlib import Path
-from rich.console import Console
-from labby.providers import services
+from labby.providers import provider_setup
+from labby import utils
 from labby.models import Project, Node
 
 
-console = Console(color_system="auto")
 app = typer.Typer(help="Management of Lab Config Provision")
-config = {"gns3_server_url": "http://gns3-server:80"}
-provider = services.get("GNS3", **config)
 
 
 class DeviceTypes(str, Enum):
@@ -23,11 +19,11 @@ class DeviceTypes(str, Enum):
 
 def config_callback(value: Path):
     if not value.exists():
-        console.print("The config doesn't exists")
-        raise typer.Abort()
+        utils.console.print("The config doesn't exists")
+        raise typer.Exit(code=1)
     elif not value.is_file():
-        console.print("No config file")
-        raise typer.Abort()
+        utils.console.print("No config file")
+        raise typer.Exit(code=1)
     return value
 
 
@@ -37,7 +33,7 @@ def bootstrap(
     project: str = typer.Option(
         ..., "--project", "-p", help="Project the node belongs to"
     ),
-    config: Path = typer.Option(
+    bconfig: Path = typer.Option(
         ...,
         "--config",
         "-c",
@@ -54,19 +50,14 @@ def bootstrap(
     > labby provision bootstrap node01 --project project01 --config ./node01_boot.txt
     --type arista_eos
     """
-    # if not config.exists():
-    #     console.print("The config doesn't exists")
-    #     raise typer.Abort()
-    # elif not config.is_file():
-    #     console.print("No config file")
-    #     raise typer.Abort()
-    utils.header(f"Running boostrap config process for [bold]{node}[/]")
-    prj = Project(name=project)
-    nd = Node(name=node, project=project)
-    provider.bootstrap_node(
-        node=nd, project=prj, config=config, device_type=device_type
-    )
-
-
-if __name__ == "__main__":
-    app()
+    try:
+        provider = provider_setup(
+            f"Running boostrap config process for [bold]{node}[/]"
+        )
+        prj = Project(name=project)
+        nd = Node(name=node, project=project)
+        provider.bootstrap_node(
+            node=nd, project=prj, config=bconfig, device_type=device_type
+        )
+    except Exception:
+        utils.console.print_exception()

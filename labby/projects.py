@@ -1,16 +1,13 @@
 import typer
-import labby.utils as utils
+
 from enum import Enum
 from typing import Optional
-from rich.console import Console
-from labby.providers import services
 from labby.models import Project
+from labby import utils
+from labby.providers import provider_setup
 
 
-console = Console(color_system="auto")
 app = typer.Typer(help="Management of Lab Projects")
-config = {"gns3_server_url": "http://gns3-server:80"}
-provider = services.get("GNS3", **config)
 
 
 class ProjectFilter(str, Enum):
@@ -28,7 +25,6 @@ class StartNodes(str, Enum):
 
 @app.command(name="list", short_help="Retrieves summary list of projects")
 def cli_list(
-    ctx: typer.Context,
     filter: Optional[ProjectFilter] = typer.Option(
         None, help="If used you MUST provide expected `--value`"
     ),
@@ -44,11 +40,14 @@ def cli_list(
 
     > labby project list --filter status --value opened
     """
-    utils.header("Project lists")
-    console.print(
-        provider.reporter.table_projects_list(field=filter, value=value),
-        justify="center",
-    )
+    try:
+        provider = provider_setup("Project lists")
+        utils.console.print(
+            provider.reporter.table_projects_list(field=filter, value=value),
+            justify="center",
+        )
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Retrieves details of a project")
@@ -60,9 +59,12 @@ def detail(name: str):
 
     > labby project detail project01
     """
-    utils.header(f"Project Details: {name}")
-    project = Project(name=name)
-    provider.get_project_details(project)
+    try:
+        provider = provider_setup(f"Project Details: {name}")
+        project = Project(name=name)
+        provider.get_project_details(project)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Creates a Project")
@@ -74,9 +76,12 @@ def create(name: str):
 
     > labby project create project01
     """
-    utils.header(f"Creating Project: {name}")
-    project = Project(name=name)
-    provider.create_project(project)
+    try:
+        provider = provider_setup(f"Creating Project: {name}")
+        project = Project(name=name)
+        provider.create_project(project)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Deletes a project")
@@ -88,9 +93,12 @@ def delete(name: str):
 
     > labby project delete project01
     """
-    utils.header(f"Deleting Project: {name}")
-    project = Project(name=name)
-    provider.delete_project(project)
+    try:
+        provider = provider_setup(f"Deleting Project: {name}")
+        project = Project(name=name)
+        provider.delete_project(project)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Starts a project")
@@ -108,11 +116,14 @@ def start(
 
     > labby project start project01 --start_nodes one_by_one --nodes_delay 20
     """
-    utils.header(f"Starting Project: {name}")
-    project = Project(name=name)
-    provider.start_project(
-        project=project, start_nodes=start_nodes, nodes_delay=nodes_delay
-    )
+    try:
+        provider = provider_setup(f"Starting Project: {name}")
+        project = Project(name=name)
+        provider.start_project(
+            project=project, start_nodes=start_nodes, nodes_delay=nodes_delay
+        )
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Stops a project")
@@ -129,12 +140,9 @@ def stop(
 
     > labby project stop project01
     """
-    utils.header(f"Stopping Project: {name}")
-    project = Project(name=name)
-    provider.stop_project(
-        project=project, stop_nodes=stop_nodes
-    )
-
-
-if __name__ == "__main__":
-    app()
+    try:
+        provider = provider_setup(f"Stopping Project: {name}")
+        project = Project(name=name)
+        provider.stop_project(project=project, stop_nodes=stop_nodes)
+    except Exception:
+        utils.console.print_exception()

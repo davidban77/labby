@@ -5,15 +5,15 @@ import labby.templates
 import labby.nodes
 import labby.connections
 import labby.provision
+from labby import settings
+from labby import utils
 
-# from pathlib import Path
-from labby.utils import banner
-# from labby.config import LabbyConfig
+from typing import Optional
+from pathlib import Path
 
 
-app = typer.Typer(help="Awesome Network Lab Management Toolish!", callback=banner())
+app = typer.Typer(help=f"{utils.banner()}Awesome Network Lab Management Tool!")
 state = {"verbose": False}
-
 
 app.add_typer(labby.config.app, name="config")
 app.add_typer(labby.projects.app, name="project")
@@ -24,33 +24,18 @@ app.add_typer(labby.provision.app, name="provision")
 
 
 @app.callback()
-def main(ctx: typer.Context, verbose: bool = False):
-    """
-    Awesome Network Lab Management Tool!
-    """
-    # banner()
-    # print("AQUI AQUI")
-    # print(ctx.obj)
-    # ctx.obj = LabbyConfig()
-    # print(ctx.obj)
+def main(
+    ctx: typer.Context,
+    verbose: bool = False,
+    config: Optional[Path] = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to find labby.toml file",
+    ),
+):
+    if ctx.invoked_subcommand != "config":
+        settings.load(config)
     if verbose:
         typer.echo("Will write verbose output")
         state["verbose"] = True
-    # app_dir = Path(
-    #     typer.get_app_dir(APP_NAME, force_posix=True).replace(".labby", ".config/labby")
-    # )
-    # print(app_dir.is_dir(), app_dir)
-    # config_path: Path = Path(app_dir) / "labby.yml"
-    # print(config_path)
-    # if not config_path.is_file():
-    #     print("YUHUYHU-AQUIAQUI")
-    #     typer.echo("Config file doesn't exist yet")
-
-
-if __name__ == "__main__":
-    # app_dir = typer.get_app_dir(APP_NAME)
-    # config_path: Path = Path(app_dir) / "labby.yml"
-    # print("AQUI AQUI AQUI")
-    # if not config_path.is_file():
-    #     typer.echo("Config file doesn't exist yet")
-    app()

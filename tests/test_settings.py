@@ -20,13 +20,6 @@ def test_get_config_base_path():
     )
 
 
-def test_verify_config_path_valid_location(tmp_path):
-    labby_config = tmp_path / "labby.toml"
-    labby_config.write_text("LABBY")
-    assert labby_config.read_text() == "LABBY"
-    assert settings.verify_config_path(labby_config) == labby_config
-
-
 def test_load_toml():
     toml_data = settings.load_toml(Path(__file__).parent / "data" / "labby.toml")
     assert "labby" in toml_data
@@ -68,28 +61,28 @@ def test_delete_config_data():
 
 
 def test_load_default_config():
-    config = settings.load(Path(__file__).parent / "data" / "default_labby.toml")
-    assert config.labby.provider == "gns3"
-    assert config.labby.environment == "default"
-    assert config.labby.debug is False
-    assert config.gns3.server_url is None
-    assert config.gns3.user == USER
-    assert config.gns3.password is None
-    assert config.gns3.verify_cert is False
+    settings.load(Path(__file__).parent / "data" / "default_labby.toml")
+    assert settings.SETTINGS.labby.provider == "gns3"
+    assert settings.SETTINGS.labby.environment == "default"
+    assert settings.SETTINGS.labby.debug is False
+    assert settings.SETTINGS.gns3.server_url is None
+    assert settings.SETTINGS.gns3.user == USER
+    assert settings.SETTINGS.gns3.password is None
+    assert settings.SETTINGS.gns3.verify_cert is False
 
 
 def test_load_config():
-    config = settings.load(Path(__file__).parent / "data" / "labby.toml")
-    assert config.labby.provider == "gns3"
-    assert config.labby.environment == "aws"
-    assert config.labby.debug is False
-    assert config.gns3.server_url.scheme == "http"
-    assert config.gns3.server_url.port == "80"
-    assert config.gns3.server_url.host == "gns3-server"
-    assert config.gns3.server_url.host_type == "int_domain"
-    assert config.gns3.user == USER
-    assert config.gns3.password is None
-    assert config.gns3.verify_cert is False
+    settings.load(Path(__file__).parent / "data" / "labby.toml")
+    assert settings.SETTINGS.labby.provider == "gns3"
+    assert settings.SETTINGS.labby.environment == "aws"
+    assert settings.SETTINGS.labby.debug is False
+    assert settings.SETTINGS.gns3.server_url.scheme == "http"
+    assert settings.SETTINGS.gns3.server_url.port == "80"
+    assert settings.SETTINGS.gns3.server_url.host == "gns3-server"
+    assert settings.SETTINGS.gns3.server_url.host_type == "int_domain"
+    assert settings.SETTINGS.gns3.user == USER
+    assert settings.SETTINGS.gns3.password is None
+    assert settings.SETTINGS.gns3.verify_cert is False
 
 
 def test_load_invalid_toml():

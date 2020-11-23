@@ -1,4 +1,6 @@
 from .gns3 import GNS3ProviderBuilder
+from labby import utils
+from labby import settings
 
 
 class ObjectFactory:
@@ -24,7 +26,15 @@ services = NetworkLabProvider()
 services.register_builder("GNS3", GNS3ProviderBuilder())
 
 
-# Usage will be
-# import labby.providers as lab_provider
-# config = dict(gns3_client_key="algo", gns3_client_secret="aqui")
-# gns3 = lab_providers.services.get("GNS3", **config)
+def provider_setup(header_msg: str):
+    provider = services.get(
+            settings.SETTINGS.labby.provider.upper(),
+            **settings.SETTINGS.get_provider_settings(),
+        )
+    utils.provider_header(
+        environment=settings.SETTINGS.labby.environment,
+        provider=settings.SETTINGS.labby.provider,
+        provider_version=provider.get_version(),
+        msg=header_msg,
+    )
+    return provider

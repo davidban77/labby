@@ -2,7 +2,6 @@ import typer
 
 from typing import Optional
 from pathlib import Path
-from rich.console import Console
 from labby import utils
 from labby.settings import (
     delete_config_data, update_config_data,
@@ -13,9 +12,6 @@ from labby.settings import (
 )
 
 
-APP_NAME = "labby"
-
-console = Console(color_system="auto")
 app = typer.Typer(help="Configuration for Labby")
 
 
@@ -60,9 +56,9 @@ def cli_list(
         utils.header(f"Config file at: [bold]{config_file.absolute()}[/]")
         cfg = load_toml(config_file)
         for k, v in utils.flatten(cfg).items():
-            console.print(f"[bold cyan]{k}[/] = {v}")
+            utils.console.print(f"[bold cyan]{k}[/] = {v}")
     except Exception:
-        console.print_exception()
+        utils.console.print_exception()
 
 
 @app.command(name="set", short_help="Sets a Labby configuration parameter")
@@ -120,9 +116,9 @@ def cli_set(
 
         # Save config TOML
         save_toml(config_file, new_config)
-        console.print("Config data saved")
+        utils.console.print("Config data saved")
     except Exception:
-        console.print_exception(extra_lines=3)
+        utils.console.print_exception(extra_lines=3)
 
 
 @app.command(name="unset", short_help="Unsets a Labby configuration parameter")
@@ -176,6 +172,6 @@ def cli_unset(
 
         # Save config TOML
         save_toml(config_file, new_config)
-        console.print("Config data saved")
+        utils.console.print("Config data saved")
     except Exception:
-        console.print_exception(extra_lines=3)
+        utils.console.print_exception(extra_lines=3)

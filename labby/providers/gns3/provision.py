@@ -1,10 +1,10 @@
 import re
 import time
 import gns3fy
+from labby.utils import console
 import labby.models as models
 from pathlib import Path
 from typing import Tuple, Optional
-from rich.console import Console
 from scrapli.driver import NetworkDriver
 from scrapli.driver.core import (
     IOSXEDriver,
@@ -14,9 +14,6 @@ from scrapli.driver.core import (
     JunosDriver,
 )
 from scrapli.transport.telnet import TelnetTransport
-
-
-console = Console()
 
 
 def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
@@ -121,7 +118,7 @@ class Provision:
             telnet_session.session.write(b"no\n")
             telnet_session.session.write(b"yes\n")
             time.sleep(10)
-        console.print("Opening console connection...")
+        console.log("Opening console connection...")
         connector.open()
 
     def arista_eos_boot(
@@ -130,19 +127,19 @@ class Provision:
         # Setting prompts for initiating the device
         connector.transport.username_prompt = "localhost login:"
         connector.transport.password_prompt = "localhost>"
-        console.print("Opening console connection...")
+        console.log("Opening console connection...")
         connector.open()
 
         # Disable ZTP
-        console.print("Disabling ZTP")
+        console.log("Disabling ZTP")
         response = connector.send_command("zerotouch disable")
         if response.failed:
             raise ValueError("Error disabling ZTP")
-        console.print("Reloading device...")
+        console.log("Reloading device...")
         time.sleep(20)
 
         # Re-authenticating
-        console.print("Re-opening console connection...")
+        console.log("Re-opening console connection...")
         connector.open()
 
     def bootstrap(
@@ -165,7 +162,7 @@ class Provision:
         )
 
         # Push config
-        console.print("Pushing bootstrap configuration...")
+        console.log("Pushing bootstrap configuration...")
 
         # Get response and send result status flag
         response = node_console_conn.send_config(config=config.read_text())

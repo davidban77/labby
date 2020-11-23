@@ -2,15 +2,11 @@ import typer
 import labby.utils as utils
 from enum import Enum
 from typing import Optional
-from rich.console import Console
-from labby.providers import services
+from labby.providers import provider_setup
 from labby.models import Project, Node
 
 
-console = Console(color_system="auto")
 app = typer.Typer(help="Management of Lab Nodes for a Project")
-config = {"gns3_server_url": "http://gns3-server:80"}
-provider = services.get("GNS3", **config)
 
 
 class ProjectFilter(str, Enum):
@@ -40,9 +36,12 @@ def cli_list(
 
     > labby node list project01 --filter status --value started
     """
-    utils.header(f"Nodes list for project: [bold]{project}[/]")
-    prj = Project(name=project)
-    provider.get_nodes_list(project=prj, field=field, value=value)
+    try:
+        provider = provider_setup(f"Nodes list for project: [bold]{project}[/]")
+        prj = Project(name=project)
+        provider.get_nodes_list(project=prj, field=field, value=value)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Retrieves details of a node")
@@ -57,10 +56,15 @@ def detail(
 
     > labby node detail node-1 --project project01
     """
-    utils.header(f"Node details for [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.get_node_details(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Node details for [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.get_node_details(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Creates a node")
@@ -78,10 +82,15 @@ def create(
 
     > labby node create router01 --project project01 --template IOSv
     """
-    utils.header(f"Create node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project, template=template)
-    provider.create_node(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Create node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project, template=template)
+        provider.create_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Deletes a node")
@@ -96,10 +105,15 @@ def delete(
 
     > labby node delete router01 --project project01
     """
-    utils.header(f"Delete node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.delete_node(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Delete node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.delete_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Starts a node")
@@ -114,10 +128,15 @@ def start(
 
     > labby node start router01 --project project01
     """
-    utils.header(f"Start node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.start_node(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Start node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.start_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Stops a node")
@@ -132,10 +151,15 @@ def stop(
 
     > labby node stop router01 --project project01
     """
-    utils.header(f"Start node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.stop_node(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Start node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.stop_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Suspends a node")
@@ -150,10 +174,15 @@ def suspend(
 
     > labby node suspend router01 --project project01
     """
-    utils.header(f"Suspends node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.suspend_node(node=node, project=prj)
+    try:
+        provider = provider_setup(
+            f"Suspends node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.suspend_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()
 
 
 @app.command(short_help="Reloads a node")
@@ -168,11 +197,12 @@ def reload(
 
     > labby node reload router01 --project project01
     """
-    utils.header(f"Reload node [bold]{name}[/] on project [bold]{project}[/]")
-    prj = Project(name=project)
-    node = Node(name=name, project=project)
-    provider.reload_node(node=node, project=prj)
-
-
-if __name__ == "__main__":
-    app()
+    try:
+        provider = provider_setup(
+            f"Reload node [bold]{name}[/] on project [bold]{project}[/]"
+        )
+        prj = Project(name=project)
+        node = Node(name=name, project=project)
+        provider.reload_node(node=node, project=prj)
+    except Exception:
+        utils.console.print_exception()

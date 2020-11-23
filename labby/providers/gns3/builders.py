@@ -1,12 +1,9 @@
 import time
 import gns3fy
-from rich.console import Console
+from labby.utils import console
 import labby.models as models
 from typing import List, Tuple, Dict
 from requests.exceptions import HTTPError
-
-
-console = Console()
 
 
 def set_node_attributes(node: models.Node):
@@ -76,13 +73,13 @@ class GNS3ProjectBuilder:
             raise ValueError("GNS3 Project not initialized")
         initial_status = project.status
         if initial_status == "closed":
-            console.print(f"Opening project [cyan]{project.name}[/]...")
+            console.log(f"Opening project [cyan]{project.name}[/]...")
             self.start(project, start_nodes="none")
         return initial_status
 
     def post_status(self, project: models.Project, initial_status: str):
         if initial_status == "closed":
-            console.print(f"Closing project [cyan]{project.name}[/]...")
+            console.log(f"Closing project [cyan]{project.name}[/]...")
             self.stop(project, stop_nodes=False)
 
     def update(self, project: models.Project):
@@ -148,14 +145,14 @@ class GNS3ProjectBuilder:
 
         project._provider.open()
         if start_nodes == "all":
-            console.print(f"Starting all nodes in project {project.name}...")
+            console.log(f"Starting all nodes in project {project.name}...")
             project._provider.start_nodes(nodes_delay)
         elif start_nodes == "one_by_one":
             for node in project._provider.nodes:
                 if node.status == "started":
-                    console.print(f"Node [cyan]{node.name}[/] already started...")
+                    console.log(f"Node [cyan]{node.name}[/] already started...")
                 else:
-                    console.print(f"Starting node: [cyan]{node.name}[/]")
+                    console.log(f"Starting node: [cyan]{node.name}[/]")
                     node.start()
                     time.sleep(nodes_delay)
 
@@ -170,7 +167,7 @@ class GNS3ProjectBuilder:
             raise ValueError("GNS3 Provider not initialized")
 
         if stop_nodes:
-            console.print("Stopping nodes...")
+            console.log("Stopping nodes...")
             project._provider.stop_nodes()
         project._provider.close()
 
@@ -312,7 +309,7 @@ class GNS3ConnectionBuilder:
         node_b: str,
         port_b: str,
     ) -> Tuple[gns3fy.Link, bool]:
-        _node_a = project.get_node(name=node_a)
+        _node_a = project.get_node(name=node_a)  # type: ignore
         if not _node_a:
             raise ValueError(f"node_a: {node_a} not found")
         try:
@@ -320,7 +317,7 @@ class GNS3ConnectionBuilder:
         except IndexError:
             raise ValueError(f"port_a: {port_a} not found")
 
-        _node_b = project.get_node(name=node_b)
+        _node_b = project.get_node(name=node_b)  # type: ignore
         if not _node_b:
             raise ValueError(f"node_b: {node_b} not found")
         try:
@@ -329,7 +326,7 @@ class GNS3ConnectionBuilder:
             raise ValueError(f"port_b: {port_b} not found")
 
         _matches = []
-        for _l in project.links:
+        for _l in project.links:  # type: ignore
             if not _l.nodes:
                 continue
             if (
@@ -357,7 +354,7 @@ class GNS3ConnectionBuilder:
             link = None
             link_exists = False
 
-        return link, link_exists
+        return link, link_exists  # type: ignore
 
     def update(self, connection: models.Connection):
         if connection._provider is None:
@@ -371,6 +368,8 @@ class GNS3ConnectionBuilder:
             connection.is_created = False
 
     def set_provider(self, connection: models.Connection, project: models.Project):
+        if project._provider is None:
+            raise ValueError("GNS3 Provider not initialized")
         if connection.endpoints is None:
             raise ValueError("Need to have 'endpoints' defined to create connection")
         _provider, link_exists = self._get_link(

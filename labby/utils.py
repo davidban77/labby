@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 
-console = Console()
+console = Console(color_system="auto", log_path=False)
 
 
 def banner():
@@ -20,14 +20,23 @@ def banner():
 [/]
         """
     )
+    return "=>"
 
 
 def header(msg: str):
     console.print(
-        Panel(f"[cyan]{msg}", title="LABBY"),
+        Panel(f"[cyan]{msg}"),
         justify="center",
     )
     typer.echo("\n")
+
+
+def provider_header(environment: str, provider: str, provider_version: str, msg: str):
+    console.log(
+        f"[cyan]Environment:[/] {environment}  [cyan]Provider:[/] {provider.upper()}"
+        f"  [cyan]Version:[/] {provider_version}"
+    )
+    header(msg)
 
 
 def flatten(data: MutableMapping[str, Any], parent_key="", sep=".") -> Dict[str, Any]:

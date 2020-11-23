@@ -1,5 +1,6 @@
 import typer
 import toml
+
 from pathlib import Path
 from typing import MutableMapping, Optional, Literal, Any, Tuple
 from pydantic import BaseSettings, AnyHttpUrl, SecretStr
@@ -34,6 +35,12 @@ class LabbySettings(LabbyBaseSettings):
     labby: LabbyConfig = LabbyConfig()
     gns3: Gns3Config = Gns3Config()
 
+    def get_provider_settings(self) -> MutableMapping:
+        return getattr(self, self.labby.provider).dict()
+
+
+SETTINGS = LabbySettings()
+
 
 def get_config_current_path() -> Path:
     """
@@ -56,19 +63,16 @@ def get_config_base_path() -> Path:
     )
 
 
-def verify_config_path(config: Path) -> Path:
+def get_config_path() -> Path:
     """
-    Verify Path passed and if it does not exists, verifies config on current dir
-    and lastly against user's home .config/labby dir
+    Verifies config on current dir and lastly against user's home .config/labby dir
     """
-    if not config.exists():
-        config = get_config_current_path()
-        if not config.exists():
-            config = get_config_base_path()
-    if not config.is_file():
+    config_file = get_config_current_path()
+    if not config_file.exists():
+        config_file = get_config_base_path()
+    if not config_file.is_file():
         raise ValueError("Config file not found")
-    print(config.absolute())
-    return config
+    return config_file
 
 
 def load_toml(config_file: Path) -> MutableMapping:
@@ -101,19 +105,6 @@ def get_config_data(data: MutableMapping) -> Tuple[MutableMapping, MutableMappin
         global_config.get("environment", "default"), {}
     )
     return global_config, environment_config
-
-
-def load(config_file: Path) -> LabbySettings:
-    """
-    Read the config from a Path and return the labby settings.
-    """
-    # config_file = verify_config_path(config_file)
-    config_data = load_toml(config_file)
-
-    # Get global and environment config data
-    global_config, environment_config = get_config_data(config_data)
-
-    return LabbySettings(labby=global_config, **environment_config)
 
 
 def create_config_data(parameter: str, value: Any) -> MutableMapping:
@@ -167,3 +158,21 @@ def delete_config_data(config_file: Path, parameter: str) -> MutableMapping:
         return merged_data
     except Exception as err:
         raise err
+
+
+def load(config_file: Optional[Path] = None):
+    """
+    Read the config from a Path and return the labby settings.
+    """
+    # config_file = verify_config_path(config_file)
+    if config_file is None:
+        config_file = get_config_path()
+
+    config_data = load_toml(config_file)
+
+    # Get global and environment config data
+    global_config, environment_config = get_config_data(config_data)
+
+    global SETTINGS
+
+    SETTINGS = LabbySettings(labby=global_config, **environment_config)
