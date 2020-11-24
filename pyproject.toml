@@ -15,7 +15,8 @@ nornir = "^3.0.0"
 scrapli = "^2020.10.10"
 nornir-scrapli = "^2020.11.1"
 tomlkit = "^0.7.0"
-pydantic = "^1.7.2"
+pydantic = {version = "^1.7.2", extras = ["dotenv"]}
+python-dotenv = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"

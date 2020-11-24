@@ -31,7 +31,11 @@ def config_callback(value: Path):
 def bootstrap(
     node: str = typer.Argument(..., help="Node to start bootstrap process"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the node belongs to"
+        ...,
+        "--project",
+        "-p",
+        help="Project the node belongs to",
+        envvar="LABBY_PROJECT",
     ),
     bconfig: Path = typer.Option(
         ...,

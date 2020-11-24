@@ -48,7 +48,7 @@ def cli_list(
 def detail(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """
@@ -71,7 +71,7 @@ def detail(
 def create(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
     template: str = typer.Option(
         ..., "--template", "-t", help="Base template to derive new node"
@@ -97,7 +97,7 @@ def create(
 def delete(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """
@@ -120,7 +120,7 @@ def delete(
 def start(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """
@@ -143,7 +143,7 @@ def start(
 def stop(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """
@@ -166,7 +166,7 @@ def stop(
 def suspend(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """
@@ -189,7 +189,7 @@ def suspend(
 def reload(
     name: str = typer.Argument(..., help="Name of node"),
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs"
+        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
     ),
 ):
     """

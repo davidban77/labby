@@ -22,7 +22,11 @@ class ProjectFilter(str, Enum):
 )
 def cli_list(
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project to collect nodes information"
+        ...,
+        "--project",
+        "-p",
+        help="Project to collect nodes information",
+        envvar="LABBY_PROJECT",
     ),
     field: Optional[ProjectFilter] = typer.Option(
         None, "--filter", "-f", help="If used you MUST provide expected `--value`"
@@ -50,7 +54,7 @@ def cli_list(
 @app.command(short_help="Finds a link in a project")
 def find(
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs"
+        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
     ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"
@@ -91,7 +95,7 @@ def find(
 @app.command(short_help="Creates a connection")
 def create(
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs"
+        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
     ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"
@@ -132,7 +136,7 @@ def create(
 @app.command(short_help="Deletes a link")
 def delete(
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs"
+        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
     ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"

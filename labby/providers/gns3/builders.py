@@ -4,6 +4,7 @@ from labby.utils import console
 import labby.models as models
 from typing import List, Tuple, Dict
 from requests.exceptions import HTTPError
+from rich.progress import track
 
 
 def set_node_attributes(node: models.Node):
@@ -148,7 +149,7 @@ class GNS3ProjectBuilder:
             console.log(f"Starting all nodes in project {project.name}...")
             project._provider.start_nodes(nodes_delay)
         elif start_nodes == "one_by_one":
-            for node in project._provider.nodes:
+            for node in track(project._provider.nodes, description="Starting nodes..."):
                 if node.status == "started":
                     console.log(f"Node [cyan]{node.name}[/] already started...")
                 else:
