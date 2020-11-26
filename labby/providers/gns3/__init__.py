@@ -19,6 +19,7 @@ class GNS3Provider(ProvidersBase):
         if url is None:
             raise ValueError("No GNS3 server url specified")
 
+        self.url = url
         self.server = gns3fy.Gns3Connector(url=url, user=user, cred=cred, verify=verify)
 
         self.project_builder = GNS3ProjectBuilder(server=self.server)
@@ -26,6 +27,15 @@ class GNS3Provider(ProvidersBase):
         self.connection_builder = GNS3ConnectionBuilder(server=self.server)
         self.reporter = Reports(server=self.server)
         self.provisioner = Provision(self.server)
+
+    def get_project_web_url(self, project: models.Project):
+        # Retrieve project
+        if not self.project_builder.retrieve(project):
+            console.log(
+                f"No project named [cyan]{project.name}[/] found. Nothing to do..."
+            )
+            return
+        return f"{self.url}/static/web-ui/server/1/project/{project.id}"
 
     def get_version(self):
         return self.server.get_version()["version"]

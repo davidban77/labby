@@ -1,5 +1,5 @@
 [labby]
-environment = "aws"
+environment = "local"
 provider = "gns3"
 
 [labby.notifications]
@@ -10,15 +10,19 @@ channel = "general"
 inventory = "ansible"
 workers = 10
 
-[environment.aws.gns3]
+[environment.local.gns3]
 server_url = "http://gns3-server:80"
 verify_cert = false
 
+[environment.aws.gns3]
+server_url = "http://ec2.aws.gns3-server:80"
+verify_cert = false
+
 [environment.aws.vrnetlab]
-docker_host = "tcp://docker-host:2375"
+docker_host = "tcp://ec2.aws.docker-host:2375"
 verify_cert = true
 
 [environment.packet.eve_ng]
-server_url = "http://even-ng-server.local"
+server_url = "http://packet.even-ng-server.local"
 user = "user1"
 password = "password1"

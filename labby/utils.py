@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 
-console = Console(color_system="auto", log_path=False)
+console = Console(color_system="auto", log_path=False, record=True)
 
 
 def banner():

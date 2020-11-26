@@ -51,7 +51,11 @@ def cli_list(
 
 
 @app.command(short_help="Retrieves details of a project")
-def detail(name: str):
+def detail(
+    name: str = typer.Argument(
+        ..., help="Project to get details from", envvar="LABBY_PROJECT"
+    )
+):
     """
     Retrieves Project details
 
@@ -68,7 +72,9 @@ def detail(name: str):
 
 
 @app.command(short_help="Creates a Project")
-def create(name: str):
+def create(
+    name: str = typer.Argument(..., help="Project to create", envvar="LABBY_PROJECT")
+):
     """
     Creates a Project
 
@@ -85,7 +91,9 @@ def create(name: str):
 
 
 @app.command(short_help="Deletes a project")
-def delete(name: str):
+def delete(
+    name: str = typer.Argument(..., help="Project to delete", envvar="LABBY_PROJECT")
+):
     """
     Deletes a Project
 
@@ -103,24 +111,24 @@ def delete(name: str):
 
 @app.command(short_help="Starts a project")
 def start(
-    name: str = typer.Argument(..., help="Project to start"),
+    name: str = typer.Argument(..., help="Project to start", envvar="LABBY_PROJECT"),
     start_nodes: StartNodes = typer.Option(
         "none", help="Strategy to use to start nodes in project"
     ),
-    nodes_delay: int = typer.Option(10, help="Time to wait starting nodes"),
+    delay: int = typer.Option(10, help="Time to wait starting nodes"),
 ):
     """
     Starts a Project and gives a sequence to start the nodes
 
     For example:
 
-    > labby project start project01 --start_nodes one_by_one --nodes_delay 20
+    > labby project start project01 --start-nodes one_by_one --delay 20
     """
     try:
         provider = provider_setup(f"Starting Project: {name}")
         project = Project(name=name)
         provider.start_project(
-            project=project, start_nodes=start_nodes, nodes_delay=nodes_delay
+            project=project, start_nodes=start_nodes, nodes_delay=delay
         )
     except Exception:
         utils.console.print_exception()
@@ -128,7 +136,7 @@ def start(
 
 @app.command(short_help="Stops a project")
 def stop(
-    name: str = typer.Argument(..., help="Project to start"),
+    name: str = typer.Argument(..., help="Project to start", envvar="LABBY_PROJECT"),
     stop_nodes: bool = typer.Option(
         False, help="Strategy to use to start nodes in project"
     ),
@@ -144,5 +152,24 @@ def stop(
         provider = provider_setup(f"Stopping Project: {name}")
         project = Project(name=name)
         provider.stop_project(project=project, stop_nodes=stop_nodes)
+    except Exception:
+        utils.console.print_exception()
+
+
+@app.command(short_help="Launches a Project")
+def launch(
+    name: str = typer.Argument(..., help="Project to start", envvar="LABBY_PROJECT"),
+):
+    """
+    Launches a Project on a browser
+
+    For example:
+
+    > labby project launch project01
+    """
+    try:
+        provider = provider_setup(f"Launching Project: {name}")
+        project = Project(name=name)
+        typer.launch(provider.get_project_web_url(project))
     except Exception:
         utils.console.print_exception()

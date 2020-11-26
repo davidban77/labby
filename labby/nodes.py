@@ -19,7 +19,11 @@ class ProjectFilter(str, Enum):
 @app.command(name="list", short_help="Retrieves a list of nodes from a project")
 def cli_list(
     project: str = typer.Option(
-        ..., "--project", "-p", help="Project to collect nodes information"
+        ...,
+        "--project",
+        "-p",
+        help="Project to collect nodes information",
+        envvar="LABBY_PROJECT",
     ),
     field: Optional[ProjectFilter] = typer.Option(
         None, "--filter", "-f", help="If used you MUST provide expected `--value`"
