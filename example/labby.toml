@@ -6,9 +6,13 @@ provider = "gns3"
 service = "slack"
 channel = "general"
 
-[labby.input.nornir]
-inventory = "ansible"
-workers = 10
+[labby.provisioner.nornir.runner]
+plugin = "threaded"
+options = { num_workers = 20}
+
+[labby.provisioner.nornir.inventory]
+plugin = "SimpleInventory"
+options = {host_file = "inventory/hosts.yml", group_file = "inventory/groups.yml"}
 
 [environment.local.gns3]
 server_url = "http://gns3-server:80"

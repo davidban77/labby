@@ -1,8 +1,17 @@
 import abc
+from typing import Optional
 import labby.models as models
 
 
 class ProvidersBase(abc.ABC):
+    @abc.abstractmethod
+    def get_project_web_url(self, project: models.Project) -> Optional[str]:
+        ...
+
+    @abc.abstractmethod
+    def get_version(self) -> str:
+        ...
+
     @abc.abstractmethod
     def get_project_details(self, project: models.Project):
         ...

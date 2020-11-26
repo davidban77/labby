@@ -1,10 +1,8 @@
-import re
 import time
 import gns3fy
-from labby.utils import console
+from labby.utils import console, dissect_url
 import labby.models as models
 from pathlib import Path
-from typing import Tuple, Optional
 from scrapli.driver import NetworkDriver
 from scrapli.driver.core import (
     IOSXEDriver,
@@ -14,28 +12,6 @@ from scrapli.driver.core import (
     JunosDriver,
 )
 from scrapli.transport.telnet import TelnetTransport
-
-
-def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """
-    Takes URL and returns protocol, destination and resource.
-
-    Example:
-    >>> dissect_url("https://api.test.com/v2/resourceX")
-    ("https", "api.test.com", "v2/resourceX")
-    """
-    match = re.search(
-        r"((?P<protocol>\w+?)://)?(?P<destination>(\w+(-\w+)?\.?)+[a-z|0-9]+):?"
-        r"(?P<port>\d+)?(/(?P<resource>[a-z]+\S+))?",
-        target,
-    )
-    if match is None:
-        raise ValueError(f"Could not dissect URL: {target}")
-    return (
-        match.groupdict().get("protocol"),
-        match.groupdict().get("destination"),
-        match.groupdict().get("resource"),
-    )
 
 
 def bootstrap_settings(device_type: str, host: str, port: int) -> NetworkDriver:

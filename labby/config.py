@@ -4,7 +4,8 @@ from typing import Optional
 from pathlib import Path
 from labby import utils
 from labby.settings import (
-    delete_config_data, update_config_data,
+    delete_config_data,
+    update_config_data,
     get_config_base_path,
     get_config_current_path,
     load_toml,

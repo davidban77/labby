@@ -1,5 +1,6 @@
+import re
 import typer
-from typing import Dict, List, Any, MutableMapping
+from typing import Dict, List, Any, MutableMapping, Tuple, Optional
 from rich.console import Console
 from rich.panel import Panel
 
@@ -87,3 +88,25 @@ def delete_nested_key(dicti, path):
         return dicti
     except KeyError as err:
         raise err
+
+
+def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    Takes URL and returns protocol, destination and resource.
+
+    Example:
+    >>> dissect_url("https://api.test.com/v2/resourceX")
+    ("https", "api.test.com", "v2/resourceX")
+    """
+    match = re.search(
+        r"((?P<protocol>\w+?)://)?(?P<destination>(\w+(-\w+)?\.?)+[a-z|0-9]+):?"
+        r"(?P<port>\d+)?(/(?P<resource>[a-z]+\S+))?",
+        target,
+    )
+    if match is None:
+        raise ValueError(f"Could not dissect URL: {target}")
+    return (
+        match.groupdict().get("protocol"),
+        match.groupdict().get("destination"),
+        match.groupdict().get("resource"),
+    )

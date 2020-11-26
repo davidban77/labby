@@ -28,16 +28,16 @@ class GNS3Provider(ProvidersBase):
         self.reporter = Reports(server=self.server)
         self.provisioner = Provision(self.server)
 
-    def get_project_web_url(self, project: models.Project):
+    def get_project_web_url(self, project: models.Project) -> Optional[str]:
         # Retrieve project
         if not self.project_builder.retrieve(project):
             console.log(
                 f"No project named [cyan]{project.name}[/] found. Nothing to do..."
             )
-            return
+            return None
         return f"{self.url}/static/web-ui/server/1/project/{project.id}"
 
-    def get_version(self):
+    def get_version(self) -> str:
         return self.server.get_version()["version"]
 
     def get_project_details(self, project: models.Project):
