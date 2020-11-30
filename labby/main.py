@@ -4,7 +4,7 @@ import labby.projects
 import labby.templates
 import labby.nodes
 import labby.connections
-import labby.provision
+import labby.run
 from labby import settings
 from labby import utils
 
@@ -20,7 +20,7 @@ app.add_typer(labby.projects.app, name="project")
 app.add_typer(labby.templates.app, name="template")
 app.add_typer(labby.nodes.app, name="node")
 app.add_typer(labby.connections.app, name="link")
-app.add_typer(labby.provision.app, name="provision")
+app.add_typer(labby.run.app, name="run")
 
 
 @app.callback()
@@ -35,6 +35,7 @@ def main(
     ),
 ):
     if ctx.invoked_subcommand != "config":
+        ctx.obj = config
         settings.load(config)
     if verbose:
         typer.echo("Will write verbose output")

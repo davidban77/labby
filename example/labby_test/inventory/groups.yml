@@ -1,5 +1,5 @@
 ---
-global:
+gns3:
   data:
     gns3_links_spec:
       - ["r1", "Gi0/0", "sw1", "Ethernet1"]

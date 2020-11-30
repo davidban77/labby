@@ -2,8 +2,8 @@ import typer
 import toml
 
 from pathlib import Path
-from typing import MutableMapping, Optional, Literal, Any, Tuple
-from pydantic import BaseSettings, AnyHttpUrl, SecretStr
+from typing import MutableMapping, Optional, Literal, Any, Tuple, Dict
+from pydantic import BaseSettings, AnyHttpUrl, SecretStr, FilePath
 from labby import utils
 
 
@@ -25,15 +25,37 @@ class Gns3Config(LabbyBaseSettings):
     verify_cert: bool = False
 
 
+class NornirRunnerConfig(LabbyBaseSettings):
+    plugin: str = "threaded"
+    options: Dict[str, Any] = {"num_workers": 5}
+
+
+class NornirInventoryOptions(LabbyBaseSettings):
+    host_file: Optional[FilePath] = None
+    group_file: Optional[FilePath] = None
+
+
+class NornirInventoryConfig(LabbyBaseSettings):
+    plugin: str = "SimpleInventory"
+    options: Optional[NornirInventoryOptions]
+
+
+class NornirConfig(LabbyBaseSettings):
+    runner: NornirRunnerConfig = NornirRunnerConfig()
+    inventory: NornirInventoryConfig = NornirInventoryConfig()
+
+
 class LabbyConfig(LabbyBaseSettings):
     environment: str = "default"
     provider: Literal["gns3"] = "gns3"
+    project: Optional[str] = None
     debug: bool = False
 
 
 class LabbySettings(LabbyBaseSettings):
     labby: LabbyConfig = LabbyConfig()
     gns3: Gns3Config = Gns3Config()
+    nornir: NornirConfig = NornirConfig()
 
     def get_provider_settings(self) -> MutableMapping:
         return getattr(self, self.labby.provider).dict()
@@ -90,12 +112,17 @@ def save_toml(config_file: Path, data: MutableMapping):
     return
 
 
-def get_config_data(data: MutableMapping) -> Tuple[MutableMapping, MutableMapping]:
+def get_config_data(
+    data: MutableMapping,
+) -> Tuple[MutableMapping, MutableMapping, MutableMapping]:
     """
     Based on a Dictionary of data, return the global and environment config
     """
     # Get all environment data
     all_environments = data.get("environment", {})
+
+    # Get all projects data
+    all_projects = data.get("project", {})
 
     # Get Global Labby config
     global_config = data.get("labby", {})
@@ -104,7 +131,17 @@ def get_config_data(data: MutableMapping) -> Tuple[MutableMapping, MutableMappin
     environment_config = all_environments.get(
         global_config.get("environment", "default"), {}
     )
-    return global_config, environment_config
+
+    # Get specific project data for this run
+    project_config = all_projects.get(global_config.get("project", ""), {})
+
+    # Get Nornir config
+    nornir_config = dict(
+        runner=global_config.get("nornir", {}).get("runner", {}),
+        inventory=project_config.get("nornir", {}).get("inventory", {}),
+    )
+
+    return global_config, environment_config, nornir_config
 
 
 def create_config_data(parameter: str, value: Any) -> MutableMapping:
@@ -136,10 +173,12 @@ def update_config_data(config_file: Path, parameter: str, value: str) -> Mutable
     new_data = create_config_data(parameter, value)
     config_data = load_toml(config_file)
     merged_data = utils.mergedicts(config_data, new_data)
-    global_config, environment_config = get_config_data(merged_data)
+    global_config, environment_config, nornir_config = get_config_data(merged_data)
 
     try:
-        _ = LabbySettings(labby=global_config, **environment_config)
+        _ = LabbySettings(
+            labby=global_config, nornir=nornir_config, **environment_config
+        )
         return merged_data
     except Exception as err:
         raise err
@@ -151,16 +190,35 @@ def delete_config_data(config_file: Path, parameter: str) -> MutableMapping:
     """
     config_data = load_toml(config_file)
     merged_data = utils.delete_nested_key(config_data, parameter)
-    global_config, environment_config = get_config_data(merged_data)
+    global_config, environment_config, nornir_config = get_config_data(merged_data)
 
     try:
-        _ = LabbySettings(labby=global_config, **environment_config)
+        _ = LabbySettings(
+            labby=global_config, nornir=nornir_config, **environment_config
+        )
         return merged_data
     except Exception as err:
         raise err
 
 
-def load(config_file: Optional[Path] = None):
+def get_project_data(project_file: Path):
+    """
+    Loads Project TOML file and sets inventory to its resolved path
+    """
+    data = load_toml(project_file)
+    inv_options = data.get("nornir", {}).get("inventory", {}).get("options", {})
+    if inv_options.get("host_file") is not None:
+        inv_options["host_file"] = Path(
+            project_file.parent.resolve() / inv_options["host_file"]
+        )
+        inv_options["group_file"] = Path(
+            project_file.parent.resolve() / inv_options["group_file"]
+        )
+        data["nornir"]["inventory"]["options"] = inv_options
+    return data
+
+
+def load(config_file: Optional[Path] = None, project_file: Optional[Path] = None):
     """
     Read the config from a Path and return the labby settings.
     """
@@ -170,9 +228,15 @@ def load(config_file: Optional[Path] = None):
 
     config_data = load_toml(config_file)
 
+    if project_file:
+        # It overrides project data from main config file
+        config_data["project"][project_file.stem] = get_project_data(project_file)
+
     # Get global and environment config data
-    global_config, environment_config = get_config_data(config_data)
+    global_config, environment_config, nornir_config = get_config_data(config_data)
 
     global SETTINGS
 
-    SETTINGS = LabbySettings(labby=global_config, **environment_config)
+    SETTINGS = LabbySettings(
+        labby=global_config, nornir=nornir_config, **environment_config
+    )

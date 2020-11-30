@@ -1,0 +1,8 @@
+name = "Labby Test"
+description = "This is an example project"
+version = "0.0.1"
+authors = ["Foo Bar <foo.bar@example.com>"]
+
+[nornir.inventory]
+plugin = "SimpleInventory"
+options = {host_file = "../labby_test/inventory/hosts.yml", group_file = "./inventory/groups.yml"}

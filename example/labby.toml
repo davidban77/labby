@@ -1,22 +1,60 @@
+####################################
+# GLOBAL
+####################################
+
 [labby]
 environment = "local"
 provider = "gns3"
+project = "labby_test"
 
 [labby.notifications]
 service = "slack"
 channel = "general"
 
-[labby.provisioner.nornir.runner]
+[labby.nornir.runner]
 plugin = "threaded"
 options = { num_workers = 20}
 
-[labby.provisioner.nornir.inventory]
+####################################
+# PROJECTS EXAMPLE
+####################################
+
+[project.labby_test]
+name = "Labby Test"
+description = "This is an example project"
+version = "0.0.1"
+authors = ["Foo Bar <foo.bar@example.com>"]
+
+[project.labby_test.nornir.inventory]
 plugin = "SimpleInventory"
-options = {host_file = "inventory/hosts.yml", group_file = "inventory/groups.yml"}
+
+[project.labby_test.nornir.inventory.options]
+host_file = "labby_test/inventory/hosts.yml"
+group_file = "labby_test/inventory/groups.yml"
+
+[project.labby_test2]
+name = "Labby Test 2"
+description = "This is another example project"
+version = "0.0.1"
+
+[project.labby_test2.nornir.inventory]
+plugin = "SimpleInventory"
+
+[project.labby_test2.nornir.inventory.options]
+host_file = "labby_test2/inventory/hosts.yml"
+group_file = "labby_test2/inventory/groups.yml"
+
+####################################
+# EXAMPLE ENV LOCAL
+####################################
 
 [environment.local.gns3]
 server_url = "http://gns3-server:80"
 verify_cert = false
+
+####################################
+# EXAMPLE ENV AWS
+####################################
 
 [environment.aws.gns3]
 server_url = "http://ec2.aws.gns3-server:80"
@@ -25,6 +63,10 @@ verify_cert = false
 [environment.aws.vrnetlab]
 docker_host = "tcp://ec2.aws.docker-host:2375"
 verify_cert = true
+
+####################################
+# EXAMPLE ENV PACKET
+####################################
 
 [environment.packet.eve_ng]
 server_url = "http://packet.even-ng-server.local"

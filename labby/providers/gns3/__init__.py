@@ -40,6 +40,12 @@ class GNS3Provider(ProvidersBase):
     def get_version(self) -> str:
         return self.server.get_version()["version"]
 
+    def retrieve_project(self, project: models.Project) -> bool:
+        """
+        It checks if the project exists on GNS3 and updated its attributes if it exists.
+        """
+        return self.project_builder.retrieve(project)
+
     def get_project_details(self, project: models.Project):
         # Retrieve project
         if not self.project_builder.retrieve(project):
@@ -223,18 +229,24 @@ class GNS3Provider(ProvidersBase):
             self.reporter.table_template_detail(template=template), justify="center"
         )
 
-    def create_project(self, project: models.Project):
+    def create_project(self, project: models.Project) -> bool:
+        """
+        Creates a project if it doesn't exists, returns boolean stating if it managed
+        to create it successfully.
+        """
         # TODO: Wrapper could be set to check project existence
         # Retrieve project
-        if self.project_builder.retrieve(project):
+        _created = False
+        if self.retrieve_project(project):
             console.log(
                 f"Project {project.name} is already created. Nothing to do..."
             )
-            return
+            return _created
 
         # Create project
         if self.project_builder.create(project=project):
             console.log(f"[green]Created[/] project: [cyan]{project.name}[/]")
+            _created = True
         else:
             console.log("[red]Project could not be created[/]")
 
@@ -243,6 +255,7 @@ class GNS3Provider(ProvidersBase):
         console.log(
             self.reporter.table_project_summary(project=project), justify="center"
         )
+        return _created
 
     def delete_project(self, project: models.Project):
         # Retrieve project
@@ -303,25 +316,31 @@ class GNS3Provider(ProvidersBase):
         #     self.reporter.table_project_summary(project=project), justify="center"
         # )
 
-    def create_node(self, node: models.Node, project: models.Project):
+    def create_node(self, node: models.Node, project: models.Project) -> bool:
+        """
+        Creates a node if it doesn't exists, returns boolean stating if it managed
+        to create it successfully.
+        """
+        _created = False
         # Retrieve project
-        if not self.project_builder.retrieve(project):
+        if not self.retrieve_project(project):
             console.log(
                 f"No project named [cyan]{project.name}[/] found. Nothing to do..."
             )
-            return
+            return _created
 
         # Prep project for nodes and links and get initial status
         initial_status = self.project_builder.prep_status(project)
 
         # Retrieve node
         if self.node_builder.retrieve(node, project):
-            console.log(f"Node [cyan]{node.name}[/] found. Nothing to do...")
-            return
+            console.log(f"Node [cyan]{node.name}[/] already created. Nothing to do...")
+            return _created
 
         # Create node
         if self.node_builder.create(node=node):
             console.log(f"[green]Created[/] node: [cyan]{node.name}[/]")
+            _created = True
         else:
             console.log("[red]Node could not be created[/]")
 
@@ -340,6 +359,7 @@ class GNS3Provider(ProvidersBase):
 
         # Set project back to its original state
         self.project_builder.post_status(project, initial_status)
+        return _created
 
     def delete_node(self, node: models.Node, project: models.Project):
         # Retrieve project
