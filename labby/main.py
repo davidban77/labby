@@ -1,10 +1,10 @@
 import typer
-import labby.config
-import labby.projects
-import labby.templates
-import labby.nodes
-import labby.connections
-import labby.run
+import labby.commands.config
+import labby.commands.projects
+import labby.commands.templates
+import labby.commands.nodes
+import labby.commands.connections
+import labby.commands.run
 from labby import settings
 from labby import utils
 
@@ -15,12 +15,12 @@ from pathlib import Path
 app = typer.Typer(help=f"{utils.banner()}Awesome Network Lab Management Tool!")
 state = {"verbose": False}
 
-app.add_typer(labby.config.app, name="config")
-app.add_typer(labby.projects.app, name="project")
-app.add_typer(labby.templates.app, name="template")
-app.add_typer(labby.nodes.app, name="node")
-app.add_typer(labby.connections.app, name="link")
-app.add_typer(labby.run.app, name="run")
+app.add_typer(labby.commands.config.app, name="config")
+app.add_typer(labby.commands.projects.app, name="project")
+app.add_typer(labby.commands.templates.app, name="template")
+app.add_typer(labby.commands.nodes.app, name="node")
+app.add_typer(labby.commands.connections.app, name="link")
+app.add_typer(labby.commands.run.app, name="run")
 
 
 @app.callback()

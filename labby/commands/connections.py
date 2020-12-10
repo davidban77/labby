@@ -1,8 +1,8 @@
-from labby import settings
 import typer
 import labby.utils as utils
 from enum import Enum
 from typing import Optional
+from labby import settings
 from labby.providers import provider_setup
 from labby.models import Project, Connection
 
