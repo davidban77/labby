@@ -29,7 +29,7 @@ services.register_builder("GNS3", GNS3ProviderBuilder())
 def provider_setup(header_msg: str):
     provider = services.get(
             settings.SETTINGS.labby.provider.upper(),
-            **settings.SETTINGS.get_provider_settings(),
+            **settings.SETTINGS.get_provider_settings().dict(),
         )
     utils.provider_header(
         environment=settings.SETTINGS.labby.environment,

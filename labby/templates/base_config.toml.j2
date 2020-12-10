@@ -1,0 +1,28 @@
+[labby]
+environment = "{{ environment }}"
+provider = "{{ provider }}"
+{% if project is defined %}
+project = "{{ project }}"
+{% endif %}
+
+[[environment]]
+name = "{{ environment }}"
+description = "{{ environment_description }}"
+
+    [environment.{{ environment }}]
+    server_url = "{{ provider_url }}"
+
+{% if project_name is defined %}
+[[project]]
+name = "{{ project_name }}"
+description = "{{ project_description }}"
+version = "{{ project_version }}"
+authors = {{ project_authors }}
+
+    [project.inventory]
+    plugin = "SimpleInventory"
+
+    [project.inventory.options]
+    host_file = "{{ project_hosts_file }}"
+    group_file = "{{ project_groups_file }}"
+{% endif %}

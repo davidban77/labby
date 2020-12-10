@@ -1,5 +1,7 @@
 import re
 import typer
+import functools
+from labby import settings
 from typing import Dict, List, Any, MutableMapping, Tuple, Optional
 from rich.console import Console
 from rich.panel import Panel
@@ -110,3 +112,29 @@ def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str
         match.groupdict().get("destination"),
         match.groupdict().get("resource"),
     )
+
+
+def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
+    """Catches errors and exceptions and rich prints it
+    """
+    def decorator_error_catcher(func):
+        @functools.wraps(func)
+        def wrapper_error_catcher(*args, **kwargs):
+            try:
+                if parameter == "check_project":
+                    name = settings.SETTINGS.labby.project
+                    if name is None:
+                        console.print("[red]No project specified[/]")
+                        raise typer.Exit(code=1)
+                value = func(*args, **kwargs)
+                return value
+            except typer.Exit:
+                console.print("[red]Exiting...[/]\n")
+            except Exception:
+                console.print_exception()
+        return wrapper_error_catcher
+
+    if _func is None:
+        return decorator_error_catcher
+    else:
+        return decorator_error_catcher(_func)

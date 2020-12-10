@@ -238,9 +238,7 @@ class GNS3Provider(ProvidersBase):
         # Retrieve project
         _created = False
         if self.retrieve_project(project):
-            console.log(
-                f"Project {project.name} is already created. Nothing to do..."
-            )
+            console.log(f"Project {project.name} is already created. Nothing to do...")
             return _created
 
         # Create project
@@ -256,6 +254,38 @@ class GNS3Provider(ProvidersBase):
             self.reporter.table_project_summary(project=project), justify="center"
         )
         return _created
+
+    def update_project(
+        self, project: models.Project, parameter: str, value: str
+    ) -> bool:
+        """
+        Updates a projec, returns boolean stating if it managed to update it
+        successfully.
+        """
+        # Retrieve project
+        _updated = False
+        if not self.retrieve_project(project):
+            console.log(
+                f"No project named [cyan]{project.name}[/] found. Nothing to do..."
+            )
+            return False
+
+        # Update project
+        if self.project_builder.update(
+            project=project, parameter=parameter, value=value
+        ):
+            console.log(f"[green]Updated[/] project: [cyan]{project.name}[/]")
+            _updated = True
+        else:
+            console.log("[red]Project could not be updated[/]")
+        console.log(f"Updated parameter: [cyan]{parameter}: {value}[/]")
+
+        # Project Summary Table
+        console.log()
+        console.log(
+            self.reporter.table_project_summary(project=project), justify="center"
+        )
+        return _updated
 
     def delete_project(self, project: models.Project):
         # Retrieve project

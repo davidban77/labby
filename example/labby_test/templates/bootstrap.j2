@@ -1,0 +1,41 @@
+{% if platform == "ios" %}
+hostname {{ name }}
+! Archiving section
+archive
+log config
+logging enable
+logging size 500
+notify syslog contenttype plaintext
+! AAA
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+aaa authorization commands 15 default local
+! SSH
+crypto key generate rsa label LAB modulus 2048
+ip ssh version 2
+line vty 0 4
+transport input ssh
+! USER
+username {{ username }} privilege 15 password 0 {{ password }}
+!
+interface {{ data["mgmt_interface"] }}
+ip address {{ data["mgmt_address"] | ipaddress("address") }} {{ data["mgmt_address"] | ipaddress("netmask") }}
+no shutdown
+!
+exit
+exit
+{% elif platform == "eos" %}
+configure terminal
+hostname {{ name }}
+ip routing
+username {{ username }} privilege 15 role network-admin secret {{ password }}
+management api http-commands
+protocol https
+no shutdown
+interface {{ data["mgmt_interface"] }}
+ip address {{ data["mgmt_address"] }}
+no shutdown
+exit
+exit
+{% endif %}

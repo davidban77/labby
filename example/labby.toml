@@ -1,6 +1,6 @@
-####################################
+########################################################################
 # GLOBAL
-####################################
+########################################################################
 
 [labby]
 environment = "local"
@@ -11,64 +11,128 @@ project = "labby_test"
 service = "slack"
 channel = "general"
 
-[labby.nornir.runner]
-plugin = "threaded"
-options = { num_workers = 20}
+# [labby.nornir.runner]
+# plugin = "threaded"
+# options = { num_workers = 20}
 
-####################################
-# PROJECTS EXAMPLE
-####################################
+########################################################################
+# PROJECTS EXAMPLES
+########################################################################
 
-[project.labby_test]
-name = "Labby Test"
+# # Project slug labby_test
+
+# [project.labby_test]
+# name = "Labby Test"
+# description = "This is an example project"
+# version = "0.0.1"
+# authors = ["Foo Bar <foo.bar@example.com>"]
+
+# [project.labby_test.nornir.inventory]
+# plugin = "SimpleInventory"
+
+# [project.labby_test.nornir.inventory.options]
+# host_file = "labby_test/inventory/hosts.yml"
+# group_file = "labby_test/inventory/groups.yml"
+
+# # Project slug labby_test2
+
+# [project.labby_test2]
+# name = "Labby Test 2"
+# description = "This is another example project"
+# version = "0.0.1"
+
+# [project.labby_test2.nornir.inventory]
+# plugin = "SimpleInventory"
+
+# [project.labby_test2.nornir.inventory.options]
+# host_file = "labby_test2/inventory/hosts.yml"
+# group_file = "labby_test2/inventory/groups.yml"
+
+[[project]]
+name = "labby_test"
 description = "This is an example project"
 version = "0.0.1"
 authors = ["Foo Bar <foo.bar@example.com>"]
 
-[project.labby_test.nornir.inventory]
-plugin = "SimpleInventory"
+    [project.inventory]
+    plugin = "SimpleInventory"
 
-[project.labby_test.nornir.inventory.options]
-host_file = "labby_test/inventory/hosts.yml"
-group_file = "labby_test/inventory/groups.yml"
+    # [project.runner]
+    # plugin = "threaded"
+    # options = { num_workers = 20}
 
-[project.labby_test2]
-name = "Labby Test 2"
-description = "This is another example project"
-version = "0.0.1"
+    [project.inventory.options]
+    host_file = "example/labby_test/inventory/hosts.yml"
+    group_file = "example/labby_test/inventory/groups.yml"
 
-[project.labby_test2.nornir.inventory]
-plugin = "SimpleInventory"
+# [[project]]
+# name = "labby_tes2"
+# description = "This is another example project"
+# version = "0.2.1"
+# authors = ["Foo Bar <foo.bar@example.com>"]
 
-[project.labby_test2.nornir.inventory.options]
-host_file = "labby_test2/inventory/hosts.yml"
-group_file = "labby_test2/inventory/groups.yml"
+#     [project.inventory]
+#     plugin = "SimpleInventory"
 
-####################################
+#     [project.inventory.options]
+#     host_file = "labby_test2/inventory/hosts.yml"
+#     group_file = "labby_test2/inventory/groups.yml"
+
+########################################################################
 # EXAMPLE ENV LOCAL
-####################################
+########################################################################
 
-[environment.local.gns3]
-server_url = "http://gns3-server:80"
-verify_cert = false
+# [environment.local.gns3]
+# server_url = "http://gns3-server:80"
+# verify_cert = false
 
-####################################
+[[environment]]
+name = "local"
+description = "This is my local environment"
+
+    [environment.gns3]
+    server_url = "http://gns3-server:80"
+    verify_cert = "false"
+
+########################################################################
 # EXAMPLE ENV AWS
-####################################
+########################################################################
 
-[environment.aws.gns3]
-server_url = "http://ec2.aws.gns3-server:80"
-verify_cert = false
+# [environment.aws.gns3]
+# server_url = "http://ec2.aws.gns3-server:80"
+# verify_cert = false
 
-[environment.aws.vrnetlab]
-docker_host = "tcp://ec2.aws.docker-host:2375"
-verify_cert = true
+# [environment.aws.vrnetlab]
+# docker_host = "tcp://ec2.aws.docker-host:2375"
+# verify_cert = true
 
-####################################
+[[environment]]
+name = "aws"
+description = "AWS environment"
+region = "us-east"
+
+    [environment.gns3]
+    server_url = "http://ec2.aws.gns3-server:80"
+    verify_cert = "false"
+
+    [environment.vrnetlab]
+    server_url = "tcp://ec2.aws.docker-host:2375"
+    verify_cert = "true"
+
+########################################################################
 # EXAMPLE ENV PACKET
-####################################
+########################################################################
 
-[environment.packet.eve_ng]
-server_url = "http://packet.even-ng-server.local"
-user = "user1"
-password = "password1"
+# [environment.packet.eve_ng]
+# server_url = "http://packet.even-ng-server.local"
+# user = "user1"
+# password = "password1"
+
+[[environment]]
+name = "packet"
+description = "Packet environment"
+
+    [environment.eve_ng]
+    server_url = "http://packet.even-ng-server.com"
+    user = "user1"
+    password = "passsdasd32413123word1"

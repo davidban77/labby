@@ -1,3 +1,4 @@
+from labby import settings
 import typer
 import labby.utils as utils
 from enum import Enum
@@ -16,15 +17,11 @@ class ProjectFilter(str, Enum):
     # template = "template"
 
 
-@app.command(name="list", short_help="Retrieves a list of nodes from a project")
+@app.command(
+    name="list", short_help="Retrieves a list of nodes from a project"
+)  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def cli_list(
-    project: str = typer.Option(
-        ...,
-        "--project",
-        "-p",
-        help="Project to collect nodes information",
-        envvar="LABBY_PROJECT",
-    ),
     field: Optional[ProjectFilter] = typer.Option(
         None, "--filter", "-f", help="If used you MUST provide expected `--value`"
     ),
@@ -38,45 +35,37 @@ def cli_list(
 
     For example:
 
-    > labby node list project01 --filter status --value started
+    > labby --project lab01 node list --filter status --value started
     """
-    try:
-        provider = provider_setup(f"Nodes list for project: [bold]{project}[/]")
-        prj = Project(name=project)
-        provider.get_nodes_list(project=prj, field=field, value=value)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(f"Nodes list for project: [bold]{project}[/]")
+    prj = Project(name=project)  # type: ignore
+    provider.get_nodes_list(project=prj, field=field, value=value)
 
 
-@app.command(short_help="Retrieves details of a node")
+@app.command(short_help="Retrieves details of a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def detail(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Retrieves Node details
 
-    > labby node detail node-1 --project project01
+    > labby --project lab01 node detail node-1
     """
-    try:
-        provider = provider_setup(
-            f"Node details for [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.get_node_details(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Node details for [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.get_node_details(node=node, project=prj)
 
 
-@app.command(short_help="Creates a node")
+@app.command(short_help="Creates a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def create(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
     template: str = typer.Option(
         ..., "--template", "-t", help="Base template to derive new node"
     ),
@@ -84,129 +73,107 @@ def create(
     """
     Creates a Node
 
-    > labby node create router01 --project project01 --template IOSv
+    > labby --project lab01 node create router01 --template IOSv
     """
-    try:
-        provider = provider_setup(
-            f"Create node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project, template=template)
-        provider.create_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Create node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project, template=template)  # type: ignore
+    provider.create_node(node=node, project=prj)
 
 
-@app.command(short_help="Deletes a node")
+@app.command(short_help="Deletes a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def delete(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Deletes a Node
 
-    > labby node delete router01 --project project01
+    > labby --project lab01 node delete router01
     """
-    try:
-        provider = provider_setup(
-            f"Delete node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.delete_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Delete node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.delete_node(node=node, project=prj)
 
 
-@app.command(short_help="Starts a node")
+@app.command(short_help="Starts a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def start(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Starts a Node
 
-    > labby node start router01 --project project01
+    > labby --project lab01 node start router01
     """
-    try:
-        provider = provider_setup(
-            f"Start node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.start_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Start node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.start_node(node=node, project=prj)
 
 
-@app.command(short_help="Stops a node")
+@app.command(short_help="Stops a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def stop(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Stops a Node
 
-    > labby node stop router01 --project project01
+    > labby --project lab01 node stop router01
     """
-    try:
-        provider = provider_setup(
-            f"Start node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.stop_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Start node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.stop_node(node=node, project=prj)
 
 
-@app.command(short_help="Suspends a node")
+@app.command(short_help="Suspends a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def suspend(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Suspend a Node
 
-    > labby node suspend router01 --project project01
+    > labby --project lab01 node suspend router01
     """
-    try:
-        provider = provider_setup(
-            f"Suspends node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.suspend_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Suspends node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.suspend_node(node=node, project=prj)
 
 
-@app.command(short_help="Reloads a node")
+@app.command(short_help="Reloads a node")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def reload(
     name: str = typer.Argument(..., help="Name of node"),
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the Node belongs", envvar="LABBY_PROJECT"
-    ),
 ):
     """
     Reloads a Node
 
-    > labby node reload router01 --project project01
+    > labby --project lab01 node reload router01
     """
-    try:
-        provider = provider_setup(
-            f"Reload node [bold]{name}[/] on project [bold]{project}[/]"
-        )
-        prj = Project(name=project)
-        node = Node(name=name, project=project)
-        provider.reload_node(node=node, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(
+        f"Reload node [bold]{name}[/] on project [bold]{project}[/]"
+    )
+    prj = Project(name=project)  # type: ignore
+    node = Node(name=name, project=project)  # type: ignore
+    provider.reload_node(node=node, project=prj)

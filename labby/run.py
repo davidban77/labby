@@ -43,27 +43,24 @@ def build(
         ...,
         "--project",
         "-p",
-        help="Project the node belongs to",
+        help="Project slug to search on configuration file",
         envvar="LABBY_PROJECT",
     ),
-    project_path: Path = typer.Option(
-        Path.cwd(),
-        "--project-path",
-        "-p",
-        help="Nornir project directory",
-        callback=project_callback
-    ),
+    # project_path: Path = typer.Option(
+    #     Path.cwd() / settings.SETTINGS.labby.project,
+    #     "--project-path",
+    #     help="Nornir project directory",
+    #     callback=project_callback
+    # ),
 ):
     """
     It builds a project from scratch using the provider and Nornir.
 
-    > labby run build --project-path example_project/
+    > labby run build --project labby_test
     """
     try:
-        project_file = list(project_path.glob(f"{project}.toml"))
-        if project_file:
-            # Re-apply the settings with the project file
-            settings.load(config_file=ctx.obj, project_file=project_file[0])
+        # Re-apply the settings with the project file
+        settings.load(config_file=ctx.obj, project=project)
         nornir_module.build(project)
     except Exception:
         utils.console.print_exception()

@@ -14,6 +14,7 @@ class TemplateFilter(str, Enum):
 
 
 @app.command(name="list", short_help="Retrieve a summary list of node templates")
+@utils.error_catcher
 def cli_list(
     filter: Optional[TemplateFilter] = typer.Option(
         None, help="If used you MUST provide expected `--value`"
@@ -30,23 +31,18 @@ def cli_list(
 
     > labby template list --filter template_type --value docker
     """
-    try:
-        provider = provider_setup("Templates list")
-        utils.console.print(
-            provider.reporter.table_templates_list(field=filter, value=value),
-            justify="center",
-        )
-    except Exception:
-        utils.console.print_exception()
+    provider = provider_setup("Templates list")
+    utils.console.print(
+        provider.reporter.table_templates_list(field=filter, value=value),
+        justify="center",
+    )
 
 
 @app.command(short_help="Retrieves details of a template")
+@utils.error_catcher
 def detail(name: str):
     """
     Retrieves Template details
     """
-    try:
-        provider = provider_setup(f"Template: {name}")
-        provider.get_template_details(name)
-    except Exception:
-        utils.console.print_exception()
+    provider = provider_setup(f"Template: {name}")
+    provider.get_template_details(name)

@@ -1,3 +1,4 @@
+from labby import settings
 import typer
 import labby.utils as utils
 from enum import Enum
@@ -19,15 +20,9 @@ class ProjectFilter(str, Enum):
 @app.command(
     name="list",
     short_help="Retrieves a summary list of links in a project",
-)
+)  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def cli_list(
-    project: str = typer.Option(
-        ...,
-        "--project",
-        "-p",
-        help="Project to collect nodes information",
-        envvar="LABBY_PROJECT",
-    ),
     field: Optional[ProjectFilter] = typer.Option(
         None, "--filter", "-f", help="If used you MUST provide expected `--value`"
     ),
@@ -41,21 +36,17 @@ def cli_list(
 
     For example:
 
-    > labby link list project01 --filter status --value started
+    > labby --project lab01 link list --filter status --value started
     """
-    try:
-        provider = provider_setup(f"Connections list for project: [bold]{project}[/]")
-        prj = Project(name=project)
-        provider.get_connections_list(project=prj, field=field, value=value)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    provider = provider_setup(f"Connections list for project: [bold]{project}[/]")
+    prj = Project(name=project)  # type: ignore
+    provider.get_connections_list(project=prj, field=field, value=value)
 
 
-@app.command(short_help="Finds a link in a project")
+@app.command(short_help="Finds a link in a project")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def find(
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
-    ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"
     ),
@@ -70,33 +61,29 @@ def find(
     ),
 ):
     """
-    Find a Link in a project
+    Find a Link in a project.
 
-    > labby link find --project project01 --node_a router01 --port_a eth1
+    > labby --project lab01 link find --node_a router01 --port_a eth1
         --node_b router02 --port_b eth2
     """
-    try:
-        _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
-        provider = provider_setup(f"Finding link: [bold]{_name}[/]")
-        prj = Project(project)
-        connection = Connection(
-            name=_name,
-            project=project,
-            endpoints=[
-                {"name": node_a, "port": port_a},
-                {"name": node_b, "port": port_b},
-            ],
-        )
-        provider.get_connection_details(connection=connection, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
+    provider = provider_setup(f"Finding link: [bold]{_name}[/]")
+    prj = Project(project)  # type: ignore
+    connection = Connection(
+        name=_name,
+        project=project,  # type: ignore
+        endpoints=[
+            {"name": node_a, "port": port_a},
+            {"name": node_b, "port": port_b},
+        ],
+    )
+    provider.get_connection_details(connection=connection, project=prj)
 
 
-@app.command(short_help="Creates a connection")
+@app.command(short_help="Creates a connection")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def create(
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
-    ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"
     ),
@@ -113,31 +100,27 @@ def create(
     """
     Creates a Link
 
-    > labby link create --project project01 --node_a router01 --port_a eth1
+    > labby --project lab01 link create --node_a router01 --port_a eth1
         --node_b router02 --port_b eth2
     """
-    try:
-        _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
-        provider = provider_setup(f"Finding link: [bold]{_name}[/]")
-        prj = Project(project)
-        connection = Connection(
-            name=_name,
-            project=project,
-            endpoints=[
-                {"name": node_a, "port": port_a},
-                {"name": node_b, "port": port_b},
-            ],
-        )
-        provider.create_connection(connection=connection, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
+    provider = provider_setup(f"Finding link: [bold]{_name}[/]")
+    prj = Project(project)  # type: ignore
+    connection = Connection(
+        name=_name,
+        project=project,  # type: ignore
+        endpoints=[
+            {"name": node_a, "port": port_a},
+            {"name": node_b, "port": port_b},
+        ],
+    )
+    provider.create_connection(connection=connection, project=prj)
 
 
-@app.command(short_help="Deletes a link")
+@app.command(short_help="Deletes a link")  # type: ignore
+@utils.error_catcher(parameter="check_project")
 def delete(
-    project: str = typer.Option(
-        ..., "--project", "-p", help="Project the link belongs", envvar="LABBY_PROJECT"
-    ),
     node_a: str = typer.Option(
         ..., "--node_a", "-na", help="Node name from ENDPOINT A"
     ),
@@ -156,21 +139,19 @@ def delete(
 
     NOTE: Order does not matter, just the pairing of node and port
 
-    > labby link delete --project project01 --node_a router01 --port_a eth1
+    > labby --project lab01 link delete --node_a router01 --port_a eth1
         --node_b router02 --port_b eth2
     """
-    try:
-        _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
-        provider = provider_setup(f"Finding link: [bold]{_name}[/]")
-        prj = Project(project)
-        connection = Connection(
-            name=_name,
-            project=project,
-            endpoints=[
-                {"name": node_a, "port": port_a},
-                {"name": node_b, "port": port_b},
-            ],
-        )
-        provider.delete_connection(connection=connection, project=prj)
-    except Exception:
-        utils.console.print_exception()
+    project = settings.SETTINGS.labby.project
+    _name = f"{node_a}: {port_a} <===> {port_b} :{node_b}"
+    provider = provider_setup(f"Finding link: [bold]{_name}[/]")
+    prj = Project(project)  # type: ignore
+    connection = Connection(
+        name=_name,
+        project=project,  # type: ignore
+        endpoints=[
+            {"name": node_a, "port": port_a},
+            {"name": node_b, "port": port_b},
+        ],
+    )
+    provider.delete_connection(connection=connection, project=prj)

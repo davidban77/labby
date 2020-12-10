@@ -1,6 +1,8 @@
 ---
 gns3:
   data:
+    mgmt_user: netops
+    mgmt_password: netops123
     gns3_links_spec:
       - ["r1", "Gi0/0", "sw1", "Ethernet1"]
       - ["r1", "Gi0/1", "r2", "Ethernet1"]

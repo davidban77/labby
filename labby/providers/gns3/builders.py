@@ -60,6 +60,7 @@ def set_project_attributes(project: models.Project):
     if project._provider is None:
         raise ValueError("GNS3 Provider not initialized")
     project.status = project._provider.status
+    project.name = project._provider.name
     project.id = project._provider.project_id
     project.nodes = get_nodes(project) if project._provider.nodes else None
     project.connections = get_connections(project) if project._provider.links else None
@@ -83,7 +84,7 @@ class GNS3ProjectBuilder:
             console.log(f"Closing project [cyan]{project.name}[/]...")
             self.stop(project, stop_nodes=False)
 
-    def update(self, project: models.Project):
+    def labby_update(self, project: models.Project):
         if project._provider is None:
             raise ValueError("GNS3 Provider not initialized")
         try:
@@ -100,7 +101,7 @@ class GNS3ProjectBuilder:
 
     def retrieve(self, project: models.Project) -> bool:
         self.set_provider(project)
-        self.update(project)
+        self.labby_update(project)
         if not project.is_created:
             return False
         return True
@@ -111,7 +112,21 @@ class GNS3ProjectBuilder:
 
         # Create and update
         project._provider.create()
-        self.update(project)
+        self.labby_update(project)
+        if not project.is_created:
+            return False
+        return True
+
+    def update(self, project: models.Project, parameter: str, value: str) -> bool:
+        if project._provider is None:
+            raise ValueError("GNS3 Provider not initialized")
+
+        # Update
+        project._provider.update(**{parameter: value})
+        # TODO: Verify if the get can be decorated in gns3fy
+        # time.sleep(3)
+        # project._provider.get()
+        self.labby_update(project)
         if not project.is_created:
             return False
         return True
@@ -158,7 +173,7 @@ class GNS3ProjectBuilder:
                     time.sleep(nodes_delay)
 
         # Refresh and validate
-        self.update(project)
+        self.labby_update(project)
         if project.status != "opened":
             return False
         return True
@@ -173,7 +188,7 @@ class GNS3ProjectBuilder:
         project._provider.close()
 
         # Refresh and validate
-        self.update(project)
+        self.labby_update(project)
         if project.status != "closed":
             return False
         return True
