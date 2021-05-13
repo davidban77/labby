@@ -1,0 +1,12 @@
+configure terminal
+hostname {{ node_name }}
+ip routing
+username {{ user }} privilege 15 role network-admin secret {{ password }}
+management api http-commands
+protocol https
+no shutdown
+interface {{ mgmt_port }}
+ip address {{ mgmt_addr }}
+no shutdown
+exit
+exit

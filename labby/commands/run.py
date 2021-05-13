@@ -1,106 +1,139 @@
-import typer
 from enum import Enum
+from typing import Optional
+import typer
+
 from pathlib import Path
-from labby.providers import provider_setup
+from labby.providers import get_provider
 from labby import utils
-from labby.models import Project, Node
-from labby import settings
-from labby import nornir_module
+from labby import config
+from netaddr import IPNetwork
+from nornir.core.helpers.jinja_helper import render_from_file
 
 
-app = typer.Typer(help="Runs Labs provisioning tasks with Nornir")
+app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
+project_app = typer.Typer(help="Runs actions on a Network Provider Project")
+node_app = typer.Typer(help="Runs actions on a Network Provider Node")
+
+app.add_typer(project_app, name="project")
+app.add_typer(node_app, name="node")
 
 
 class DeviceTypes(str, Enum):
-    cisco_iosxe = "cisco_iosxe"
-    cisco_iosxr = "cisco_iosxr"
+    cisco_ios = "cisco_ios"
+    cisco_xr = "cisco_xr"
     cisco_nxos = "cisco_nxos"
     arista_eos = "arista_eos"
     juniper_junos = "juniper_junos"
 
 
-def config_callback(value: Path):
+def file_check(value: Path):
     if not value.exists():
-        utils.console.print("The config doesn't exist")
+        utils.console.log("The config doesn't exist", style="error")
         raise typer.Exit(code=1)
     elif not value.is_file():
-        utils.console.print("No config file")
+        utils.console.log("No config file", style="error")
         raise typer.Exit(code=1)
     return value
 
 
-def project_callback(value: Path):
-    if not value.is_dir():
-        utils.console.print("The project folder doesn't exist")
-        raise typer.Exit(code=1)
-    return value
+def ipaddr(value: str, action: str = "address") -> str:
+    to_render = ""
+    if action == "address":
+        to_render = str(IPNetwork(addr=value).ip)
+    elif action == "netmask":
+        to_render = str(IPNetwork(addr=value).netmask)
+    return to_render
 
 
-@app.command(short_help="Build a project from scratch using Nornir")
-def build(
-    ctx: typer.Context,
-    project: str = typer.Option(
-        ...,
-        "--project",
-        "-p",
-        help="Project slug to search on configuration file",
-        envvar="LABBY_PROJECT",
-    ),
-    # project_path: Path = typer.Option(
-    #     Path.cwd() / settings.SETTINGS.labby.project,
-    #     "--project-path",
-    #     help="Nornir project directory",
-    #     callback=project_callback
-    # ),
-):
+@project_app.command(short_help="Launches a project on a browser")
+def launch(project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT")):
     """
-    It builds a project from scratch using the provider and Nornir.
+    Launches a Project on a browser.
 
-    > labby run build --project labby_test
+    Example:
+
+    > labby run project-launch --project lab01
     """
-    try:
-        # Re-apply the settings with the project file
-        settings.load(config_file=ctx.obj, project=project)
-        nornir_module.build(project)
-    except Exception:
-        utils.console.print_exception()
+    provider = get_provider(
+        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
+    )
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+    typer.launch(project.get_web_url())
 
 
-@app.command(short_help="Bootstrap provision process")
+@node_app.command(short_help="Initial bootsrtap config on a Node")
 def bootstrap(
-    node: str = typer.Argument(..., help="Node to start bootstrap process"),
-    project: str = typer.Option(
-        ...,
-        "--project",
-        "-p",
-        help="Project the node belongs to",
-        envvar="LABBY_PROJECT",
-    ),
-    bconfig: Path = typer.Option(
-        ...,
-        "--config",
-        "-c",
-        help="Bootstrap configuration file",
-        callback=config_callback,
-    ),
-    device_type: DeviceTypes = typer.Option(
-        ..., "--type", "-t", help="The device type to execute the correct process"
-    ),
+    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
+    bconfig: Optional[Path] = typer.Option(None, "--config", "-c", help="Bootstrap configuration file."),
+    mgmt_port: Optional[str] = typer.Option(None, help="Management Interface to configure on the device"),
+    mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
+    user: Optional[str] = typer.Option(None, help="Initial user to configure on the system."),
+    password: Optional[str] = typer.Option(None, help="Initial password to configure on the system."),
 ):
-    """
-    It runs a bootstrap process for a given node on a given project.
+    r"""
+    Sets a bootstrap config on a Node.
 
-    > labby run bootstrap node01 --project project01 --config ./node01_boot.txt
-    --type arista_eos
+    There are 2 modes to run a bootstrap sequence.
+
+    - By passing the bootstrap configuration directly from a file:
+
+    > labby run node bootstrap --project lab01 --config r1.txt --node r1
+
+    - By using labby bootstrap templates
+
+    > labby run node bootstrap --mgmt_port Management1 --mgmt_addr 192.168.77.77/24 --user netops --password netops123
+    --project lab01 --node r1
     """
-    try:
-        provider = provider_setup(
-            f"Running boostrap config process for [bold]{node}[/]"
+    # Get network lab provider
+    provider = get_provider(
+        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
+    )
+
+    # Get project
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    # Get node to bootstrap
+    node = project.search_node(node_name)
+    if not node:
+        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    # Render bootstrap config
+    if bconfig:
+        utils.console.log(f"[b]({project.name})({node.name})[/] Reading bootstrap config from file")
+        file_check(bconfig)
+        cfg_data = bconfig.read_text()
+
+    else:
+        utils.console.log(f"[b]({project.name})({node.name})[/] Rendering bootstrap config")
+        # Check all other parameters are set
+        if any(param is None for param in [mgmt_addr, mgmt_port, user, password]):
+            utils.console.log("All arguments must be set: mgmt_addr, mgmt_port, user, password", style="error")
+            raise typer.Exit(code=1)
+
+        if node.net_os is None:
+            utils.console.log(
+                f"Node [cyan i]{node_name}[/] net_os parameter must be set. Verify node template name", style="error"
+            )
+            raise typer.Exit(code=1)
+
+        # Render bootstrap config
+        template = Path(__file__).parent.parent / "templates" / f"nodes_bootstrap/{node.net_os}.cfg.j2"
+        cfg_data = render_from_file(
+            path=str(template.parent),
+            template=template.name,
+            jinja_filters={"ipaddr": ipaddr},
+            **dict(mgmt_port=mgmt_port, mgmt_addr=mgmt_addr, user=user, password=password, node_name=node_name),
         )
-        prj = Project(name=project)
-        nd = Node(name=node, project=project)
-        provider.bootstrap_node(
-            node=nd, project=prj, config=bconfig, device_type=device_type
-        )
-    except Exception:
-        utils.console.print_exception()
+        utils.console.log(f"[b]({project.name})({node.name})[/] Bootstrap config rendered", style="good")
+
+    # Run node bootstrap config process
+    node.bootstrap(config=cfg_data, boot_delay=boot_delay)

@@ -1,5 +1,6 @@
 [main]
-environment = "default"
+# SET AS ENV VAR
+# environment = "default"
 debug = false
 
 #### Environment default ####
@@ -13,35 +14,43 @@ service = "slack"
 channel = "general"
 
 [environment.default.providers.container-lab]
-kind = "vrnetlab"
+type = "vrnetlab"
 server_url = "tcp://docker-host.ec2.aws:2375"
 verify_cert = true
 
 [environment.default.providers.gns3-lab]
-kind = "gns3"
-server_url = "http://gns3-server:80"
+type = "gns3"
+server_url = "http://gns3-lab:80"
 verify_cert = false
 
 #### Environment aws ####
 
 [environment.aws]
-provider = "gns3-us-server"
+# SET AS ENV VAR
+# provider = "gns3-us-server"
 
 [environment.aws.meta]
 region = "us-east"
-
 
 [environment.aws.nornir_runner]
 plugin = "threaded"
 options = { num_workers = 20 }
 
 [environment.aws.providers.gns3-us-server]
-kind = "gns3"
+type = "gns3"
 server_url = "http://gns3-us-east-server.aws:80"
 verify_cert = true
 # Also can be set as env variables
 user = "netops"
 password = "netops123"
+
+[environment.aws.providers.gns3-eu-server]
+type = "gns3"
+server_url = "http://gns3-eu-east-server.awseu:8080"
+verify_cert = true
+# SET AS ENV VAR
+# user = "netops"
+# password = "netops123"
 
 #### Environment packet ####
 
@@ -49,6 +58,7 @@ password = "netops123"
 provider = "gns3-main"
 
 [environment.packet.providers.gns3-main]
-kind = "gns3"
+type = "gns3"
 server_url = "http://gns3-main.packet:80"
 verify_cert = false
+

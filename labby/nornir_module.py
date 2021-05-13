@@ -1,15 +1,19 @@
 import logging
+from nornir.core import Nornir
 import typer
 from pathlib import Path
+from typing import Optional
 from netaddr import IPNetwork
 from nornir import InitNornir
 from nornir.core.task import Task, Result
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.tasks.files import write_file
 from nornir_utils.plugins.functions import print_result
-from labby import settings, utils
-from labby.models import Project, Node
-from labby.providers import provider_setup
+from nornir_scrapli.tasks import send_command
+# from labby import settings, utils
+from labby import models
+from labby.models import LabbyProject, LabbyNode
+from labby.providers import get_provider
 
 
 # CONFIG_FILE = Path(__file__) / ".." / "example/labby.toml"
@@ -20,12 +24,12 @@ from labby.providers import provider_setup
 
 
 # Filter function based on the gns3_template attribute
-def gns3_host(host):
-    return True if host.data.get("gns3_template") else False
+def labby_node(host):
+    return True if host.data.get("labby_builtin", False) is False else False
 
 
-def group_gns3(host):
-    return host.has_parent_group("gns3")
+def group_labby(host):
+    return host.has_parent_group("labby")
 
 
 def ipaddress(value: str, action: str = "address") -> str:
@@ -84,46 +88,99 @@ def generate_bootstrap_config(task: Task, template: Path):
     )
 
 
-def build(project_name: str):
-    if settings.SETTINGS.nornir is None:
-        utils.console.print("[red]Nornir settings not found[/]")
-        raise typer.Exit(code=1)
-    # Initialize Nornir
-    nr = InitNornir(**settings.SETTINGS.nornir.dict())
+# def build(project_name: str):
+#     if settings.SETTINGS.nornir is None:
+#         utils.console.print("[red]Nornir settings not found[/]")
+#         raise typer.Exit(code=1)
+#     # Initialize Nornir
+#     nr = InitNornir(**settings.SETTINGS.nornir.dict())
 
-    # Filter only gns3 hosts
-    nr = nr.filter(filter_func=group_gns3)
+#     # Filter only gns3 hosts
+#     nr = nr.filter(filter_func=group_gns3)
 
-    # Initialize provider
-    # provider = provider_setup(f"Building project: {project_name}")
+#     # Initialize provider
+#     # provider = provider_setup(f"Building project: {project_name}")
 
-    # Create project object and on provider
-    project = Project(name=project_name)
-    # created = provider.create_project(project)
-    # if not created:
-    #     raise typer.Exit(code=1)
+#     # Create project object and on provider
+#     project = Project(name=project_name)
+#     # created = provider.create_project(project)
+#     # if not created:
+#     #     raise typer.Exit(code=1)
 
-    # Based on each Nornir host, create the provider object and save it
-    for name, host in nr.inventory.hosts.items():
-        # Create Labby Node from Nornir host
-        node = Node(name=name, project=project.name, template=host["gns3_template"])
+#     # Based on each Nornir host, create the provider object and save it
+#     for name, host in nr.inventory.hosts.items():
+#         # Create Labby Node from Nornir host
+#         node = Node(name=name, project=project.name, template=host["gns3_template"])
 
-        # Create node on provider lab
-        # created = provider.create_node(node=node, project=project)
-        # if not created:
-        #     raise typer.Exit(code=1)
+#         # Create node on provider lab
+#         # created = provider.create_node(node=node, project=project)
+#         # if not created:
+#         #     raise typer.Exit(code=1)
 
-        # Save object on Nornir host
-        host.data["node"] = node
+#         # Save object on Nornir host
+#         host.data["node"] = node
 
-    # Generate bootstrap config? (maybe it can be passed as a jinja template)
-    nr_gn3_buildable = nr.filter(filter_func=gns3_host)
-    result = nr_gn3_buildable.run(
-        task=generate_bootstrap_config,
-        template=Path(
-            Path(__file__) / "../.." / "example/labby_test/templates/bootstrap.j2"
-        ).resolve(),
-    )
-    print_result(result)
+#     # Generate bootstrap config? (maybe it can be passed as a jinja template)
+#     nr_gn3_buildable = nr.filter(filter_func=gns3_host)
+#     result = nr_gn3_buildable.run(
+#         task=generate_bootstrap_config,
+#         template=Path(
+#             Path(__file__) / "../.." / "example/labby_test/templates/bootstrap.j2"
+#         ).resolve(),
+#     )
+#     print_result(result)
 
-    return
+#     return
+
+
+def backup_task(task: Task):
+    if task.host.platform == "cisco_iosxe" or task.host.platform == "cisco_nxos":
+        command = "show run"
+    else:
+        command = "show run"
+    task.run(task=send_command, command=command)
+
+
+class LabbyNornir:
+    def __init__(self) -> None:
+        # Project settings
+        self.project_config = settings.SETTINGS.get_project()
+
+        # Initialize Nornir object and filter for provider objects
+        nr = InitNornir(**self.project_config.nornir.dict())
+        self.nr = nr.filter(filter_func=group_labby)
+
+        # Initialize Labby project
+        self.project = models.LabbyProject(name=self.project_config.name)
+
+        # Initialize Labby nodes and store in Nornir objs
+        for name, host in self.nr.inventory.hosts.items():
+            host.data["labby_node"] = LabbyNode(
+                name=name, project=self.project.name, template=host["gns3_template"]
+            )
+
+    def backup(self) -> bool:
+        # Filter the nodes if needed
+        _nr = self.nr.filter(filter_func=labby_node)
+        result = _nr.run(task=backup_task, name="backup config")
+        print_result(result)  # type: ignore
+        try:
+            result.raise_on_error()
+            return True
+        except Exception:
+            return False
+
+    def bootstrap(self, template: Path) -> bool:
+        # Filter the nodes if needed
+        _nr = self.nr.filter(filter_func=labby_node)
+        result = _nr.run(
+            task=generate_bootstrap_config,
+            name="generate bootstrap config",
+            template=template,
+        )
+        print_result(result)  # type: ignore
+        try:
+            result.raise_on_error()
+            return True
+        except Exception:
+            return False

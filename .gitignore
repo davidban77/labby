@@ -91,3 +91,9 @@ site/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Ignore dynaconf secret files
+.secrets.*
+
+# Labby ignores!
+.labby.lock

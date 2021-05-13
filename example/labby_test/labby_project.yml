@@ -1,0 +1,75 @@
+---
+main:
+  name: labby_test
+  description: This is an example project
+  contributors: ["David Flores <@netpanda>"]
+  version: "0.0.1"
+  # NOTE: Needed when building Nornir inventory
+  mgmt_net: 192.168.0.100/28
+  mgmt_creds:
+    user: "netops"
+    password: "netops123"
+
+nodes_spec:
+  - template: "Cisco CSR1000v"
+    nodes: ["csr-r1", "csr-r2", "csr-r3"]
+    device_type: "ios_xe"
+    mgmt_interface: "Gi0/0"
+  - template: "Arista vEOS"
+    nodes: ["arista-r1", "arista-r2", "arista-r3"]
+    device_type: "eos"
+    mgmt_interface: "Management1"
+  - template: "Cisco IOSv L2"
+    nodes: ["ios-sw1"]
+    device_type: "ios"
+    config_managed: false
+  - template: "Cloud"
+    nodes: ["cloud1"]
+    device_type: "builtin"
+    config_managed: false
+
+links_spec:
+  - node: "ios-sw1"
+    links:
+      - { "port": "Gi0/0", "node_b": "cloud1", "port_b": "eth0" }
+      - { "port": "Gi0/1", "node_b": "csr-r1", "port_b": "Gi0/0" }
+      - { "port": "Gi0/2", "node_b": "csr-r2", "port_b": "Gi0/0" }
+      - { "port": "Gi0/3", "node_b": "csr-r3", "port_b": "Gi0/0" }
+      - { "port": "Gi1/0", "node_b": "arista-r1", "port_b": "Management1" }
+      - { "port": "Gi1/1", "node_b": "arista-r2", "port_b": "Management1" }
+      - { "port": "Gi1/2", "node_b": "arista-r3", "port_b": "Management1" }
+  - node: "csr-r1"
+    links:
+      - { "port": "Gi0/1", "node_b": "csr-r2", "port_b": "Gi0/1" }
+      - { "port": "Gi0/2", "node_b": "csr-r3", "port_b": "Gi0/2" }
+      - { "port": "Gi0/3", "node_b": "arista-r1", "port_b": "Ethernet1", "filter": { "packet_drop": 77 } }
+  - node: "csr-r2"
+    links:
+      - { "port": "Gi1/0", "node_b": "csr-r3", "port_b": "Gi1/0" }
+  - node: "csr-r3"
+    links:
+      - { "port": "Gi0/3", "node_b": "arista-r3", "port_b": "Ethernet1" }
+  - node: "arista-r1"
+    links:
+      - { "port": "Ethernet2", "node_b": "arista-r2", "port_b": "Ethernet2" }
+      - { "port": "Ethernet3", "node_b": "arista-r3", "port_b": "Ethernet3" }
+  - node: "arista-r2"
+    links:
+      - { "port": "Ethernet4", "node_b": "arista-r3", "port_b": "Ethernet4" }
+
+vars:
+  defaults:
+    domain: "lab.local"
+
+  groups:
+    dub:
+      asn: 65177
+
+    lon:
+      asn: 65144
+
+  hosts:
+    arista-r1:
+      interfaces:
+        name: "Ethernet2"
+        description: "Some interface test"

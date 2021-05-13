@@ -1,35 +1,59 @@
 import typer
-import labby.commands.config
-import labby.commands.projects
-import labby.commands.templates
-import labby.commands.nodes
-import labby.commands.connections
+
+# import labby.commands.projects
+import labby.commands.configuration
 import labby.commands.run
-from labby import settings
+import labby.commands.get
+import labby.commands.start
+import labby.commands.restart
+import labby.commands.stop
+import labby.commands.create
+import labby.commands.delete
+import labby.commands.update
+
+from labby import config
 from labby import utils
+from labby.providers import register_service
 
 from typing import Optional
 from pathlib import Path
+from dotenv import load_dotenv
+from rich.traceback import install as traceback_install
+
+traceback_install()
 
 
-app = typer.Typer(help=f"{utils.banner()}Awesome Network Lab Management Tool!")
+app = typer.Typer(help=f"{utils.banner()} Awesome Network Lab Management Tool!")
 state = {"verbose": False}
 
-app.add_typer(labby.commands.config.app, name="config")
-app.add_typer(labby.commands.projects.app, name="project")
-app.add_typer(labby.commands.templates.app, name="template")
-app.add_typer(labby.commands.nodes.app, name="node")
-app.add_typer(labby.commands.connections.app, name="link")
+# app.add_typer(labby.commands.projects.app, name="project")
 app.add_typer(labby.commands.run.app, name="run")
+app.add_typer(labby.commands.get.app, name="get")
+app.add_typer(labby.commands.start.app, name="start")
+app.add_typer(labby.commands.restart.app, name="restart")
+app.add_typer(labby.commands.stop.app, name="stop")
+app.add_typer(labby.commands.create.app, name="create")
+app.add_typer(labby.commands.delete.app, name="delete")
+app.add_typer(labby.commands.update.app, name="update")
+app.add_typer(labby.commands.configuration.app, name="config")
+
+
+def version_callback(value: bool):
+    from labby import __version__
+
+    if value:
+        utils.console.print(f"Labby version [cyan bold]{__version__}[/]")
+        raise typer.Exit()
 
 
 @app.callback()
 def main(
     ctx: typer.Context,
     verbose: bool = False,
-    config: Optional[Path] = typer.Option(
+    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback, is_eager=True),
+    config_file: Optional[Path] = typer.Option(
         None,
-        "--config",
+        "--config-file",
         "-c",
         help="Path to find labby.toml file",
         envvar="LABBY_CONFIG",
@@ -47,18 +71,24 @@ def main(
         help="Network Lab provider to use",
         envvar="LABBY_PROVIDER",
     ),
-    project: Optional[str] = typer.Option(
-        None, "--project", help="Network Project to use", envvar="LABBY_PROJECT"
-    ),
+    # project: Optional[str] = typer.Option(None, "--project", help="Network Project to use", envvar="LABBY_PROJECT"),
 ):
-    ctx.obj = config
-    if ctx.invoked_subcommand != "config":
-        settings.load(
-            config_file=config,
-            environment=environment,
-            provider=provider,
-            project=project,
+    if not config_file:
+        config_file = config.get_config_current_path()
+        if not config_file.is_file():
+            config_file = config.get_config_base_path()
+            if not config_file.is_file():
+                utils.console.print("[red]Configuration specified is not a file[/]")
+                raise typer.Exit(code=1)
+    ctx.obj = dict(config_file=config_file)
+    config.load_config(config_file=config_file, environment_name=environment, provider_name=provider, debug=verbose)
+    # Register each provider environment
+    try:
+        register_service(config.SETTINGS.environment.provider.name, config.SETTINGS.environment.provider.kind)
+    except AttributeError:
+        utils.console.print(
+            "An attribute was not found in configuration. Most likely is a configuration file issue", style="error"
         )
-    if verbose:
-        typer.echo("Will write verbose output")
-        state["verbose"] = True
+        raise typer.Exit(1)
+    # Load env vars after processed in config to be used by typer commands
+    load_dotenv()

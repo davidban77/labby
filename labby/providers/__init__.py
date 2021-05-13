@@ -1,6 +1,12 @@
 from .gns3 import GNS3ProviderBuilder
-from labby import utils
-from labby import settings
+
+# from labby import config
+# from labby import utils
+
+# from labby import settings
+# from labby.models import ProviderGeneral, ProviderDocker
+from labby.config import ProviderSettings
+from labby.models import LabbyProvider
 
 
 class ObjectFactory:
@@ -13,7 +19,7 @@ class ObjectFactory:
     def create(self, key, **kwargs):
         builder = self._builders.get(key)
         if not builder:
-            raise ValueError(key)
+            raise ValueError(f"Provider not found {key}")
         return builder(**kwargs)
 
 
@@ -23,18 +29,25 @@ class NetworkLabProvider(ObjectFactory):
 
 
 services = NetworkLabProvider()
-services.register_builder("GNS3", GNS3ProviderBuilder())
 
 
-def provider_setup(header_msg: str):
+def register_service(provider_name: str, provider_type: str):
+    if provider_type == "gns3":
+        services.register_builder(f"{provider_name}", GNS3ProviderBuilder())
+    else:
+        raise NotImplementedError(provider_type)
+
+
+def get_provider(provider_name: str, provider_settings: ProviderSettings) -> LabbyProvider:
     provider = services.get(
-            settings.SETTINGS.labby.provider.upper(),
-            **settings.SETTINGS.get_provider_settings().dict(),
-        )
-    utils.provider_header(
-        environment=settings.SETTINGS.labby.environment,
-        provider=settings.SETTINGS.labby.provider,
-        provider_version=provider.get_version(),
-        msg=header_msg,
+        provider_name,
+        settings=provider_settings,
     )
+    # if header_msg is not None:
+    #     utils.provider_header(
+    #         environment=settings.SETTINGS.labby.environment,
+    #         provider=settings.SETTINGS.labby.provider,
+    #         provider_version=provider.get_version(),
+    #         msg=header_msg,
+    #     )
     return provider

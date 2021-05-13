@@ -1,13 +1,18 @@
+# from pathlib import Path
 import re
 import typer
 import functools
-from labby import settings
+# from labby import settings
 from typing import Dict, List, Any, MutableMapping, Tuple, Optional
 from rich.console import Console
 from rich.panel import Panel
+from rich.theme import Theme
 
 
-console = Console(color_system="auto", log_path=False, record=True)
+custom_theme = Theme({"warning": "bold magenta", "error": "bold red", "good": "bold green"})
+
+
+console = Console(color_system="auto", log_path=False, record=True, theme=custom_theme)
 
 
 def banner():
@@ -121,11 +126,11 @@ def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
         @functools.wraps(func)
         def wrapper_error_catcher(*args, **kwargs):
             try:
-                if parameter == "check_project":
-                    name = settings.SETTINGS.labby.project
-                    if name is None:
-                        console.print("[red]No project specified[/]")
-                        raise typer.Exit(code=1)
+                # if parameter == "check_project":
+                #     name = settings.SETTINGS.labby.project
+                #     if name is None:
+                #         console.print("[red]No project specified[/]")
+                #         raise typer.Exit(code=1)
                 value = func(*args, **kwargs)
                 return value
             except typer.Exit:
@@ -138,3 +143,8 @@ def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
         return decorator_error_catcher
     else:
         return decorator_error_catcher(_func)
+
+
+# def get_package_version() -> str:
+#     data = settings.load_toml(Path(__file__).parent.parent / "pyproject.toml")
+#     return data["tool"]["poetry"]["version"]

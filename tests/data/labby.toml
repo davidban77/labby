@@ -1,24 +1,62 @@
-[labby]
-environment = "aws"
-provider = "gns3"
+[main]
+environment = "default"
+debug = false
 
-[labby.notifications]
+#### Environment default ####
+
+[environment.default]
+provider = "gns3-lab"
+# provider = "container-lab"
+
+[environment.default.notifications]
 service = "slack"
 channel = "general"
 
-[labby.input.nornir]
-inventory = "ansible"
-workers = 10
-
-[environment.aws.gns3]
-server_url = "http://gns3-server:80"
-verify_cert = false
-
-[environment.aws.vrnetlab]
-docker_host = "tcp://docker-host:2375"
+[environment.default.providers.container-lab]
+type = "vrnetlab"
+server_url = "tcp://docker-host.ec2.aws:2375"
 verify_cert = true
 
-[environment.packet.eve_ng]
-server_url = "http://even-ng-server.local"
-user = "user1"
-password = "password1"
+[environment.default.providers.gns3-lab]
+type = "gns3"
+server_url = "http://gns3-lab:80"
+verify_cert = false
+
+#### Environment aws ####
+
+[environment.aws]
+provider = "gns3-us-server"
+
+[environment.aws.meta]
+region = "us-east"
+
+[environment.aws.nornir_runner]
+plugin = "threaded"
+options = { num_workers = 20 }
+
+[environment.aws.providers.gns3-us-server]
+type = "gns3"
+server_url = "http://gns3-us-east-server.aws:80"
+verify_cert = true
+# Also can be set as env variables
+user = "netops"
+password = "netops123"
+
+[environment.aws.providers.gns3-eu-server]
+type = "gns3"
+server_url = "http://gns3-eu-east-server.awseu:8080"
+verify_cert = true
+# Also can be set as env variables
+user = "netops"
+password = "netops123"
+
+#### Environment packet ####
+
+[environment.packet]
+provider = "gns3-main"
+
+[environment.packet.providers.gns3-main]
+type = "gns3"
+server_url = "http://gns3-main.packet:80"
+verify_cert = false
+

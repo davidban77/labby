@@ -1,0 +1,94 @@
+[main]
+name = "labby_test"
+description = "This is an example project"
+contributors = ["David Flores <@netpanda>"]
+version = "0.0.1"
+# NOTE: Needed when building Nornir inventory
+mgmt_net = "192.168.7.96/28"
+mgmt_user = "netops"
+mgmt_password = "netops123"
+# mgmt_creds = { user = "netops" }
+# mgmt_creds = { user = "netops", password = "netops123" }
+# OR in turn you can set env vars LABBY_PROJECT_CREDS_USER and LABBY_PROJECT_CREDS_PASSWORD
+
+[main.nornir_inventory]
+group_file = "./example_inventory/groups.yml"
+host_file = "./example_inventory/hosts.yml"
+
+[[nodes_spec]]
+template = "Cisco IOSv L2"
+nodes = ["ios-sw1"]
+device_type = "ios"
+config_managed = false
+[[nodes_spec]]
+template = "Cisco CSR1000v"
+nodes = ["csr-r1", "csr-r2", "csr-r3"]
+device_type = "ios_xe"
+mgmt_interface = "Gi0/0"
+[[nodes_spec]]
+template = "Arista vEOS"
+nodes = ["arista-r1", "arista-r2", "arista-r3"]
+device_type = "eos"
+mgmt_interface = "Management1"
+[[nodes_spec]]
+template = "Cloud"
+nodes = ["cloud1"]
+device_type = "builtin"
+config_managed = false
+
+[[links_spec]]
+node = "ios-sw1"
+links = [
+    { port = "Gi0/0", node_b = "cloud1", port_b = "eth0" },
+    { port = "Gi0/1", node_b = "csr-r1", port_b = "Gi0/0" },
+    { port = "Gi0/2", node_b = "csr-r2", port_b = "Gi0/0" },
+    { port = "Gi0/3", node_b = "csr-r3", port_b = "Gi0/0" },
+    { port = "Gi1/0", node_b = "arista-r1", port_b = "Management1" },
+    { port = "Gi1/1", node_b = "arista-r2", port_b = "Management1" },
+    { port = "Gi1/2", node_b = "arista-r3", port_b = "Management1" }
+]
+[[links_spec]]
+node = "csr-r1"
+links = [
+    { port = "Gi0/1", node_b = "csr-r2", port_b = "Gi0/1" },
+    { port = "Gi0/2", node_b = "csr-r3", port_b = "Gi0/2" },
+    { port = "Gi0/3", node_b = "arista-r1", port_b = "Ethernet1", filter = { packet_drop = 77 } }
+]
+[[links_spec]]
+node = "csr-r2"
+links = [
+    { port = "Gi1/0", node_b = "csr-r3", port_b = "Gi1/0" }
+]
+[[links_spec]]
+node = "csr-r3"
+links = [
+    { port = "Gi0/3", node_b = "arista-r3", port_b = "Ethernet1" }
+]
+[[links_spec]]
+node = "arista-r1"
+links = [
+    { port = "Ethernet2", node_b = "arista-r2", port_b = "Ethernet2" },
+    { port = "Ethernet3", node_b = "arista-r3", port_b = "Ethernet3" },
+]
+[[links_spec]]
+node = "arista-r2"
+links = [
+    { port = "Ethernet4", node_b = "arista-r3", port_b = "Ethernet4" }
+]
+
+[vars.defaults.data]
+domain = "lab.local"
+
+[[vars.groups.dub.data]]
+asn = 65777
+[[vars.groups.lon.data]]
+asn = 65444
+    [vars.groups.lon.data.ntp]
+    servers = ["10.0.0.1", "10.0.0.2"]
+
+# [[vars.hosts.arista-r1]]
+# hostname = "arista-r1"
+# port = 7000
+# username = "netops"
+# password = "netops123"
+# platform = "eos"
