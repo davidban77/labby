@@ -71,7 +71,7 @@ def node(
         raise typer.Exit(1)
     labels = [] if not label else label
     node = project.create_node(
-        name=node_name, template=template_name, labels=labels, **dict(mgmt_port=mgmt_port, mgmt_addr=mgmt_addr)
+        name=node_name, template=template_name, labels=labels, mgmt_port=mgmt_port, mgmt_addr=mgmt_addr
     )
     utils.console.log(node)
 

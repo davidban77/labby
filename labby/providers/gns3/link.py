@@ -53,6 +53,7 @@ class GNS3Link(LabbyLink):
 
         self.get()
         console.log(f"[b]({self.project.name})({self.name})[/] Link updated", style="good")
+        lock_file.apply_link_data(self)
 
     def apply_metric(self, **kwargs) -> bool:
         console.log(f"[b]({self.project.name})({self.name})[/] Applying filter: {kwargs}", highlight=True)

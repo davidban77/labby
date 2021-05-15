@@ -42,9 +42,28 @@ class GNS3Node(LabbyNode):
     _base: Node
     _template: Optional[Template]
 
-    def __init__(self, name: str, template: str, project_name: str, node: Node, labels: List[str] = [], **data) -> None:
+    def __init__(
+        self,
+        name: str,
+        template: str,
+        project_name: str,
+        node: Node,
+        labels: List[str] = [],
+        mgmt_addr: Optional[str] = None,
+        mgmt_port: Optional[str] = None,
+        **data,
+    ) -> None:
         _project = LabbyProjectInfo(name=project_name, id=node.project_id)
-        super().__init__(name=name, labels=labels, template=template, project=_project, _base=node, **data)
+        super().__init__(
+            name=name,
+            labels=labels,
+            template=template,
+            project=_project,
+            _base=node,
+            mgmt_addr=mgmt_addr,
+            mgmt_port=mgmt_port,
+            **data,
+        )
         # self.name = name
         # self._base: Node = node
         self._template = self._get_gns3_template()
@@ -63,6 +82,11 @@ class GNS3Node(LabbyNode):
                 raise ValueError(f"Port name or link type info not available: {p} -> {self.name}")
         self.interfaces = _interfaces
         self.properties = self._base.properties
+
+        # Validate mgmt_port
+        if self.mgmt_port is not None and self.mgmt_port not in self.interfaces:
+            console.log(f"Mgmt Port {self.mgmt_port} is not part of the node interfaces", style="error")
+            raise typer.Exit(1)
 
         # Update attributes from template
         self.category = self._template.category
@@ -141,12 +165,20 @@ class GNS3Node(LabbyNode):
         console.log(f"[b]({self.project.name})({self.name})[/] Updating node: {kwargs}", highlight=True)
         if "labels" in kwargs:
             self.labels = kwargs["labels"]
+        elif "mgmt_addr" in kwargs:
+            self.mgmt_addr = kwargs["mgmt_addr"]
+        elif "mgmt_port" in kwargs:
+            self.mgmt_port = kwargs["mgmt_port"]
+            if self.mgmt_port not in self.interfaces:
+                console.log(f"Mgmt Port {self.mgmt_port} is not part of the node interfaces", style="error")
+                raise typer.Exit(1)
         else:
             self._base.update(**kwargs)
         time.sleep(2)
 
         self.get()
         console.log(f"[b]({self.project.name})({self.name})[/] Node updated", style="good")
+        lock_file.apply_node_data(self)
 
     def delete(self) -> bool:
         console.log(f"[b]({self.project.name})({self.name})[/] Deleting node")
@@ -173,12 +205,15 @@ class GNS3Node(LabbyNode):
                 self.start()
                 status.update(status=f"[b]({self.project.name})({self.name})[/] Waiting for node to warmup")
                 time.sleep(boot_delay)
+            else:
+                status.update(status=f"[b]({self.project.name})({self.name})[/] Restarting node")
+                self.restart()
+                status.update(status=f"[b]({self.project.name})({self.name})[/] Waiting for node to warmup")
+                time.sleep(boot_delay)
 
         server_host = dissect_url(self._base._connector.base_url)[1]
         if not server_host:
-            console.log(
-                f"[b]({self.project.name})({self.name})[/] GNS3 server host could not be parsed", style="error"
-            )
+            console.log(f"[b]({self.project.name})({self.name})[/] GNS3 server host could not be parsed", style="error")
             raise typer.Exit(1)
 
         console.log(f"[b]({self.project.name})({self.name})[/] Running bootstrap configuration process")
@@ -190,7 +225,21 @@ class GNS3Node(LabbyNode):
             return False
 
     def render_ports_detail(self) -> ConsoleRenderable:
-        ports = ", ".join([p.name if p.name else "" for p in self._base.ports])
+        # The following helps highlight used ports
+        list_ports = []
+        flag = False
+        for port in self._base.ports:
+            for _, link in self._base.links.items():
+                for gns3_port in link.nodes:
+                    if gns3_port.name == port.name and gns3_port.node_name == self.name:
+                        flag = True
+            if flag:
+                flag = False
+                list_ports.append(f"[yellow i]{port.name}[/]")
+            else:
+                flag = False
+                list_ports.append(port.name)
+        ports = ", ".join([p for p in list_ports])
         return Panel(ports, expand=False, title="[b]Ports[/]", box=box.HEAVY_EDGE)
 
     def render_links_detail(self) -> ConsoleRenderable:
@@ -222,4 +271,6 @@ class GNS3Node(LabbyNode):
         table.add_row("[b]Version[/b]", self.version)
         table.add_row("[b]#Ports[/b]", str(len(self.interfaces)))
         table.add_row("[b]Labels[/b]", str(self.labels))
+        table.add_row("[b]Mgmt Address[/b]", self.mgmt_addr)
+        table.add_row("[b]Mgmt Port[/b]", self.mgmt_port)
         yield table

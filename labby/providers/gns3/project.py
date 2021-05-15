@@ -191,7 +191,15 @@ class GNS3Project(LabbyProject):
         time.sleep(2)
         console.log(f"[b]({self.name})[/] Project nodes have been stopped", style="good")
 
-    def create_node(self, name: str, template: str, labels: List[str] = [], **kwargs) -> GNS3Node:
+    def create_node(
+        self,
+        name: str,
+        template: str,
+        labels: List[str] = [],
+        mgmt_addr: Optional[str] = None,
+        mgmt_port: Optional[str] = None,
+        **kwargs,
+    ) -> GNS3Node:
         if self.status == "closed":
             self.start()
 
@@ -208,6 +216,8 @@ class GNS3Project(LabbyProject):
                 project_name=self.name,
                 node=gns3_node,
                 labels=labels,
+                mgmt_addr=mgmt_addr,
+                mgmt_port=mgmt_port,
                 **kwargs,
             )
             time.sleep(2)
@@ -334,6 +344,9 @@ class GNS3Project(LabbyProject):
 
         _gns3_link = self._base.search_link(node_a, port_a, node_b, port_b)
 
+        if _gns3_link is None:
+            return None
+
         link = self.links.get(f"{_gns3_link.name}")
 
         if link is not None:
@@ -353,9 +366,10 @@ class GNS3Project(LabbyProject):
             "Model",
             "Version",
             "Builtin",
-            "Template",
+            # "Template",
             "Console Port",
             "Labels",
+            "Mgmt Address",
             "# Ports",
             title="Nodes Information",
             title_justify="center",
@@ -377,9 +391,10 @@ class GNS3Project(LabbyProject):
                 node.model if node.model else "None",
                 node.version if node.version else "None",
                 bool_status(node.builtin),
-                node.template if node.template else "None",
+                # node.template if node.template else "None",
                 str(node.console),
                 str(node.labels) if node.labels is not None else "None",
+                node.mgmt_addr,
                 node_ports,
             )
         return table

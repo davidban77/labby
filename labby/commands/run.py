@@ -70,8 +70,8 @@ def bootstrap(
     node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     bconfig: Optional[Path] = typer.Option(None, "--config", "-c", help="Bootstrap configuration file."),
-    mgmt_port: Optional[str] = typer.Option(None, help="Management Interface to configure on the device"),
-    mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
+    # mgmt_port: Optional[str] = typer.Option(None, help="Management Interface to configure on the device"),
+    # mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
     user: Optional[str] = typer.Option(None, help="Initial user to configure on the system."),
     password: Optional[str] = typer.Option(None, help="Initial password to configure on the system."),
 ):
@@ -114,9 +114,21 @@ def bootstrap(
 
     else:
         utils.console.log(f"[b]({project.name})({node.name})[/] Rendering bootstrap config")
+        mgmt_port = node.mgmt_port
+        if mgmt_port is None:
+            utils.console.log(
+                f"Node [cyan i]{node_name}[/] mgmt_port parameter must be set. Run update command", style="error"
+            )
+            raise typer.Exit(code=1)
+        mgmt_addr = node.mgmt_addr
+        if mgmt_addr is None:
+            utils.console.log(
+                f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
+            )
+            raise typer.Exit(code=1)
         # Check all other parameters are set
-        if any(param is None for param in [mgmt_addr, mgmt_port, user, password]):
-            utils.console.log("All arguments must be set: mgmt_addr, mgmt_port, user, password", style="error")
+        if any(param is None for param in [user, password]):
+            utils.console.log("All arguments must be set: user, password", style="error")
             raise typer.Exit(code=1)
 
         if node.net_os is None:

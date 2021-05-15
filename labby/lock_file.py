@@ -24,8 +24,10 @@
 import toml
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, Optional
+
+import typer
 from labby.models import LabbyLink, LabbyNode, LabbyProject
-from labby import config
+from labby import config, utils
 
 
 DEFAULT_LOCK_FILE = Path().cwd() / ".labby.lock"
@@ -71,9 +73,12 @@ def save_data(lock_file_data: MutableMapping[str, Any], lock_file: Path = DEFAUL
     lock_file.write_text(toml.dumps(lock_file_data))
 
 
-def apply_node_data(node: LabbyNode, project: LabbyProject, lock_file: Path = DEFAULT_LOCK_FILE):
+def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None, lock_file: Path = DEFAULT_LOCK_FILE):
     lock_file_data = read_data(lock_file)
     if not lock_file_data:
+        if not project:
+            utils.console.log("Cannot save node in lock file", style="error")
+            raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
     else:
         project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
@@ -81,6 +86,9 @@ def apply_node_data(node: LabbyNode, project: LabbyProject, lock_file: Path = DE
         ]["projects"].get(node.project.name)
 
         if project_lock_file_data is None:
+            if not project:
+                utils.console.log("Cannot save node in lock file", style="error")
+                raise typer.Exit(1)
             lock_file_data = gen_lock_file_data(project)
 
         else:
@@ -88,9 +96,12 @@ def apply_node_data(node: LabbyNode, project: LabbyProject, lock_file: Path = DE
     save_data(lock_file_data, lock_file)
 
 
-def apply_link_data(link: LabbyLink, project: LabbyProject, lock_file: Path = DEFAULT_LOCK_FILE):
+def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None, lock_file: Path = DEFAULT_LOCK_FILE):
     lock_file_data = read_data(lock_file)
     if not lock_file_data:
+        if not project:
+            utils.console.log("Cannot save node in lock file", style="error")
+            raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
     else:
         project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
@@ -98,6 +109,9 @@ def apply_link_data(link: LabbyLink, project: LabbyProject, lock_file: Path = DE
         ]["projects"].get(link.project.name)
 
         if project_lock_file_data is None:
+            if not project:
+                utils.console.log("Cannot save node in lock file", style="error")
+                raise typer.Exit(1)
             lock_file_data = gen_lock_file_data(project)
 
         else:
