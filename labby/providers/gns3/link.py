@@ -97,6 +97,8 @@ class GNS3Link(LabbyLink):
             box=box.HEAVY_EDGE,
             highlight=True,
         )
+        if self.endpoint is None:
+            raise ValueError(f"Link {self} does not have endpoint defined")
         table.add_row(
             self.endpoint.node_a,
             self.endpoint.port_a,

@@ -116,6 +116,7 @@ class ProjectSettings(BaseSettings):
 
 class LabbySettings(BaseSettings):
     environment: EnvironmentSettings
+    lock_file: Path
     debug: bool = False
 
     class Config(LabbyBaseConfig):
@@ -195,7 +196,7 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
 
 
 def get_nornir_runner_settings(nornir_data: Dict[str, Any]) -> NornirRunner:
-    nornir_args = {}
+    nornir_args: Dict[str, Any] = {}
     if "plugin" in nornir_data:
         nornir_args.update(plugin=nornir_data["plugin"])
     if "options" in nornir_data:
@@ -208,7 +209,7 @@ def get_env_settings(
     environment_name: Optional[str], provider_name: Optional[str], config_data: MutableMapping[str, Any]
 ) -> EnvironmentSettings:
     envs = config_data.get("environment", {})
-    env_args = {}
+    env_args: Dict[str, Any] = {}
 
     # Get environment name
     if environment_name is None:
@@ -269,7 +270,7 @@ def load_config(
     # Environment config
     environment = get_env_settings(environment_name, provider_name, config_data)
 
-    options = {}
+    options: Dict[str, Any] = {"lock_file": config_file.parent / ".labby.json"}
 
     if debug is not None:
         options.update(debug=debug)

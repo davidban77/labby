@@ -105,6 +105,7 @@ def node(
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+    # project.update_node(name=node_name, **{parameter: parsed_value})
     node = project.search_node(name=node_name)
     if not node:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")

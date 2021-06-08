@@ -1,36 +1,10 @@
-# LOCK_FILE = {
-#     "environment1": {
-#         "provider1": {
-#             "projects": {
-#                 "project1": {
-#                     "labels": ["project1_label"],
-#                     "nodes": {
-#                         "router1": {
-#                             "labels": ["router1_label"],
-#                             "mgmt_port": "Management1",
-#                             "mgmt_ip": "192.168.1.1/30",
-#                         },
-#                     },
-#                     "links": {
-#                         "link1": {
-#                             "labels": ["link1_label"],
-#                         },
-#                     },
-#                 }
-#             }
-#         }
-#     }
-# }
-import toml
+import json
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, Optional
 
 import typer
 from labby.models import LabbyLink, LabbyNode, LabbyProject
 from labby import config, utils
-
-
-DEFAULT_LOCK_FILE = Path().cwd() / ".labby.lock"
 
 
 def gen_node_data(node: LabbyNode) -> Dict[str, Any]:
@@ -51,11 +25,11 @@ def gen_project_data(project: LabbyProject):
     return {project.name: {"labels": project.labels, "nodes": nodes_lock_data, "links": links_lock_data}}
 
 
-def gen_lock_file_data(project: LabbyProject):
+def gen_lock_file_data(project: Optional[LabbyProject] = None):
     # Initialize lock file data
     lock_file_data = {
         config.SETTINGS.environment.name: {
-            config.SETTINGS.environment.provider.name: {"projects": gen_project_data(project)}
+            config.SETTINGS.environment.provider.name: {"projects": gen_project_data(project) if project else {}}
         }
     }
 
@@ -64,22 +38,25 @@ def gen_lock_file_data(project: LabbyProject):
 
 def read_data(file_path: Path) -> Optional[MutableMapping[str, Any]]:
     if file_path.exists():
-        return toml.loads(file_path.read_text())
+        # return toml.loads(file_path.read_text())
+        return json.loads(file_path.read_text())
     else:
         return None
 
 
-def save_data(lock_file_data: MutableMapping[str, Any], lock_file: Path = DEFAULT_LOCK_FILE):
-    lock_file.write_text(toml.dumps(lock_file_data))
+def save_data(lock_file_data: MutableMapping[str, Any]):
+    # lock_file.write_text(toml.dumps(lock_file_data))
+    config.SETTINGS.lock_file.write_text(json.dumps(lock_file_data, indent=4))
 
 
-def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None, lock_file: Path = DEFAULT_LOCK_FILE):
-    lock_file_data = read_data(lock_file)
+def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None):
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         if not project:
             utils.console.log("Cannot save node in lock file", style="error")
             raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
+
     else:
         project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
             config.SETTINGS.environment.provider.name
@@ -89,20 +66,25 @@ def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None, loc
             if not project:
                 utils.console.log("Cannot save node in lock file", style="error")
                 raise typer.Exit(1)
-            lock_file_data = gen_lock_file_data(project)
+            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
+                "projects"
+            ].update(gen_project_data(project))
+            project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
+                config.SETTINGS.environment.provider.name
+            ]["projects"][node.project.name]
+        project_lock_file_data["nodes"].update(gen_node_data(node))
 
-        else:
-            project_lock_file_data["nodes"].update(gen_node_data(node))
-    save_data(lock_file_data, lock_file)
+    save_data(lock_file_data)
 
 
-def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None, lock_file: Path = DEFAULT_LOCK_FILE):
-    lock_file_data = read_data(lock_file)
+def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None):
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         if not project:
-            utils.console.log("Cannot save node in lock file", style="error")
+            utils.console.log("Cannot save link in lock file", style="error")
             raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
+
     else:
         project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
             config.SETTINGS.environment.provider.name
@@ -110,43 +92,56 @@ def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None, loc
 
         if project_lock_file_data is None:
             if not project:
-                utils.console.log("Cannot save node in lock file", style="error")
+                utils.console.log("Cannot save link in lock file, missing project data", style="error")
                 raise typer.Exit(1)
-            lock_file_data = gen_lock_file_data(project)
+            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
+                "projects"
+            ].update(gen_project_data(project))
+            project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
+                config.SETTINGS.environment.provider.name
+            ]["projects"][link.project.name]
+        project_lock_file_data["links"].update(gen_link_data(link))
 
-        else:
-            project_lock_file_data["links"].update(gen_link_data(link))
-    save_data(lock_file_data, lock_file)
+    save_data(lock_file_data)
 
 
-def apply_project_data(project: LabbyProject, lock_file: Path = DEFAULT_LOCK_FILE):
-    lock_file_data = read_data(lock_file)
+def apply_project_data(project: LabbyProject):
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         lock_file_data = gen_lock_file_data(project)
+
     else:
         project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
             config.SETTINGS.environment.provider.name
         ]["projects"].get(project.name)
 
         if project_lock_file_data is None:
-            lock_file_data = gen_lock_file_data(project)
+            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
+                "projects"
+            ].update(gen_project_data(project))
         else:
             project_lock_file_data.update(labels=project.labels)
 
-    save_data(lock_file_data, lock_file)
+    save_data(lock_file_data)
 
 
-def get_project_data(project_name: str, lock_file: Path = DEFAULT_LOCK_FILE) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def get_project_data(project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
-    return lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name]["projects"].get(
-        project_name
-    )
+    try:
+        return lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
+            "projects"
+        ].get(project_name)
+    except KeyError:
+        # Initialize lock file data if new environment/provider
+        lock_file_data.update(gen_lock_file_data())
+        save_data(lock_file_data)
+        return None
 
 
-def get_node_data(node_name: str, project_name: str, lock_file: Path = DEFAULT_LOCK_FILE) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def get_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
     project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
@@ -159,8 +154,8 @@ def get_node_data(node_name: str, project_name: str, lock_file: Path = DEFAULT_L
     return project_lock_file_data["nodes"].get(node_name)
 
 
-def get_link_data(link_name: str, project_name: str, lock_file: Path = DEFAULT_LOCK_FILE) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
     project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
@@ -173,8 +168,8 @@ def get_link_data(link_name: str, project_name: str, lock_file: Path = DEFAULT_L
     return project_lock_file_data["links"].get(link_name)
 
 
-def delete_project_data(project_name: str, lock_file: Path = DEFAULT_LOCK_FILE) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def delete_project_data(project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
     return lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name]["projects"].pop(
@@ -182,10 +177,8 @@ def delete_project_data(project_name: str, lock_file: Path = DEFAULT_LOCK_FILE) 
     )
 
 
-def delete_node_data(
-    node_name: str, project_name: str, lock_file: Path = DEFAULT_LOCK_FILE
-) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
     project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
@@ -198,10 +191,8 @@ def delete_node_data(
     return project_lock_file_data["nodes"].pop(node_name, None)
 
 
-def delete_link_data(
-    link_name: str, project_name: str, lock_file: Path = DEFAULT_LOCK_FILE
-) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(lock_file)
+def delete_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]:
+    lock_file_data = read_data(config.SETTINGS.lock_file)
     if not lock_file_data:
         return None
     project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][

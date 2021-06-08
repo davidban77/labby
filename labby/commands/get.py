@@ -1,9 +1,10 @@
+# from labby.models import LabbyProvider
 import typer
 from enum import Enum
 from typing import Optional
-from labby.providers import get_provider
+from labby.providers import get_provider_instance
 from labby import utils
-from labby import config
+# from labby import config
 
 
 app = typer.Typer(help="Retrieves information on resources of a Network Provider Lab")
@@ -41,10 +42,7 @@ def project_list(
 
     > labby get project list --filter status --value opened
     """
-
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     utils.console.log(provider.render_project_list(field=filter, value=value))
 
 
@@ -59,9 +57,7 @@ def project_detail(
 
     > labby get project detail --project lab01
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -71,6 +67,10 @@ def project_detail(
     utils.console.log()
     utils.console.log(project.render_links_summary())
     project.to_initial_state()
+
+    # Aver
+    if project.nornir:
+        utils.console.log(project.nornir.inventory.hosts)
 
 
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
@@ -86,9 +86,7 @@ def node_list(
 
     > labby get node list --project lab01 --filter status --value started
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -110,9 +108,7 @@ def node_template_list(
 
     > labby get node template-list
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     utils.console.log(provider.render_templates_list(field=filter, value=value))
 
 
@@ -128,9 +124,7 @@ def node_detail(
 
     > labby get node detail --project lab01 --node r1
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -149,6 +143,41 @@ def node_detail(
     project.to_initial_state()
 
 
+@node_app.command(short_help="Retrieves node running configuration", name="config")
+def node_config(
+    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+):
+    """[summary]
+
+    Args:
+        project_name (str, optional): [description]. Defaults to .
+        node_name (str, optional): [description]. Defaults to typer.Option(..., "--node", "-n", help="Node name").
+
+    Raises:
+        typer.Exit: [description]
+        typer.Exit: [description]
+        typer.Exit: [description]
+        typer.Exit: [description]
+    """
+    provider = get_provider_instance()
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+    node = project.search_node(name=node_name)
+    if not node:
+        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+    utils.console.log(node)
+
+    if node.nornir:
+        utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
+
+    # Aver
+    node.get_config()
+
+
 @node_app.command(short_help="Retrieves details of a node template", name="template-detail")
 def node_template_detail(
     template_name: str = typer.Option(..., "--template", "-t", help="Node Template name"),
@@ -160,9 +189,7 @@ def node_template_detail(
 
     > labby get node template-detail --template "Arista EOS vEOS 4.25F"
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     template = provider.search_template(template_name=template_name)
     if not template:
         utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
@@ -183,9 +210,7 @@ def link_list(
 
     > labby get link list --project lab01
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -210,9 +235,7 @@ def link_detail(
 
     > labby get link detail --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")

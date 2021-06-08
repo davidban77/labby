@@ -1,3 +1,4 @@
+# import typer
 import re
 import time
 from typing import Any, List, Optional, Dict
@@ -16,6 +17,7 @@ from labby.providers.gns3.link import GNS3Link
 from labby.providers.gns3.utils import bool_status, link_status, node_status, node_net_os, template_type, project_status
 from labby.utils import console
 from labby import lock_file
+from nornir import InitNornir
 
 
 def get_link_name(node_a, port_a, node_b, port_b) -> str:
@@ -23,8 +25,8 @@ def get_link_name(node_a, port_a, node_b, port_b) -> str:
 
 
 class GNS3Project(LabbyProject):
-    nodes: Dict[str, GNS3Node] = Field(default_factory=dict)
-    links: Dict[str, GNS3Link] = Field(default_factory=dict)
+    nodes: Dict[str, GNS3Node] = Field(default_factory=dict)  # type: ignore
+    links: Dict[str, GNS3Link] = Field(default_factory=dict)  # type: ignore
     _base: Project
     _initial_state: Optional[str]
 
@@ -37,6 +39,19 @@ class GNS3Project(LabbyProject):
         else:
             self.get(nodes_refresh=True, links_refresh=True)
 
+        self.init_nornir()
+
+    def init_nornir(self) -> None:
+        self.nornir = InitNornir(
+            runner={
+                "plugin": "threaded",
+                "options": {
+                    "num_workers": 100,
+                },
+            },
+            inventory={"plugin": "LabbyNornirInventory", "options": {"project": self}},
+        )
+
     def _update_labby_project_attrs(self, nodes_refresh: bool = False, links_refresh: bool = False):
         self.status = self._base.status
         self.id = self._base.project_id
@@ -47,7 +62,7 @@ class GNS3Project(LabbyProject):
                     _node.get()
                     if not _node.template:
                         raise ValueError(f"Node template could not be resolved: {_node}")
-                kwargs = {}
+                kwargs: Dict[str, Any] = {}
                 node_lock_file_data = lock_file.get_node_data(_node.name, self.name)
                 if node_lock_file_data:
                     kwargs.update(**node_lock_file_data)
@@ -84,6 +99,7 @@ class GNS3Project(LabbyProject):
         console.log(f"[b]({self.name})[/] Collecting project data")
         self._base.get()
         self._update_labby_project_attrs(nodes_refresh, links_refresh)
+        self.init_nornir()
 
     def start(self, start_nodes: Optional[str] = None, nodes_delay: int = 5) -> bool:
         console.log(f"[b]({self.name})[/] Starting project")
@@ -207,6 +223,7 @@ class GNS3Project(LabbyProject):
         if _node:
             console.log(f"Node [cyan i]{name}[/] already created. Nothing to do...", style="warning")
             return _node
+
         else:
             console.log(f"[b]({self.name})({name})[/] Creating node with template [cyan i]{template}[/]")
             gns3_node = self._base.create_node(name=name, template=template, **kwargs)
@@ -224,6 +241,8 @@ class GNS3Project(LabbyProject):
             # console.log(node)
             console.log(f"[b]({self.name})({node.name})[/] Node created", style="good")
             lock_file.apply_node_data(node, self)
+            self.init_nornir()
+            node.nornir = self.nornir.inventory.hosts[gns3_node.name]  # type: ignore
             return node
 
     # def delete_node(self, name: str) -> bool:
@@ -249,17 +268,46 @@ class GNS3Project(LabbyProject):
         # Refresh attributes
         self.get()
 
-        # Retrive info from lock file
         node = self.nodes.get(name)
 
         if node is not None:
+            # Refresh lock data
             node_lock_file_data = lock_file.get_node_data(name, self.name)
             if node_lock_file_data is not None:
                 node.labels = node_lock_file_data.get("labels", [])
                 node.mgmt_addr = node_lock_file_data.get("mgmt_addr")
                 node.mgmt_port = node_lock_file_data.get("mgmt_port")
 
+            # Refresh nornir object on host
+            if node.nornir is None:
+                # print(type(self.nornir.inventory.hosts[name]))
+                # print(self.nornir.inventory.hosts[name])
+                # node.nornir = self.nornir.filter(host=name)
+                node.nornir = self.nornir.filter(filter_func=lambda h: h.name == name)  # type: ignore
+                # print(node.nornir.inventory.hosts[name].values())
+                # node.nornir = self.nornir.inventory.hosts[name]
+
         return node
+
+    # def update_node(self, name: str, **kwargs) -> None:
+    #     node = self.search_node(name)
+    #     if node is None:
+    #         console.log(f"[b]({self.name})({name})[/] Node not found", style="warning")
+    #         raise typer.Exit(1)
+
+    #     with console.status(f"[b]({self.name})({node.name})[/] Updating node: {kwargs}", spinner="aesthetic") as _:
+    #         node.update(**kwargs)
+    #     lock_file.apply_node_data(node, self)
+
+    # def update_node(self, name: str, **kwargs) -> None:
+    #     node = self.search_node(name)
+    #     if node is None:
+    #         console.log(f"[b]({self.name})({name})[/] Node not found", style="warning")
+    #         raise typer.Exit(1)
+
+    #     with console.status(f"[b]({self.name})({node.name})[/] Updating node: {kwargs}", spinner="aesthetic") as _:
+    #         node.update(**kwargs)
+    #     lock_file.apply_node_data(node, self)
 
     # def bootstrap_node(self, name: str, config: str, boot_delay: int = 5) -> bool:
     #     console.log(f"[b]({self.name})({name})[/] Bootstraping node")
@@ -379,7 +427,7 @@ class GNS3Project(LabbyProject):
         if field:
             nodes = [x for x in self.nodes.values() if getattr(x, field) == value]
         else:
-            nodes = self.nodes.values()
+            nodes = list(self.nodes.values())
         for node in nodes:
             node_ports = "None" if node.interfaces is None else str(len(node.interfaces))
             table.add_row(
@@ -418,8 +466,10 @@ class GNS3Project(LabbyProject):
         if field:
             links = [x for x in self.links.values() if getattr(x, field) == value]
         else:
-            links = self.links.values()
+            links = list(self.links.values())
         for link in links:
+            if link.endpoint is None:
+                raise ValueError(f"Link {link} does not have endpoint defined")
             table.add_row(
                 f"[b]{link.endpoint.node_a}[/]",
                 f"{link.endpoint.port_a}",

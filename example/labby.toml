@@ -1,5 +1,5 @@
 [main]
-environment = "default"
+environment = "packet"
 debug = false
 
 #### Environment default ####
@@ -50,5 +50,5 @@ provider = "gns3-main"
 
 [environment.packet.providers.gns3-main]
 kind = "gns3"
-server_url = "http://gns3-main.packet:80"
+server_url = "http://147.75.199.202:3080"
 verify_cert = false

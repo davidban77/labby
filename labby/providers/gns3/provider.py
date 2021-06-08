@@ -25,9 +25,9 @@ class GNS3Provider(LabbyProvider):
         super().__init__(name=name, kind=kind)
         self._base: Server = Server(url=server_url, user=user, cred=password, verify=verify_cert)
 
-    def get_projects(self) -> List[GNS3Project]:
-        self._base.get_projects()
-        return [GNS3Project(prj.name, prj) for prj in self._base.projects.values()]  # type: ignore
+    # def get_projects(self) -> List[GNS3Project]:
+    #     self._base.get_projects()
+    #     return [GNS3Project(prj.name, prj) for prj in self._base.projects.values()]  # type: ignore
 
     def search_project(self, project_name: str) -> Optional[GNS3Project]:
         r_gns3_project = self._base.search_project(project_name)
@@ -38,6 +38,7 @@ class GNS3Provider(LabbyProvider):
         project_lock_file_data = lock_file.get_project_data(project_name)
         if project_lock_file_data is None:
             _project = GNS3Project(project_name, r_gns3_project)
+            lock_file.apply_project_data(_project)
         else:
             labels = project_lock_file_data["labels"]
             _project = GNS3Project(project_name, r_gns3_project, labels=labels)

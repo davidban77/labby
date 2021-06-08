@@ -96,4 +96,4 @@ dmypy.json
 .secrets.*
 
 # Labby ignores!
-.labby.lock
+.labby.json

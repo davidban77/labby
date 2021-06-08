@@ -19,8 +19,13 @@ from typing import Optional
 from pathlib import Path
 from dotenv import load_dotenv
 from rich.traceback import install as traceback_install
+from nornir.core.plugins.inventory import InventoryPluginRegister
+from labby.nornir.plugins.inventory.labby import LabbyNornirInventory
 
 traceback_install()
+
+
+InventoryPluginRegister.register("LabbyNornirInventory", LabbyNornirInventory)
 
 
 app = typer.Typer(help=f"{utils.banner()} Awesome Network Lab Management Tool!")

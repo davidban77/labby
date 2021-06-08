@@ -3,9 +3,8 @@ from typing import Optional
 import typer
 
 from pathlib import Path
-from labby.providers import get_provider
+from labby.providers import get_provider_instance
 from labby import utils
-from labby import config
 from netaddr import IPNetwork
 from nornir.core.helpers.jinja_helper import render_from_file
 
@@ -54,9 +53,7 @@ def launch(project_name: str = typer.Option(..., "--project", "-p", help="Projec
 
     > labby run project-launch --project lab01
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -86,13 +83,10 @@ def bootstrap(
 
     - By using labby bootstrap templates
 
-    > labby run node bootstrap --mgmt_port Management1 --mgmt_addr 192.168.77.77/24 --user netops --password netops123
-    --project lab01 --node r1
+    > labby run node bootstrap --user netops --password netops123 --project lab01 --node r1
     """
     # Get network lab provider
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = get_provider_instance()
 
     # Get project
     project = provider.search_project(project_name=project_name)

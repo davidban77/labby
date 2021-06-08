@@ -1,65 +1,9 @@
 import abc
 from typing import Dict, Optional, List, Any
+from nornir.core import Nornir
 from pydantic import BaseModel
 from pydantic.fields import Field
 from rich.console import ConsoleRenderable
-
-
-# @dataclass
-# class LabbyPort:
-#     name: str
-#     type: str
-
-
-# @dataclass
-# class LabbyNode:
-#     name: str
-#     project: str
-#     project_id: Optional[str] = None
-#     id: Optional[str] = None
-#     template: Optional[str] = None
-#     type: Optional[str] = None
-#     exists: Optional[bool] = None
-#     console: Optional[int] = None
-#     status: Optional[str] = None
-#     category: Optional[str] = None
-#     net_os: Optional[str] = None
-#     model: Optional[str] = None
-#     interfaces: Optional[List[LabbyPort]] = None
-#     x: int = 0
-#     y: int = 0
-#     properties: Optional[Dict[str, str]] = None
-#     _provider: Optional[Any] = None       # Inner object with provider specific settings
-
-
-# @dataclass
-# class LabbyEndpoint:
-#     node: LabbyNode
-#     port: LabbyPort
-
-
-# @dataclass
-# class LabbyLink:
-#     name: str
-#     project: str
-#     endpoints: List[LabbyEndpoint]
-#     project_id: Optional[str] = None
-#     id: Optional[str] = None
-#     exists: Optional[bool] = None
-#     type: Optional[str] = None
-#     _provider: Optional[Any] = None       # Inner object with provider specific settings
-
-
-# @dataclass
-# class LabbyProject:
-#     name: str
-#     id: Optional[str] = None  # Inherited from provider
-#     status: Optional[str] = None
-#     exists: Optional[bool] = None    # Flags that specifies if project existis
-#     nodes: Optional[List[LabbyNode]] = None   # List of nodes in project
-#     connections: Optional[List[LabbyLink]] = None
-#     _provider: Optional[Any] = None      # Inner object with provider specific settings
-#     # mgmt: Object  -> Possibly.. like a nested attr with mgmt nodes info
 
 
 class LabbyNodeTemplate(BaseModel):
@@ -118,25 +62,27 @@ class LabbyNode(BaseModel, abc.ABC):
     mgmt_addr: Optional[str]
     properties: Optional[Dict[str, Any]]
     labels: List[str] = Field(default_factory=list)
+    nornir: Optional[Nornir]
 
     class Config:
         validate_assignment = True
         extra = "allow"
+        arbitrary_types_allowed = True
 
     @abc.abstractmethod
     def get(self) -> None:
         pass
 
     @abc.abstractmethod
-    def start(self) -> None:
+    def start(self) -> bool:
         pass
 
     @abc.abstractmethod
-    def stop(self) -> None:
+    def stop(self) -> bool:
         pass
 
     @abc.abstractmethod
-    def restart(self) -> None:
+    def restart(self) -> bool:
         pass
 
     @abc.abstractmethod
@@ -161,6 +107,10 @@ class LabbyNode(BaseModel, abc.ABC):
 
     @abc.abstractmethod
     def render_properties(self) -> ConsoleRenderable:
+        pass
+
+    @abc.abstractmethod
+    def get_config(self) -> bool:
         pass
 
 
@@ -194,7 +144,7 @@ class LabbyLink(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def delete(self) -> None:
+    def delete(self) -> bool:
         pass
 
     @abc.abstractmethod
@@ -209,10 +159,12 @@ class LabbyProject(BaseModel, abc.ABC):
     nodes: Dict[str, LabbyNode] = Field(default_factory=dict)
     links: Dict[str, LabbyLink] = Field(default_factory=dict)
     labels: List[str] = Field(default_factory=list)
+    nornir: Optional[Nornir]
 
     class Config:
         validate_assignment = True
         extra = "allow"
+        arbitrary_types_allowed = True
 
     @abc.abstractmethod
     def get(self) -> None:
@@ -231,11 +183,11 @@ class LabbyProject(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def delete(self) -> None:
+    def delete(self) -> bool:
         pass
 
     @abc.abstractmethod
-    def start_nodes(self) -> None:
+    def start_nodes(self, start_nodes: str, nodes_delay: int = 5) -> None:
         pass
 
     @abc.abstractmethod
@@ -300,9 +252,9 @@ class LabbyProvider(BaseModel, abc.ABC):
         validate_assignment = True
         extra = "allow"
 
-    @abc.abstractmethod
-    def get_projects(self) -> List[LabbyProject]:
-        pass
+    # @abc.abstractmethod
+    # def get_projects(self) -> List[LabbyProject]:
+    #     pass
 
     @abc.abstractmethod
     def search_project(self, project_name: str) -> Optional[LabbyProject]:
@@ -339,132 +291,3 @@ class LabbyProvider(BaseModel, abc.ABC):
     @abc.abstractmethod
     def render_project_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
         pass
-
-
-# class BaseProvider(BaseModel):
-#     name: str
-#     type: str
-#     server_url: Optional[AnyHttpUrl]
-#     user: Optional[str] = None
-#     password: Optional[str] = None
-#     verify_cert: bool = False
-
-
-# class ProviderDocker(BaseProvider):
-#     server_url: Optional[AnyUrl]
-
-
-# class ProviderGeneral(BaseProvider):
-#     pass
-
-
-# class EnvironmentSettings(BaseModel):
-#     name: str
-#     description: Optional[str]
-#     # provider: Optional[str]
-#     # gns3: Optional[ProviderGns3]
-#     # vrnetlab: Optional[ProviderVrnetlab]
-#     # eve_ng: Optional[ProviderEveng]
-#     # providers: Union[List[ProviderVrnetlab], List[ProviderGns3], List[ProviderEveng]]
-#     providers: List[Union[ProviderGeneral, ProviderDocker]]
-#     metadata: Dict[str, Any] = Field(default_factory=dict)
-
-#     def get_provider(self, name: str) -> Union[ProviderGeneral, ProviderDocker]:
-#         # return getattr(self, name)
-#         try:
-#             return next(_p for _p in self.providers if _p.name == name)
-#         except StopIteration:
-#             raise ValueError(f"Provider not found: {name}")
-
-#     class Config:
-#         extra = "ignore"
-#         validate_assignment = True
-
-
-# class NornirInventoryOptions(BaseModel):
-#     host_file: FilePath
-#     group_file: FilePath
-
-
-# class NornirInventory(BaseModel):
-#     plugin: str = "SimpleInventory"
-#     options: NornirInventoryOptions
-
-
-# class NornirRunner(BaseModel):
-#     plugin: str = "threaded"
-#     options: Dict[str, Any] = {"num_workers": 5}
-
-
-# class NornirSettings(BaseModel):
-#     runner: NornirRunner
-#     inventory: NornirInventory
-
-
-# class NodeSpec(BaseModel):
-#     template: str
-#     nodes: List[str]
-#     device_type: str
-#     mgmt_interface: Optional[str]
-#     config_managed: bool = True
-
-
-# class LinkSpec(BaseModel):
-#     node_a: str
-#     port_a: str
-#     node_b: str
-#     port_b: str
-#     link_filter: Optional[Dict[str, Any]] = None
-
-
-# class ProjectSettings(BaseModel):
-#     name: str
-#     description: Optional[str]
-#     contributors: Optional[List[str]]
-#     version: Optional[str]
-#     nodes_spec: List[NodeSpec]
-#     links_spec: List[LinkSpec]
-
-#     class Config:
-#         extra = "ignore"
-#         validate_assignment = True
-
-
-# class LabbyGlobalSettings(BaseSettings):
-#     provider: str
-#     provider_type: Literal["gns3", "vrnetlab", "eve_ng"]
-#     environment: str
-#     project: Optional[str] = None
-#     debug: bool = False
-
-#     class Config:
-#         env_prefix = "LABBY_"
-#         env_file = ".env"
-#         env_file_encoding = "utf-8"
-#         extra = "ignore"
-#         validate_assignment = True
-
-
-# class LabbySettings(BaseModel):
-#     labby: LabbyGlobalSettings
-#     envs: Dict[str, EnvironmentSettings]
-#     prjs: Dict[str, ProjectSettings]
-
-#     def get_environment(self) -> EnvironmentSettings:
-#         try:
-#             return self.envs[self.labby.environment]
-#         except KeyError:
-#             raise ValueError(f"No environment {self.labby.environment} found")
-
-#     def get_project(self) -> ProjectSettings:
-#         try:
-#             if self.labby.project is None:
-#                 raise KeyError
-#             return self.prjs[self.labby.project]
-#         except KeyError:
-#             raise ValueError(f"No project {self.labby.project} found")
-
-#     def get_provider_settings(
-#         self,
-#     ) -> Union[ProviderGeneral, ProviderDocker]:
-#         return self.get_environment().get_provider(self.labby.provider)
