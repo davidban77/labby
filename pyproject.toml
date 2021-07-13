@@ -26,6 +26,13 @@ flake8 = "^3.8.4"
 [tool.black]
 line-length = 120
 
+[tool.pydocstyle]
+convention = "google"
+inherit = false
+match = "(?!__init__).*\\.py"
+match-dir = "(?!tests)[^\\.].*"
+add_ignore = "D212"
+
 [tool.poetry.scripts]
 labby = "labby.main:app"
 

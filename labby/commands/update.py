@@ -10,7 +10,7 @@ from labby import config
 app = typer.Typer(help="Updates a Network Provider Lab Resource")
 
 
-class LinkFilter(str, Enum):
+class LinkFilter(str, Enum):  # noqa: D101
     frequency_drop = "frequency_drop"
     packet_loss = "packet_loss"
     latency = "latency"
@@ -21,6 +21,7 @@ class LinkFilter(str, Enum):
 
 def is_truthy(arg: Any):
     """Convert "truthy" strings into Booleans.
+
     Examples:
         >>> is_truthy('yes')
         True
@@ -42,11 +43,9 @@ def project(
     int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
     float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
 ):
-    """
-    Updates a Project based on a parameter and its value.
+    """Update a Project based on a parameter and its value.
 
     Example:
-
     > labby update project -p lab01 --parameter auto_close --bool-value yes
     """
     if string_value:
@@ -54,20 +53,23 @@ def project(
     elif bool_value:
         parsed_value = is_truthy(bool_value)
     elif int_value:
-        parsed_value = int(int_value)
+        parsed_value = int(int_value)  # type: ignore
     elif float_value:
-        parsed_value = float(float_value)
+        parsed_value = float(float_value)  # type: ignore
     else:
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+
+    env = config.get_config_env()
+    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Update project
     project.update(**{parameter: parsed_value})
+    utils.console.log(project)
 
 
 @app.command(short_help="Updates a node")
@@ -80,11 +82,9 @@ def node(
     int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
     float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
 ):
-    """
-    Updates a Node based on a parameter and its value.
+    """Update a Node based on a parameter and its value.
 
     Example:
-
     > labby update node -p lab01 -n r1 --parameter name --string-value new_r1
     """
     if string_value:
@@ -92,25 +92,28 @@ def node(
     elif bool_value:
         parsed_value = is_truthy(bool_value)
     elif int_value:
-        parsed_value = int(int_value)
+        parsed_value = int(int_value)  # type: ignore
     elif float_value:
-        parsed_value = float(float_value)
+        parsed_value = float(float_value)  # type: ignore
     else:
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+
+    env = config.get_config_env()
+    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    # project.update_node(name=node_name, **{parameter: parsed_value})
+
     node = project.search_node(name=node_name)
     if not node:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Update node
     node.update(**{parameter: parsed_value})
+    utils.console.log(node)
 
 
 @app.command(short_help="Updates a node template")
@@ -122,11 +125,9 @@ def node_template(
     int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
     float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
 ):
-    """
-    Updates a Node Template based on a parameter and its value.
+    """Update a Node Template based on a parameter and its value.
 
     Example:
-
     > labby update template -t "Arista EOS vEOS 4.25F" --parameter ram --int-value 2048
     """
     if string_value:
@@ -134,20 +135,23 @@ def node_template(
     elif bool_value:
         parsed_value = is_truthy(bool_value)
     elif int_value:
-        parsed_value = int(int_value)
+        parsed_value = int(int_value)  # type: ignore
     elif float_value:
-        parsed_value = float(float_value)
+        parsed_value = float(float_value)  # type: ignore
     else:
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+
+    env = config.get_config_env()
+    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
     template = provider.search_template(template_name)
     if not template:
         utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Update node template
     template.update(**{parameter: parsed_value})
+    utils.console.log(template)
 
 
 @app.command(short_help="Updates a link filter")
@@ -160,11 +164,9 @@ def link_filter(
     filter_type: LinkFilter = typer.Option(..., help="Filter to apply to the link"),
     filter_value: str = typer.Option(..., help="Value of Link Filter to apply to the link"),
 ):
-    """
-    Updates a Link based on a parameter and its value.
+    """Update a Link based on a parameter and its value.
 
     Example:
-
     > labby update link -p lab01 -na r1 -pa Ethernet2 -nb r2 -pb Ethernet2 --filter-type packet_loss --filter-value 77
     """
     filters: Dict[str, Any]
@@ -172,9 +174,9 @@ def link_filter(
         filters = dict({filter_type: int(filter_value)})
     else:
         filters = dict({filter_type: filter_value})
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+
+    env = config.get_config_env()
+    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -185,5 +187,7 @@ def link_filter(
             f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
         )
         raise typer.Exit(1)
+
+    # Update link
     link.apply_metric(**filters)
     utils.console.log(link)

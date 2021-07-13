@@ -154,6 +154,20 @@ def get_config_path() -> Path:
     return config_file
 
 
+def get_config_env() -> EnvironmentSettings:
+    """Get Environment object from SETTINGS.
+
+    Raises:
+        ValueError: Configuration not set
+
+    Returns:
+        EnvironmentSettings: Environment object
+    """
+    if SETTINGS is None:
+        raise ValueError("Configuration is not set")
+    return SETTINGS.environment
+
+
 def load_toml(config_file: Path) -> MutableMapping:
     """
     Reades TOML file from Path
