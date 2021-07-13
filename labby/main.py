@@ -76,7 +76,6 @@ def main(
         help="Network Lab provider to use",
         envvar="LABBY_PROVIDER",
     ),
-    # project: Optional[str] = typer.Option(None, "--project", help="Network Project to use", envvar="LABBY_PROJECT"),
 ):
     if not config_file:
         config_file = config.get_config_current_path()
@@ -87,6 +86,11 @@ def main(
                 raise typer.Exit(code=1)
     ctx.obj = dict(config_file=config_file)
     config.load_config(config_file=config_file, environment_name=environment, provider_name=provider, debug=verbose)
+
+    if config.SETTINGS is None:
+        utils.console.print("No configuration settings found", style="error")
+        raise typer.Exit(1)
+
     # Register each provider environment
     try:
         register_service(config.SETTINGS.environment.provider.name, config.SETTINGS.environment.provider.kind)

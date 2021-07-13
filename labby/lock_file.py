@@ -1,3 +1,4 @@
+"""Lock file operations module."""
 import json
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, Optional
@@ -7,15 +8,67 @@ from labby.models import LabbyLink, LabbyNode, LabbyProject
 from labby import config, utils
 
 
+def get_lock_file():
+    """Get lock_file object from SETTINGS.
+
+    Raises:
+        ValueError: Configuration not set
+
+    Returns:
+        Path: Lock file Path object
+    """
+    if config.SETTINGS is None:
+        raise ValueError("Configuration is not set")
+    return config.SETTINGS.lock_file
+
+
+def get_config_env():
+    """Get Environment object from SETTINGS.
+
+    Raises:
+        ValueError: Configuration not set
+
+    Returns:
+        EnvironmentSettings: Environment object
+    """
+    if config.SETTINGS is None:
+        raise ValueError("Configuration is not set")
+    return config.SETTINGS.environment
+
+
 def gen_node_data(node: LabbyNode) -> Dict[str, Any]:
+    """Generate Node data for lock file.
+
+    Args:
+        node (LabbyNode): Labby node object
+
+    Returns:
+        Dict[str, Any]: {node_name: {labels: labels, mgmt_port: mgmt_port, mgmt_addr}}
+    """
     return {node.name: {"labels": node.labels, "mgmt_port": node.mgmt_port, "mgmt_addr": node.mgmt_addr}}
 
 
 def gen_link_data(link: LabbyLink) -> Dict[str, Any]:
+    """Generate Link data for lock file.
+
+    Args:
+        link (LabbyLink): Labby link object
+
+    Returns:
+        Dict[str, Any]: {link_name: {labels: labels}}
+    """
     return {link.name: {"labels": link.labels}}
 
 
 def gen_project_data(project: LabbyProject):
+    """Generate Project data for lock file
+
+    Args:
+        project (LabbyProject): Labby Project object
+
+    Returns:
+        Dict[str, Any]: {project_name: {labels: labels, nodes: nodes_data, links: links_data}}
+    """
     nodes_lock_data = {}
     for _, node in project.nodes.items():
         nodes_lock_data.update(gen_node_data(node))
@@ -26,99 +79,131 @@ def gen_project_data(project: LabbyProject):
 
 
 def gen_lock_file_data(project: Optional[LabbyProject] = None):
+    """Generate lock file data.
+
+    Args:
+        project (Optional[LabbyProject], optional): Labby project object. Defaults to None.
+
+    Returns:
+        Dict[str, Any]: {env_name: {env_provider: {projects: project_data}}}
+    """
+    env = get_config_env()
+
     # Initialize lock file data
-    lock_file_data = {
-        config.SETTINGS.environment.name: {
-            config.SETTINGS.environment.provider.name: {"projects": gen_project_data(project) if project else {}}
-        }
-    }
+    lock_file_data = {env.name: {env.provider.name: {"projects": gen_project_data(project) if project else {}}}}
 
     return lock_file_data
 
 
 def read_data(file_path: Path) -> Optional[MutableMapping[str, Any]]:
+    """Read JSON file.
+
+    Args:
+        file_path (Path): File path
+
+    Returns:
+        Optional[MutableMapping[str, Any]]: JSON loaded data
+    """
     if file_path.exists():
         # return toml.loads(file_path.read_text())
-        return json.loads(file_path.read_text())
+        data = json.loads(file_path.read_text())
+        if not data:
+            return None
+        return data
     else:
         return None
 
 
 def save_data(lock_file_data: MutableMapping[str, Any]):
-    # lock_file.write_text(toml.dumps(lock_file_data))
-    config.SETTINGS.lock_file.write_text(json.dumps(lock_file_data, indent=4))
+    """Save lock file data to JSON file.
+
+    Args:
+        lock_file_data (MutableMapping[str, Any]): Lock file data
+    """
+    _lock_file = get_lock_file()
+    _lock_file.write_text(json.dumps(lock_file_data, indent=4))
 
 
 def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None):
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Apply node lock file data.
+
+    Args:
+        node (LabbyNode): Labby node object
+        project (Optional[LabbyProject], optional): Labby project object. Defaults to None.
+
+    Raises:
+        typer.Exit: Cannot save node in lock file because project not present.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         if not project:
             utils.console.log("Cannot save node in lock file", style="error")
             raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-            config.SETTINGS.environment.provider.name
-        ]["projects"].get(node.project.name)
+        env = get_config_env()
+        project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(node.project.name)
 
         if project_lock_file_data is None:
             if not project:
                 utils.console.log("Cannot save node in lock file", style="error")
                 raise typer.Exit(1)
-            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
-                "projects"
-            ].update(gen_project_data(project))
-            project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-                config.SETTINGS.environment.provider.name
-            ]["projects"][node.project.name]
+            lock_file_data[env.name][env.provider.name]["projects"].update(gen_project_data(project))
+            project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"][node.project.name]
         project_lock_file_data["nodes"].update(gen_node_data(node))
 
     save_data(lock_file_data)
 
 
 def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None):
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Apply link lock file data.
+
+    Args:
+        link (LabbyLink): Labby link object
+        project (Optional[LabbyProject], optional): Labby project object. Defaults to None.
+
+    Raises:
+        typer.Exit: Cannot save node in lock file because project not present.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         if not project:
             utils.console.log("Cannot save link in lock file", style="error")
             raise typer.Exit(1)
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-            config.SETTINGS.environment.provider.name
-        ]["projects"].get(link.project.name)
+        env = get_config_env()
+        project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(link.project.name)
 
         if project_lock_file_data is None:
             if not project:
                 utils.console.log("Cannot save link in lock file, missing project data", style="error")
                 raise typer.Exit(1)
-            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
-                "projects"
-            ].update(gen_project_data(project))
-            project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-                config.SETTINGS.environment.provider.name
-            ]["projects"][link.project.name]
+            lock_file_data[env.name][env.provider.name]["projects"].update(gen_project_data(project))
+            project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"][link.project.name]
         project_lock_file_data["links"].update(gen_link_data(link))
 
     save_data(lock_file_data)
 
 
 def apply_project_data(project: LabbyProject):
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Apply project lock file data.
+
+    Args:
+        project (LabbyProject): Labby project object.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-            config.SETTINGS.environment.provider.name
-        ]["projects"].get(project.name)
+        env = get_config_env()
+        project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project.name)
 
         if project_lock_file_data is None:
-            lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
-                "projects"
-            ].update(gen_project_data(project))
+            lock_file_data[env.name][env.provider.name]["projects"].update(gen_project_data(project))
         else:
             project_lock_file_data.update(labels=project.labels)
 
@@ -126,13 +211,20 @@ def apply_project_data(project: LabbyProject):
 
 
 def get_project_data(project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Get project data from lock file.
+
+    Args:
+        project_name (str): Name of the project
+
+    Returns:
+        Optional[Dict[str, Any]]: Project data if available.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
     try:
-        return lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name][
-            "projects"
-        ].get(project_name)
+        env = get_config_env()
+        return lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
     except KeyError:
         # Initialize lock file data if new environment/provider
         lock_file_data.update(gen_lock_file_data())
@@ -141,12 +233,21 @@ def get_project_data(project_name: str) -> Optional[Dict[str, Any]]:
 
 
 def get_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Get node data from lock file.
+
+    Args:
+        node_name (str): Name of the node.
+        project_name (str): Name of the project.
+
+    Returns:
+        Optional[Dict[str, Any]]: Node data if available.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
-    project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-        config.SETTINGS.environment.provider.name
-    ]["projects"].get(project_name)
+
+    env = get_config_env()
+    project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
         return None
@@ -155,12 +256,20 @@ def get_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]
 
 
 def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Get link data from lock file.
+
+    Args:
+        link_name (str): Name of the link.
+        project_name (str): Name of the project.
+    Returns:
+        Optional[Dict[str, Any]]: Link data if available.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
-    project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-        config.SETTINGS.environment.provider.name
-    ]["projects"].get(project_name)
+
+    env = get_config_env()
+    project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
         return None
@@ -169,21 +278,38 @@ def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]
 
 
 def delete_project_data(project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Delete project data on lock file.
+
+    Args:
+        project_name (str): Name of the project.
+
+    Returns:
+        Optional[Dict[str, Any]]: Project data if present.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
-    return lock_file_data[config.SETTINGS.environment.name][config.SETTINGS.environment.provider.name]["projects"].pop(
-        project_name, None
-    )
+
+    env = get_config_env()
+    return lock_file_data[env.name][env.provider.name]["projects"].pop(project_name, None)
 
 
 def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Delete node data on lock file.
+
+    Args:
+        node_name (str): Name of the node.
+        project_name (str): Name of the project.
+
+    Returns:
+        Optional[Dict[str, Any]]: Node data if present.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
-    project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-        config.SETTINGS.environment.provider.name
-    ]["projects"].get(project_name)
+
+    env = get_config_env()
+    project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
         return None
@@ -192,12 +318,21 @@ def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, An
 
 
 def delete_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]:
-    lock_file_data = read_data(config.SETTINGS.lock_file)
-    if not lock_file_data:
+    """Delete link data on lock file.
+
+    Args:
+        link_name (str): Name of the link.
+        project_name (str): Name of the project.
+
+    Returns:
+        Optional[Dict[str, Any]]: Link data if present.
+    """
+    lock_file_data = read_data(get_lock_file())
+    if lock_file_data is None:
         return None
-    project_lock_file_data = lock_file_data[config.SETTINGS.environment.name][
-        config.SETTINGS.environment.provider.name
-    ]["projects"].get(project_name)
+
+    env = get_config_env()
+    project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
         return None

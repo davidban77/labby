@@ -120,8 +120,7 @@ def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str
 
 
 def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
-    """Catches errors and exceptions and rich prints it
-    """
+    """Catches errors and exceptions and rich prints it."""
     def decorator_error_catcher(func):
         @functools.wraps(func)
         def wrapper_error_catcher(*args, **kwargs):
