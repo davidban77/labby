@@ -1,8 +1,9 @@
 import os
 import typer
 import toml
-# from labby.providers import register_service
+from labby.providers import services
 from labby import utils
+from labby.models import LabbyProvider
 
 from pathlib import Path
 from typing import MutableMapping, Optional, Dict, List, Any, Literal
@@ -154,7 +155,7 @@ def get_config_path() -> Path:
     return config_file
 
 
-def get_config_env() -> EnvironmentSettings:
+def get_environment() -> EnvironmentSettings:
     """Get Environment object from SETTINGS.
 
     Raises:
@@ -164,13 +165,29 @@ def get_config_env() -> EnvironmentSettings:
         EnvironmentSettings: Environment object
     """
     if SETTINGS is None:
-        raise ValueError("Configuration is not set")
+        utils.console.log("No config settings applied. Please check configuration file labby.toml", style="error")
+        raise typer.Exit(1)
     return SETTINGS.environment
+
+
+def get_provider() -> LabbyProvider:
+    """[summary]
+
+    Raises:
+        typer.Exit: [description]
+
+    Returns:
+        LabbyProvider: [description]
+    """
+    # # Importing at command runtime - not import load time
+    # from labby.config import SETTINGS
+    env = get_environment()
+    return services.get(env.provider.name, settings=env.provider)
 
 
 def load_toml(config_file: Path) -> MutableMapping:
     """
-    Reades TOML file from Path
+    Read TOML file from Path.
     """
     return toml.loads(config_file.read_text())
 

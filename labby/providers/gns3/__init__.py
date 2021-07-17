@@ -1,5 +1,9 @@
-from labby.config import ProviderSettings
+from __future__ import annotations
 from .provider import GNS3Provider
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from labby.config import ProviderSettings
 
 
 class GNS3ProviderBuilder:

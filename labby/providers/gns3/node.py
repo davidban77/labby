@@ -1,6 +1,6 @@
-from labby.providers.gns3.provisioner import bootstrap
 import time
 import re
+import labby.providers.gns3.console_provisioner as node_console
 from typing import Dict, List, Optional
 from gns3fy.templates import Template, get_templates
 from gns3fy.nodes import Node
@@ -16,15 +16,18 @@ from labby import config, lock_file
 from labby.providers.gns3.utils import node_net_os, node_status
 from nornir.core.task import Task
 from nornir_scrapli.tasks import send_command
-# from nornir_utils.plugins.functions import print_result
+
+
+SHOW_RUN_COMMANDS = {
+    "arista_eos": "show run",
+    "cisco_ios": "show run",
+    "cisco_iosxe": "show run",
+    "cisco_nxos": "show run",
+}
 
 
 def backup_task(task: Task):
-    if task.host.platform == "cisco_iosxe" or task.host.platform == "cisco_nxos":
-        command = "show run"
-    else:
-        command = "show run"
-    task.run(task=send_command, command=command)
+    task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
 
 
 def dissect_gns3_template_name(template_name: str) -> Optional[Dict[str, str]]:
@@ -75,8 +78,6 @@ class GNS3Node(LabbyNode):
             mgmt_port=mgmt_port,
             **data,
         )
-        # self.name = name
-        # self._base: Node = node
         self._template = self._get_gns3_template()
         self._update_labby_node_attrs()
 
@@ -100,8 +101,9 @@ class GNS3Node(LabbyNode):
             raise typer.Exit(1)
 
         # Update attributes from template
-        self.category = self._template.category
-        self.builtin = self._template.builtin
+        if self._template is not None:
+            self.category = self._template.category
+            self.builtin = self._template.builtin
 
         if self.template:
             node_data = dissect_gns3_template_name(self.template)
@@ -228,7 +230,7 @@ class GNS3Node(LabbyNode):
             raise typer.Exit(1)
 
         console.log(f"[b]({self.project.name})({self.name})[/] Running bootstrap configuration process")
-        if bootstrap(server_host=server_host, node=self, config=config):
+        if node_console.run_bootstrap_config(server_host=server_host, node=self, config=config):
             console.log(f"[b]({self.project.name})({self.name})[/] Bootstrapped node", style="good")
             return True
         else:
@@ -254,6 +256,31 @@ class GNS3Node(LabbyNode):
             result.raise_on_error()
             return True
         except Exception:
+            return False
+
+    def get_config_over_console(self, user: Optional[str] = None, password: Optional[str] = None) -> bool:
+        if self.status != "started":
+            self.start()
+            time.sleep(30)
+
+        server_host = dissect_url(self._base._connector.base_url)[1]
+        if not server_host:
+            console.log(f"[b]({self.project.name})({self.name})[/] GNS3 server host could not be parsed", style="error")
+            raise typer.Exit(1)
+
+        result = node_console.run_command(
+            server_host=server_host,
+            command=SHOW_RUN_COMMANDS[self.net_os],  # type: ignore
+            node=self,
+            user=user,
+            password=password,
+        )
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Node's config", style="good")
+        console.print(result, highlight=True)
+        if result:
+            return True
+        else:
             return False
 
     def render_ports_detail(self) -> ConsoleRenderable:

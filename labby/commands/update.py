@@ -1,8 +1,14 @@
+"""Labby update command.
+
+Handles all update/modify related actions of labby resources.
+
+Example:
+> labby update --help
+"""
 from enum import Enum
 import typer
 from typing import Any, Dict, Optional
 from distutils.util import strtobool
-from labby.providers import get_provider
 from labby import utils
 from labby import config
 
@@ -60,8 +66,7 @@ def project(
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
 
-    env = config.get_config_env()
-    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -99,8 +104,7 @@ def node(
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
 
-    env = config.get_config_env()
-    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -142,8 +146,7 @@ def node_template(
         utils.console.log("Value needs to be passed.", style="error")
         raise typer.Exit(1)
 
-    env = config.get_config_env()
-    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
+    provider = config.get_provider()
     template = provider.search_template(template_name)
     if not template:
         utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
@@ -175,8 +178,7 @@ def link_filter(
     else:
         filters = dict({filter_type: filter_value})
 
-    env = config.get_config_env()
-    provider = get_provider(provider_name=env.provider.name, provider_settings=env.provider)
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")

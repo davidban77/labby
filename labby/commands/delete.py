@@ -1,7 +1,5 @@
 import typer
-from labby.providers import get_provider
-from labby import utils
-from labby import config
+from labby import utils, config
 
 
 app = typer.Typer(help="Deletes a Resource on Network Provider Lab")
@@ -18,9 +16,7 @@ def project(
 
     > labby delete project --project lab01
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -41,9 +37,7 @@ def node(
 
     > labby delete node --project lab01 --node r1
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -71,9 +65,7 @@ def link(
 
     > labby delete link --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")

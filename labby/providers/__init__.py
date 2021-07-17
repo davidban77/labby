@@ -1,4 +1,4 @@
-import typer
+# import typer
 from .gns3 import GNS3ProviderBuilder
 
 # from labby import config
@@ -6,9 +6,9 @@ from .gns3 import GNS3ProviderBuilder
 
 # from labby import settings
 # from labby.models import ProviderGeneral, ProviderDocker
-from labby.config import ProviderSettings
-from labby.models import LabbyProvider
-from labby import utils
+# from labby.config import ProviderSettings
+# from labby.models import LabbyProvider
+# from labby import utils
 
 
 class ObjectFactory:
@@ -40,27 +40,35 @@ def register_service(provider_name: str, provider_type: str):
         raise NotImplementedError(provider_type)
 
 
-def get_provider(provider_name: str, provider_settings: ProviderSettings) -> LabbyProvider:
-    provider = services.get(
-        provider_name,
-        settings=provider_settings,
-    )
-    # if header_msg is not None:
-    #     utils.provider_header(
-    #         environment=settings.SETTINGS.labby.environment,
-    #         provider=settings.SETTINGS.labby.provider,
-    #         provider_version=provider.get_version(),
-    #         msg=header_msg,
-    #     )
-    return provider
+# def get_provider(provider_name: str, provider_settings: ProviderSettings) -> LabbyProvider:
+#     provider = services.get(
+#         provider_name,
+#         settings=provider_settings,
+#     )
+#     # if header_msg is not None:
+#     #     utils.provider_header(
+#     #         environment=settings.SETTINGS.labby.environment,
+#     #         provider=settings.SETTINGS.labby.provider,
+#     #         provider_version=provider.get_version(),
+#     #         msg=header_msg,
+#     #     )
+#     return provider
 
 
-def get_provider_instance() -> LabbyProvider:
-    # Importing at command runtime - not import load time
-    from labby.config import SETTINGS
-    if not SETTINGS:
-        utils.console.log("No config settings applied. Please check configuration file labby.toml", style="error")
-        raise typer.Exit(1)
-    return get_provider(
-        provider_name=SETTINGS.environment.provider.name, provider_settings=SETTINGS.environment.provider
-    )
+# def get_config_provider() -> LabbyProvider:
+#     """[summary]
+
+#     Raises:
+#         typer.Exit: [description]
+
+#     Returns:
+#         LabbyProvider: [description]
+#     """
+#     # Importing at command runtime - not import load time
+#     from labby.config import SETTINGS
+#     if not SETTINGS:
+#         utils.console.log("No config settings applied. Please check configuration file labby.toml", style="error")
+#         raise typer.Exit(1)
+#     return get_provider(
+#         provider_name=SETTINGS.environment.provider.name, provider_settings=SETTINGS.environment.provider
+#     )

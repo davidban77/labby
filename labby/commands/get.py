@@ -1,10 +1,14 @@
-# from labby.models import LabbyProvider
+"""Labby get command.
+
+Handles all get/retrive information actions of labby resources.
+
+Example:
+> labby get --help
+"""
 import typer
 from enum import Enum
 from typing import Optional
-from labby.providers import get_provider_instance
-from labby import utils
-# from labby import config
+from labby import utils, config
 
 
 app = typer.Typer(help="Retrieves information on resources of a Network Provider Lab")
@@ -17,14 +21,14 @@ app.add_typer(node_app, name="node")
 app.add_typer(link_app, name="link")
 
 
-class ProjectFilter(str, Enum):
+class ProjectFilter(str, Enum):  # noqa: D101
     status = "status"
     auto_start = "auto_start"
     auto_open = "auto_open"
     auto_close = "auto_close"
 
 
-class NodeFilter(str, Enum):
+class NodeFilter(str, Enum):  # noqa: D101
     node_type = "node_type"
     category = "category"
     status = "status"
@@ -39,10 +43,9 @@ def project_list(
     Retrieve a summary list of projects configured on server.
 
     Example:
-
     > labby get project list --filter status --value opened
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     utils.console.log(provider.render_project_list(field=filter, value=value))
 
 
@@ -54,10 +57,9 @@ def project_detail(
     Retrieves Project details.
 
     Example:
-
     > labby get project detail --project lab01
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -68,9 +70,9 @@ def project_detail(
     utils.console.log(project.render_links_summary())
     project.to_initial_state()
 
-    # Aver
-    if project.nornir:
-        utils.console.log(project.nornir.inventory.hosts)
+    # TODO: Delete this
+    # if project.nornir:
+    #     utils.console.log(project.nornir.inventory.hosts)
 
 
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
@@ -83,10 +85,9 @@ def node_list(
     Retrieve a summary list of nodes configured on a project.
 
     Example:
-
     > labby get node list --project lab01 --filter status --value started
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -105,10 +106,9 @@ def node_template_list(
     Retrieve a summary list of node templates configured on a provider.
 
     Example:
-
     > labby get node template-list
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     utils.console.log(provider.render_templates_list(field=filter, value=value))
 
 
@@ -121,10 +121,9 @@ def node_detail(
     Retrieves Node details.
 
     Example:
-
     > labby get node detail --project lab01 --node r1
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -147,20 +146,16 @@ def node_detail(
 def node_config(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    console: bool = typer.Option(False, "--console", "-c", help="Retrieve configuration over console"),
+    user: Optional[str] = typer.Option(None, "--user", "-u", help="User to use for console connection"),
+    password: Optional[str] = typer.Option(None, "--password", "-w", help="Password to use for console connection"),
 ):
-    """[summary]
+    """Retrieve node running configuration.
 
-    Args:
-        project_name (str, optional): [description]. Defaults to .
-        node_name (str, optional): [description]. Defaults to typer.Option(..., "--node", "-n", help="Node name").
-
-    Raises:
-        typer.Exit: [description]
-        typer.Exit: [description]
-        typer.Exit: [description]
-        typer.Exit: [description]
+    Example:
+    > labby get node detail --project lab01 --node r1
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -171,11 +166,13 @@ def node_config(
         raise typer.Exit(1)
     utils.console.log(node)
 
-    if node.nornir:
-        utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
+    if not console:
+        if node.nornir:
+            utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
 
-    # Aver
-    node.get_config()
+        node.get_config()
+    else:
+        node.get_config_over_console(user=user, password=password)
 
 
 @node_app.command(short_help="Retrieves details of a node template", name="template-detail")
@@ -186,10 +183,9 @@ def node_template_detail(
     Retrieves Node Template details.
 
     Example:
-
     > labby get node template-detail --template "Arista EOS vEOS 4.25F"
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     template = provider.search_template(template_name=template_name)
     if not template:
         utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
@@ -207,10 +203,9 @@ def link_list(
     Retrieve a summary list of links configured on a project.
 
     Example:
-
     > labby get link list --project lab01
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -232,10 +227,9 @@ def link_detail(
     Retrieves details of a link.
 
     Example:
-
     > labby get link detail --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
-    provider = get_provider_instance()
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")

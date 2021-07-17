@@ -1,9 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional
 import typer
-from labby.providers import get_provider
-from labby import utils
-from labby import config
+from labby import utils, config
 
 
 app = typer.Typer(help="Creates a Resource on Network Provider Lab")
@@ -30,9 +28,7 @@ def project(
 
     > labby create project --project lab01 --label mpls --label v0.1.0
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if project:
         utils.console.log(f"Project [cyan i]{project_name}[/] already created. Nothing to do...", style="error")
@@ -62,9 +58,7 @@ def node(
 
     > labby get node template-list
     """
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
@@ -100,9 +94,7 @@ def link(
             filters = dict({filter_type: int(filter_value)})
         else:
             filters = dict({filter_type: filter_value})
-    provider = get_provider(
-        provider_name=config.SETTINGS.environment.provider.name, provider_settings=config.SETTINGS.environment.provider
-    )
+    provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")

@@ -73,7 +73,7 @@ def gen_lock_file_data(project: Optional[LabbyProject] = None):
     Returns:
         Dict[str, Any]: {env_name: {env_provider: {projects: project_data}}}
     """
-    env = config.get_config_env()
+    env = config.get_environment()
 
     # Initialize lock file data
     lock_file_data = {env.name: {env.provider.name: {"projects": gen_project_data(project) if project else {}}}}
@@ -128,7 +128,7 @@ def apply_node_data(node: LabbyNode, project: Optional[LabbyProject] = None):
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        env = config.get_config_env()
+        env = config.get_environment()
         project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(node.project.name)
 
         if project_lock_file_data is None:
@@ -160,7 +160,7 @@ def apply_link_data(link: LabbyLink, project: Optional[LabbyProject] = None):
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        env = config.get_config_env()
+        env = config.get_environment()
         project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(link.project.name)
 
         if project_lock_file_data is None:
@@ -185,7 +185,7 @@ def apply_project_data(project: LabbyProject):
         lock_file_data = gen_lock_file_data(project)
 
     else:
-        env = config.get_config_env()
+        env = config.get_environment()
         project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project.name)
 
         if project_lock_file_data is None:
@@ -209,7 +209,7 @@ def get_project_data(project_name: str) -> Optional[Dict[str, Any]]:
     if lock_file_data is None:
         return None
     try:
-        env = config.get_config_env()
+        env = config.get_environment()
         return lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
     except KeyError:
         # Initialize lock file data if new environment/provider
@@ -232,7 +232,7 @@ def get_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]
     if lock_file_data is None:
         return None
 
-    env = config.get_config_env()
+    env = config.get_environment()
     project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
@@ -254,7 +254,7 @@ def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]
     if lock_file_data is None:
         return None
 
-    env = config.get_config_env()
+    env = config.get_environment()
     project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
@@ -276,7 +276,7 @@ def delete_project_data(project_name: str) -> Optional[Dict[str, Any]]:
     if lock_file_data is None:
         return None
 
-    env = config.get_config_env()
+    env = config.get_environment()
     return lock_file_data[env.name][env.provider.name]["projects"].pop(project_name, None)
 
 
@@ -294,7 +294,7 @@ def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, An
     if lock_file_data is None:
         return None
 
-    env = config.get_config_env()
+    env = config.get_environment()
     project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:
@@ -317,7 +317,7 @@ def delete_link_data(link_name: str, project_name: str) -> Optional[Dict[str, An
     if lock_file_data is None:
         return None
 
-    env = config.get_config_env()
+    env = config.get_environment()
     project_lock_file_data = lock_file_data[env.name][env.provider.name]["projects"].get(project_name)
 
     if project_lock_file_data is None:

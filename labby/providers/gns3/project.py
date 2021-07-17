@@ -237,12 +237,20 @@ class GNS3Project(LabbyProject):
                 mgmt_port=mgmt_port,
                 **kwargs,
             )
+
+            # Assign nornir object
+            node.nornir = self.nornir.filter(filter_func=lambda h: h.name == name)  # type: ignore
+
+            # Save node in project
+            self.nodes[name] = node
             time.sleep(2)
-            # console.log(node)
             console.log(f"[b]({self.name})({node.name})[/] Node created", style="good")
+
+            # Apply node to lock file
             lock_file.apply_node_data(node, self)
+
+            # Refresh Nornir object
             self.init_nornir()
-            node.nornir = self.nornir.inventory.hosts[gns3_node.name]  # type: ignore
             return node
 
     # def delete_node(self, name: str) -> bool:
