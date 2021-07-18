@@ -1,0 +1,4 @@
+---
+interfaces:
+  - name: Ethernet1
+    description: Test description

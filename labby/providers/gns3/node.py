@@ -234,10 +234,15 @@ class GNS3Node(LabbyNode):
             raise typer.Exit(1)
 
         console.log(f"[b]({self.project.name})({self.name})[/] Running bootstrap configuration process")
-        if node_console.run_bootstrap_config(server_host=server_host, node=self, config=config):
+        response = node_console.run_action(action="bootstrap", server_host=server_host, data=config, node=self)
+        if not response.failed:
             console.log(f"[b]({self.project.name})({self.name})[/] Bootstrapped node", style="good")
+            console.rule(title=f"Start of bootstrap capture for: [b cyan]{self.name}")
+            console.print(response.result, highlight=True)
+            console.rule(title=f"End of bootstrap capture for: [b cyan]{self.name}")
             return True
         else:
+            console.print(response.result, highlight=True)
             console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
             return False
 
@@ -251,9 +256,9 @@ class GNS3Node(LabbyNode):
 
         console.log(f"[b]({self.project.name})({self.name})[/] Applying configuration")
         result: AggregatedResult = self.nornir.run(task=config_task, config=config, name="apply config")
-        console.rule(title=f"Start of onfiguration applied for: [b cyan]{self.name}")
+        console.rule(title=f"Start of configuration applied for: [b cyan]{self.name}")
         console.print(result[self.name][-1], highlight=True)
-        console.rule(title=f"End of onfiguration applied for: [b cyan]{self.name}")
+        console.rule(title=f"End of configuration applied for: [b cyan]{self.name}")
         try:
             result.raise_on_error()
             return True
@@ -273,12 +278,21 @@ class GNS3Node(LabbyNode):
             raise typer.Exit(1)
 
         console.log(f"[b]({self.project.name})({self.name})[/] Applying configuration over console")
-        if not node_console.run_config(server_host=server_host, config=config, node=self):
-            console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
-            return False
-        else:
-            console.log(f"[b]({self.project.name})({self.name})[/] Node configured", style="good")
+        response = node_console.run_action(
+            action="config", server_host=server_host, data=config, node=self, user=user, password=password
+        )
+        if not response.failed:
+            console.log(f"[b]({self.project.name})({self.name})[/] Node configured over console", style="good")
+            console.rule(title=f"Start of config applied for: [b cyan]{self.name}")
+            console.print(response.result, highlight=True)
+            console.rule(title=f"End of config applied for: [b cyan]{self.name}")
             return True
+        else:
+            console.print(response.result, highlight=True)
+            console.log(
+                f"[b]({self.project.name})({self.name})[/] Node could not be configured over console", style="error"
+            )
+            return False
 
     def get_config(self) -> bool:
         if self.nornir is None:
@@ -309,17 +323,20 @@ class GNS3Node(LabbyNode):
             console.log(f"[b]({self.project.name})({self.name})[/] GNS3 server host could not be parsed", style="error")
             raise typer.Exit(1)
 
-        result = node_console.run_command(
+        response = node_console.run_action(
+            action="command",
             server_host=server_host,
-            command=SHOW_RUN_COMMANDS[self.net_os],  # type: ignore
+            data=SHOW_RUN_COMMANDS[self.net_os],  # type: ignore
             node=self,
             user=user,
             password=password,
         )
 
         console.log(f"[b]({self.project.name})({self.name})[/] Node's config", style="good")
-        console.print(result, highlight=True)
-        if result:
+        console.rule(title=f"Start of configuration retrieved for: [b cyan]{self.name}")
+        console.print(response.result, highlight=True)
+        console.rule(title=f"End of configuration retrieved for: [b cyan]{self.name}")
+        if not response.failed:
             return True
         else:
             return False

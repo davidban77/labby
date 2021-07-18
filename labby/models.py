@@ -114,6 +114,12 @@ class LabbyNode(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
+    def apply_config_over_console(
+        self, config: str, user: Optional[str] = None, password: Optional[str] = None
+    ) -> bool:
+        pass
+
+    @abc.abstractmethod
     def get_config(self) -> bool:
         pass
 

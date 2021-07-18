@@ -186,6 +186,7 @@ def node_config(
     vars_file: Path = typer.Option(..., "--vars", "-v", help="Variables YAML file. For example: vars.yml"),
     user: str = typer.Option(None, help="Node user"),
     password: str = typer.Option(None, help="Node password"),
+    console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
 ):
     r"""
     Configures a Node.
@@ -240,7 +241,10 @@ def node_config(
     utils.console.log(f"[b]({project.name})({node.name})[/] Node config rendered", style="good")
 
     # Apply node configuration
-    applied = node.apply_config(config=cfg_data, user=user, password=password)
+    if console:
+        applied = node.apply_config_over_console(config=cfg_data, user=user, password=password)
+    else:
+        applied = node.apply_config(config=cfg_data, user=user, password=password)
     if applied:
         utils.console.log(f"[b]({project.name})({node.name})[/] Node config applied", style="good")
     else:
