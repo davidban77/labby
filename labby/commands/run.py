@@ -7,9 +7,10 @@ Example:
 """
 import typer
 from enum import Enum
-from typing import Optional, Literal
+from typing import Any, Dict, Optional, Literal
 
 from pathlib import Path
+
 # from labby.providers import get_config_provider
 from labby import utils, config
 from netaddr import IPNetwork
@@ -175,3 +176,72 @@ def bootstrap(
 
     # Run node bootstrap config process
     node.bootstrap(config=cfg_data, boot_delay=boot_delay)
+
+
+@node_app.command(name="config", short_help="Configures a Node.")
+def node_config(
+    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    config_template: Path = typer.Option(..., "--template", "-t", help="Config template file"),
+    vars_file: Path = typer.Option(..., "--vars", "-v", help="Variables YAML file. For example: vars.yml"),
+    user: str = typer.Option(None, help="Node user"),
+    password: str = typer.Option(None, help="Node password"),
+):
+    r"""
+    Configures a Node.
+
+    > labby run node config -p lab01 -n r1 --user netops --password netops123 -t bgp.conf.j2 -v r1.yml
+    """
+    # Get network lab provider
+    provider = config.get_provider()
+
+    # Get project
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    # Get node to configure
+    node = project.search_node(node_name)
+    if not node:
+        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    # Check all other parameters are set
+    if node.net_os is None:
+        utils.console.log(
+            f"Node [cyan i]{node_name}[/] net_os parameter must be set. Verify node template name", style="error"
+        )
+        raise typer.Exit(code=1)
+
+    if node.mgmt_port is None:
+        utils.console.log(
+            f"Node [cyan i]{node_name}[/] mgmt_port parameter must be set. Run update command", style="error"
+        )
+        raise typer.Exit(code=1)
+    if node.mgmt_addr is None:
+        utils.console.log(
+            f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
+        )
+        raise typer.Exit(code=1)
+
+    if any(param is None for param in [user, password]):
+        utils.console.log("All arguments must be set: user, password", style="error")
+        raise typer.Exit(code=1)
+
+    # Render config
+    config_template_vars: Dict[str, Any] = utils.load_yaml_file(str(vars_file))
+    cfg_data = render_from_file(
+        path=str(config_template.parent),
+        template=config_template.name,
+        jinja_filters={"ipaddr": ipaddr_renderer},
+        **config_template_vars,
+    )
+    utils.console.log(f"[b]({project.name})({node.name})[/] Node config rendered", style="good")
+
+    # Apply node configuration
+    applied = node.apply_config(config=cfg_data, user=user, password=password)
+    if applied:
+        utils.console.log(f"[b]({project.name})({node.name})[/] Node config applied", style="good")
+    else:
+        utils.console.log(f"[b]({project.name})({node.name})[/] Node config not applied", style="error")

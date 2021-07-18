@@ -51,6 +51,7 @@ def node(
     Starts a Node.
 
     Example:
+
     > labby start node --project lab01 --node r1
     """
     provider = config.get_provider()

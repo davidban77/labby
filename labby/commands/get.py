@@ -43,6 +43,7 @@ def project_list(
     Retrieve a summary list of projects configured on server.
 
     Example:
+
     > labby get project list --filter status --value opened
     """
     provider = config.get_provider()
@@ -57,6 +58,7 @@ def project_detail(
     Retrieves Project details.
 
     Example:
+
     > labby get project detail --project lab01
     """
     provider = config.get_provider()
@@ -85,6 +87,7 @@ def node_list(
     Retrieve a summary list of nodes configured on a project.
 
     Example:
+
     > labby get node list --project lab01 --filter status --value started
     """
     provider = config.get_provider()
@@ -106,6 +109,7 @@ def node_template_list(
     Retrieve a summary list of node templates configured on a provider.
 
     Example:
+
     > labby get node template-list
     """
     provider = config.get_provider()
@@ -121,6 +125,7 @@ def node_detail(
     Retrieves Node details.
 
     Example:
+
     > labby get node detail --project lab01 --node r1
     """
     provider = config.get_provider()
@@ -153,6 +158,7 @@ def node_config(
     """Retrieve node running configuration.
 
     Example:
+
     > labby get node detail --project lab01 --node r1
     """
     provider = config.get_provider()
@@ -183,6 +189,7 @@ def node_template_detail(
     Retrieves Node Template details.
 
     Example:
+
     > labby get node template-detail --template "Arista EOS vEOS 4.25F"
     """
     provider = config.get_provider()
@@ -203,6 +210,7 @@ def link_list(
     Retrieve a summary list of links configured on a project.
 
     Example:
+
     > labby get link list --project lab01
     """
     provider = config.get_provider()
@@ -227,6 +235,7 @@ def link_detail(
     Retrieves details of a link.
 
     Example:
+
     > labby get link detail --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
     provider = config.get_provider()

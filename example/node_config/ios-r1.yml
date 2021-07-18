@@ -1,0 +1,4 @@
+---
+interfaces:
+  - name: Gi0/1
+    description: Test description

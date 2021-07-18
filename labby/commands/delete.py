@@ -1,3 +1,10 @@
+"""Labby delete command.
+
+Handles the deletion of labby resources.
+
+Example:
+> labby delete --help
+"""
 import typer
 from labby import utils, config
 
@@ -21,6 +28,8 @@ def project(
     if not project:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Delete project
     utils.console.log(project)
     project.delete()
 
@@ -46,6 +55,8 @@ def node(
     if not node:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Delete node
     utils.console.log(node)
     node.delete()
 
@@ -76,5 +87,7 @@ def link(
             f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
         )
         raise typer.Exit(1)
+
+    # Delete link
     utils.console.log(link)
     link.delete()

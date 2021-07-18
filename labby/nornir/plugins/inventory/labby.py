@@ -46,8 +46,8 @@ class LabbyNornirInventory(InventoryPlugin):
     def __init__(self, project: LabbyProject) -> None:
         self.project = project
         # self.project.get()
-        if not self.project.nodes:
-            raise ValueError(f"No Node in Project: {self.project.name}")
+        # if not self.project.nodes:
+        #     raise ValueError(f"No Node in Project: {self.project.name}")
 
     def load(self) -> Inventory:
         hosts = Hosts()
@@ -67,8 +67,9 @@ class LabbyNornirInventory(InventoryPlugin):
 
             host["groups"] = []
 
+            host_platform = node.net_os if node.net_os != "cisco_ios" else "cisco_iosxe"
             hosts[node.name] = _set_host(
-                data=host["data"], name=host["name"], groups=host["groups"], host=host, host_platform=node.net_os
+                data=host["data"], name=host["name"], groups=host["groups"], host=host, host_platform=host_platform
             )
             # print(hosts[node.name].keys(), type(hosts[node.name]))
 

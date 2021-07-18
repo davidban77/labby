@@ -22,6 +22,7 @@ def project(
     Stops a Project and optionally stops the nodes preemptively.
 
     Example:
+
     > labby stop project --project lab01
     """
     provider = config.get_provider()
@@ -43,6 +44,7 @@ def node(
     Stops a Node.
 
     Example:
+
     > labby stop node --project lab01 --node r1
     """
     provider = config.get_provider()

@@ -52,6 +52,7 @@ def project(
     """Update a Project based on a parameter and its value.
 
     Example:
+
     > labby update project -p lab01 --parameter auto_close --bool-value yes
     """
     if string_value:
@@ -90,6 +91,7 @@ def node(
     """Update a Node based on a parameter and its value.
 
     Example:
+
     > labby update node -p lab01 -n r1 --parameter name --string-value new_r1
     """
     if string_value:
@@ -132,6 +134,7 @@ def node_template(
     """Update a Node Template based on a parameter and its value.
 
     Example:
+
     > labby update template -t "Arista EOS vEOS 4.25F" --parameter ram --int-value 2048
     """
     if string_value:
@@ -170,6 +173,7 @@ def link_filter(
     """Update a Link based on a parameter and its value.
 
     Example:
+
     > labby update link -p lab01 -na r1 -pa Ethernet2 -nb r2 -pb Ethernet2 --filter-type packet_loss --filter-value 77
     """
     filters: Dict[str, Any]

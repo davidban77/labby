@@ -1,3 +1,10 @@
+"""Labby configuration command.
+
+Handles labby configuration.
+
+Example:
+> labby configuration --help
+"""
 import typer
 
 from pathlib import Path
@@ -21,7 +28,7 @@ def show(
     ctx: typer.Context,
 ):
     """
-    Retrieves configuration parameters at a specified location
+    Retrieves configuration parameters at a specified location.
 
     Example:
 
@@ -47,7 +54,7 @@ def edit(
     ctx: typer.Context,
 ):
     """
-    Launches configuration file for edit
+    Launches configuration file for edit.
 
     Example:
 
@@ -65,7 +72,7 @@ def environments(
     ctx: typer.Context,
 ):
     """
-    Shows information from all environments in the configuration
+    Shows information from all environments in the configuration.
 
     Example:
 
@@ -109,8 +116,9 @@ def environments(
         prov_layouts.append(Layout(Panel(Align.center(table, vertical="middle"), title="Providers")))
     layout["environments"].split(*env_layouts)
     layout["providers"].split(*prov_layouts)
+    env = config.get_environment()
     layout["footer"].update(
-        Text(f"Active Environment: {config.SETTINGS.environment.name.upper()}", style="bold magenta", justify="center")
+        Text(f"Active Environment: {env.name.upper()}", style="bold magenta", justify="center")
     )
     utils.header(f"Config file at: [bold]{config_file.absolute()}[/]")
     utils.console.print(layout)

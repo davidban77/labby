@@ -26,6 +26,7 @@ DEBUG = False
 PROJECT_SETTINGS = None
 PROVIDER_NAME = os.getenv("LABBY_PROVIDER_NAME")
 ENVIRONMENT_NAME = os.getenv("LABBY_ENVIRONMENT_NAME")
+REQUIRED_PROJECT_FIELDS = ["main", "nodes_spec", "links_spec"]
 
 
 class LabbyBaseConfig:

@@ -1,0 +1,86 @@
+---
+main:
+  name: loki-telegraf-2
+  description: POC of network devices sending logs to Telegraf and Loki
+  contributors: ["David Flores <@netpanda>"]
+  version: "0.0.1"
+  labels: ["telemetry"]
+  # NOTE: Needed when building Nornir inventory
+  mgmt_network: 192.168.0.100/28
+  mgmt_creds:
+    user: "netops"
+    password: "netops123"
+
+nodes_spec:
+  - template: "Cisco IOS CSR1kv 17.3.1a"
+    nodes: ["csr-r3"]
+    net_os: "cisco_ios"
+    mgmt_interface: "Gi1"
+
+  - template: "Arista EOS vEOS 4.25.0FX"
+    nodes: ["eos-r1", "eos-r2", "eos-r3"]
+    net_os: "arista_eos"
+    mgmt_interface: "Management1"
+
+  - template: "Cisco IOS IOSvL3 15.7(3)M3"
+    nodes: ["ios-r1", "ios-r2"]
+    net_os: "cisco_ios"
+    mgmt_interface: "Gi0/0"
+
+  - template: "Cloud"
+    nodes: ["cloud"]
+    net_os: "builtin"
+    config_managed: false
+    labels: ["mgmt"]
+
+  - template: "Ethernet switch"
+    nodes: ["mgmt_switch"]
+    net_os: "builtin"
+    config_managed: false
+    labels: ["mgmt"]
+
+links_spec:
+  - node: "mgmt_switch"
+    links:
+      - { "port": "Ethernet0", "node_b": "cloud", "port_b": "eth0" }
+      - { "port": "Ethernet1", "node_b": "ios-r1", "port_b": "Gi0/0" }
+      - { "port": "Ethernet2", "node_b": "ios-r2", "port_b": "Gi0/0" }
+      - { "port": "Ethernet3", "node_b": "csr-r3", "port_b": "Gi1" }
+      - { "port": "Ethernet4", "node_b": "eos-r1", "port_b": "Management1" }
+      - { "port": "Ethernet5", "node_b": "eos-r2", "port_b": "Management1" }
+      - { "port": "Ethernet6", "node_b": "eos-r3", "port_b": "Management1" }
+  - node: "ios-r1"
+    links:
+      - { "port": "Gi0/1", "node_b": "ios-r2", "port_b": "Gi0/1" }
+      - { "port": "Gi0/2", "node_b": "csr-r3", "port_b": "Gi2" }
+      - { "port": "Gi0/3", "node_b": "eos-r1", "port_b": "Ethernet1", "filter": { "packet_loss": 77 } }
+  - node: "ios-r2"
+    links:
+      - { "port": "Gi0/2", "node_b": "csr-r3", "port_b": "Gi3" }
+  - node: "csr-r3"
+    links:
+      - { "port": "Gi4", "node_b": "eos-r3", "port_b": "Ethernet1" }
+  - node: "eos-r1"
+    links:
+      - { "port": "Ethernet2", "node_b": "eos-r2", "port_b": "Ethernet2" }
+      - { "port": "Ethernet3", "node_b": "eos-r3", "port_b": "Ethernet3" }
+  - node: "eos-r2"
+    links:
+      - { "port": "Ethernet4", "node_b": "eos-r3", "port_b": "Ethernet4" }
+
+vars:
+  defaults:
+    domain: "lab.local"
+
+  groups:
+    dub:
+      asn: 65177
+
+    lon:
+      asn: 65144
+
+  hosts:
+    arista-r1:
+      interfaces:
+        name: "Ethernet2"
+        description: "Some interface test"

@@ -14,8 +14,8 @@ from labby.models import LabbyNode, LabbyProjectInfo, LabbyPort
 from labby.utils import console, dissect_url
 from labby import config, lock_file
 from labby.providers.gns3.utils import node_net_os, node_status
-from nornir.core.task import Task
-from nornir_scrapli.tasks import send_command
+from nornir.core.task import Task, AggregatedResult
+from nornir_scrapli.tasks import send_command, send_config
 
 
 SHOW_RUN_COMMANDS = {
@@ -28,6 +28,10 @@ SHOW_RUN_COMMANDS = {
 
 def backup_task(task: Task):
     task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
+
+
+def config_task(task: Task, config: str):
+    task.run(task=send_config, config=config)
 
 
 def dissect_gns3_template_name(template_name: str) -> Optional[Dict[str, str]]:
@@ -237,6 +241,45 @@ class GNS3Node(LabbyNode):
             console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
             return False
 
+    def apply_config(self, config: str, user: Optional[str] = None, password: Optional[str] = None) -> bool:
+        if self.nornir is None:
+            raise ValueError(f"Check nornir object is not initialised fot the node: {self.name}")
+
+        if self.status != "started":
+            self.start()
+            time.sleep(30)
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Applying configuration")
+        result: AggregatedResult = self.nornir.run(task=config_task, config=config, name="apply config")
+        console.rule(title=f"Start of onfiguration applied for: [b cyan]{self.name}")
+        console.print(result[self.name][-1], highlight=True)
+        console.rule(title=f"End of onfiguration applied for: [b cyan]{self.name}")
+        try:
+            result.raise_on_error()
+            return True
+        except Exception:
+            return False
+
+    def apply_config_over_console(
+        self, config: str, user: Optional[str] = None, password: Optional[str] = None
+    ) -> bool:
+        if self.status != "started":
+            self.start()
+            time.sleep(30)
+
+        server_host = dissect_url(self._base._connector.base_url)[1]
+        if not server_host:
+            console.log(f"[b]({self.project.name})({self.name})[/] GNS3 server host could not be parsed", style="error")
+            raise typer.Exit(1)
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Applying configuration over console")
+        if not node_console.run_config(server_host=server_host, config=config, node=self):
+            console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
+            return False
+        else:
+            console.log(f"[b]({self.project.name})({self.name})[/] Node configured", style="good")
+            return True
+
     def get_config(self) -> bool:
         if self.nornir is None:
             raise ValueError(f"Check nornir object is not initialised fot the node: {self.name}")
@@ -246,12 +289,10 @@ class GNS3Node(LabbyNode):
             time.sleep(30)
 
         result = self.nornir.run(task=backup_task, name="backup config")
-        # print(dir(result))
-        # print(result[self.name])
-        # print(dir(result[self.name][0]))
         console.log(f"[b]({self.project.name})({self.name})[/] Node's config", style="good")
+        console.rule(title=f"Start of configuration retrieved for: [b cyan]{self.name}")
         console.print(result[self.name][-1], highlight=True)
-        # print_result(result)
+        console.rule(title=f"End of configuration retrieved for: [b cyan]{self.name}")
         try:
             result.raise_on_error()
             return True

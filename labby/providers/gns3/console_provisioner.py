@@ -32,7 +32,7 @@ BOOTSTRAP_SETTINGS = {
         "auth_bypass": True,
         "transport": "telnet",
         "comms_return_char": "\r\n",
-        "timeout_ops": 190,
+        "timeout_ops": 2,
     },
     "arista_eos": {
         "auth_bypass": False,
@@ -45,19 +45,19 @@ BOOTSTRAP_SETTINGS = {
         "auth_bypass": True,
         "transport": "telnet",
         "comms_return_char": "\r\n",
-        "timeout_ops": 190,
+        "timeout_ops": 2,
     },
     "cisco_xr": {
         "auth_bypass": True,
         "transport": "telnet",
         "comms_return_char": "\r\n",
-        "timeout_ops": 190,
+        "timeout_ops": 2,
     },
     "juniper_junos": {
         "auth_bypass": True,
         "transport": "telnet",
         "comms_return_char": "\r\n",
-        "timeout_ops": 190,
+        "timeout_ops": 2,
     },
 }
 
@@ -78,15 +78,15 @@ def cisco_ios_boot(
     Raises:
         typer.Exit: When an error has been found on config dialog
     """
+    utils.console.log(f"[b]({project_name})({node_name})[/] Using Telnet transport for model {model}")
+    telnet_session = TelnetTransport(
+        host=server_host,
+        port=console,
+        comms_return_char="\r\n",
+        auth_bypass=True,
+    )
+    telnet_session.open()
     if "csr" in model:
-        utils.console.log(f"[b]({project_name})({node_name})[/] Using Telnet transport for model {model}")
-        telnet_session = TelnetTransport(
-            host=server_host,
-            port=console,
-            comms_return_char="\r\n",
-            auth_bypass=True,
-        )
-        telnet_session.open()
         response = telnet_session.session.expect([b" initial configuration dialog"], timeout=190)
         if response[0] == -1:
             utils.console.log(f"[b]({project_name})({node_name})[/] Error found on config dialog")
@@ -94,6 +94,13 @@ def cisco_ios_boot(
         telnet_session.session.write(b"no\n")
         telnet_session.session.write(b"yes\n")
         time.sleep(10)
+    else:
+        response = telnet_session.session.expect([b"Cisco IOSv"], timeout=190)
+        telnet_session.session.write(b"\r\n")
+        utils.console.log(f"[b]({project_name})({node_name})[/] Sent enter command...")
+    telnet_session.close()
+
+    # Connect to console
     utils.console.log(f"[b]({project_name})({node_name})[/] Opening console connection...")
     connector.open()
     utils.console.log(f"[b]({project_name})({node_name})[/] Console connection opened", style="good")
@@ -109,6 +116,7 @@ def arista_eos_boot(connector: EOSDriver, node_name: str, project_name: str, ser
         server_host (str): GNS3 server address.
         console (int): GNS3 telnet port number for node's console.
     """
+    # Independent telnet session to disable ZTP
     telnet_session = TelnetTransport(
         host=server_host, port=console, auth_username="admin", timeout_transport=120, timeout_ops=120
     )
@@ -124,11 +132,11 @@ def arista_eos_boot(connector: EOSDriver, node_name: str, project_name: str, ser
             [b"Welcome to Arista Networks", b"Loading linux", b"Starting ProcMgr"], timeout=30
         )
         if response[1] is None:
-            utils.console.log("Not found a reloading messages")
+            utils.console.log("Not found a reloading message")
         utils.console.log(f"[b]({project_name})({node_name})[/] Reloading device...")
         time.sleep(20)
-    else:
-        telnet_session.close()
+    telnet_session.close()
+
     # Setting prompts for initiating the device
     connector.transport.username_prompt = "localhost login:"
     connector.transport.password_prompt = "localhost>"
@@ -186,7 +194,7 @@ def run_bootstrap_config(server_host: str, config: str, node: GNS3Node) -> bool:
     """
     # Get scrapli connector object
     node_console_settings = set_node_console_settings(node=node, server_host=server_host)
-    node_console_settings.update(host=server_host, port=node.console)
+    node_console_settings.update(host=server_host, port=node.console, timeout_ops=120, timeout_transport=120)
 
     # Boot process per device type
     with utils.console.status(

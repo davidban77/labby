@@ -31,7 +31,7 @@ convention = "google"
 inherit = false
 match = "(?!__init__).*\\.py"
 match-dir = "(?!tests)[^\\.].*"
-add_ignore = "D212"
+add_ignore = "D212,D412"
 
 [tool.poetry.scripts]
 labby = "labby.main:app"

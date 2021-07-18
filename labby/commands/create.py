@@ -1,3 +1,10 @@
+"""Labby create command.
+
+Handles all creation of labby resources.
+
+Example:
+> labby create --help
+"""
 from enum import Enum
 from typing import Any, Dict, List, Optional
 import typer
@@ -7,7 +14,7 @@ from labby import utils, config
 app = typer.Typer(help="Creates a Resource on Network Provider Lab")
 
 
-class LinkFilter(str, Enum):
+class LinkFilter(str, Enum):  # noqa: D101
     frequency_drop = "frequency_drop"
     packet_loss = "packet_loss"
     latency = "latency"
@@ -34,6 +41,8 @@ def project(
         utils.console.log(f"Project [cyan i]{project_name}[/] already created. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
+
+    # Create project
     project = provider.create_project(project_name=project_name, labels=labels)
     utils.console.log(project)
 
@@ -64,6 +73,8 @@ def node(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
+
+    # Create node
     node = project.create_node(
         name=node_name, template=template_name, labels=labels, mgmt_port=mgmt_port, mgmt_addr=mgmt_addr
     )
@@ -100,5 +111,7 @@ def link(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
+
+    # Create link
     link = project.create_link(node_a, port_a, node_b, port_b, filters=filters, labels=labels)
     utils.console.log(link)

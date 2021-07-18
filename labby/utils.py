@@ -2,6 +2,7 @@
 import re
 import typer
 import functools
+import yaml
 # from labby import settings
 from typing import Dict, List, Any, MutableMapping, Tuple, Optional
 from rich.console import Console
@@ -142,6 +143,16 @@ def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
         return decorator_error_catcher
     else:
         return decorator_error_catcher(_func)
+
+
+def load_yaml_file(path: str) -> Dict[str, Any]:
+    """Loads YAML file."""
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def check_creds(user: str, password: str) -> bool:
+    return True
 
 
 # def get_package_version() -> str:
