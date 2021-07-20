@@ -68,6 +68,7 @@ class LabbyNornirInventory(InventoryPlugin):
             host["groups"] = []
 
             host_platform = node.net_os if node.net_os != "cisco_ios" else "cisco_iosxe"
+
             hosts[node.name] = _set_host(
                 data=host["data"], name=host["name"], groups=host["groups"], host=host, host_platform=host_platform
             )

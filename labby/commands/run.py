@@ -5,19 +5,15 @@ Handles all ad-hoc actions for labby resources.
 Example:
 > labby run --help
 """
+import os
+from netaddr.ip import IPNetwork
 import typer
 from enum import Enum
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, Optional
 
 from pathlib import Path
-
-# from labby.providers import get_config_provider
 from labby import utils, config
-from netaddr import IPNetwork
 from nornir.core.helpers.jinja_helper import render_from_file
-
-
-IpAddressFilter = Literal["address", "netmask"]
 
 
 app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
@@ -56,26 +52,6 @@ def file_check(value: Path) -> Path:
         utils.console.log(f"{value} is not a valid file", style="error")
         raise typer.Exit(code=1)
     return value
-
-
-def ipaddr_renderer(value: str, *, render: IpAddressFilter) -> str:
-    """Renders an IP address related values.
-
-    Args:
-        value (str): IP address/prefix to render the information from.
-        action (str, optional): Action to determine method to render. Defaults to "address".
-
-    Returns:
-        str: address value
-    """
-    to_render = ""
-    if render == "address":
-        to_render = str(IPNetwork(addr=value).ip)
-    elif render == "netmask":
-        to_render = str(IPNetwork(addr=value).netmask)
-    else:
-        raise ValueError()
-    return to_render
 
 
 @project_app.command(short_help="Launches a project on a browser")
@@ -169,7 +145,7 @@ def bootstrap(
         cfg_data = render_from_file(
             path=str(template.parent),
             template=template.name,
-            jinja_filters={"ipaddr": ipaddr_renderer},
+            jinja_filters={"ipaddr": utils.ipaddr_renderer},
             **dict(mgmt_port=mgmt_port, mgmt_addr=mgmt_addr, user=user, password=password, node_name=node_name),
         )
         utils.console.log(f"[b]({project.name})({node.name})[/] Bootstrap config rendered", style="good")
@@ -188,7 +164,7 @@ def node_config(
     password: str = typer.Option(None, help="Node password"),
     console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
 ):
-    r"""
+    """
     Configures a Node.
 
     > labby run node config -p lab01 -n r1 --user netops --password netops123 -t bgp.conf.j2 -v r1.yml
@@ -235,7 +211,7 @@ def node_config(
     cfg_data = render_from_file(
         path=str(config_template.parent),
         template=config_template.name,
-        jinja_filters={"ipaddr": ipaddr_renderer},
+        jinja_filters={"ipaddr": utils.ipaddr_renderer},
         **config_template_vars,
     )
     utils.console.log(f"[b]({project.name})({node.name})[/] Node config rendered", style="good")
@@ -249,3 +225,53 @@ def node_config(
         utils.console.log(f"[b]({project.name})({node.name})[/] Node config applied", style="good")
     else:
         utils.console.log(f"[b]({project.name})({node.name})[/] Node config not applied", style="error")
+
+
+@node_app.command(name="connect", short_help="Connects to a node.")
+def node_connect(
+    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    user: str = typer.Option(None, help="Node user"),
+    # password: str = typer.Option(None, help="Node password"),
+    console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
+):
+    """
+    Connects to a Node bia SSH (default and if applicable) or Telnet console.
+
+    For console connection to work, you must have a Telnet client installed.
+
+    Example:
+
+    > labby run node connect -p lab01 -n r1 --user netops --password netops123
+    """
+    # Get network lab provider
+    provider = config.get_provider()
+
+    # Get project
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    # Get node to connect
+    node = project.search_node(node_name)
+    if not node:
+        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
+        raise typer.Exit(1)
+
+    if node.mgmt_addr is None and console is False:
+        utils.console.log(
+            f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
+        )
+        raise typer.Exit(code=1)
+
+    if any(param is None for param in [user]):
+        utils.console.log("All arguments must be set: user", style="error")
+        raise typer.Exit(code=1)
+
+    # Connect to node
+    if console:
+        server_host = utils.dissect_url(node._base._connector.base_url)[1]  # type: ignore
+        os.system(f"telnet {server_host} {node.console}")
+    else:
+        os.system(f"ssh {user}@{IPNetwork(node.mgmt_addr).ip}")

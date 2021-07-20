@@ -4,10 +4,14 @@ import typer
 import functools
 import yaml
 # from labby import settings
-from typing import Dict, List, Any, MutableMapping, Tuple, Optional
+from typing import Dict, List, Any, MutableMapping, Tuple, Optional, Literal
 from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
+from netaddr import IPNetwork
+
+
+IpAddressFilter = Literal["address", "netmask"]
 
 
 custom_theme = Theme({"warning": "bold magenta", "error": "bold red", "good": "bold green"})
@@ -153,6 +157,26 @@ def load_yaml_file(path: str) -> Dict[str, Any]:
 
 def check_creds(user: str, password: str) -> bool:
     return True
+
+
+def ipaddr_renderer(value: str, *, render: IpAddressFilter) -> str:
+    """Renders an IP address related values.
+
+    Args:
+        value (str): IP address/prefix to render the information from.
+        action (str, optional): Action to determine method to render. Defaults to "address".
+
+    Returns:
+        str: address value
+    """
+    to_render = ""
+    if render == "address":
+        to_render = str(IPNetwork(addr=value).ip)
+    elif render == "netmask":
+        to_render = str(IPNetwork(addr=value).netmask)
+    else:
+        raise ValueError()
+    return to_render
 
 
 # def get_package_version() -> str:

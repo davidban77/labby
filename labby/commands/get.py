@@ -120,6 +120,7 @@ def node_template_list(
 def node_detail(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    properties: bool = typer.Option(False, "--properties", "-o", help="Show node properties"),
 ):
     """
     Retrieves Node details.
@@ -142,8 +143,9 @@ def node_detail(
     utils.console.log(node.render_ports_detail())
     utils.console.log()
     utils.console.log(node.render_links_detail())
-    utils.console.log()
-    utils.console.log(node.render_properties())
+    if properties:
+        utils.console.log()
+        utils.console.log(node.render_properties())
     project.to_initial_state()
 
 

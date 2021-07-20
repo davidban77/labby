@@ -62,6 +62,7 @@ class LabbyNode(BaseModel, abc.ABC):
     mgmt_addr: Optional[str]
     properties: Optional[Dict[str, Any]]
     labels: List[str] = Field(default_factory=list)
+    config_managed: bool = True
     nornir: Optional[Nornir]
 
     class Config:
@@ -179,6 +180,10 @@ class LabbyProject(BaseModel, abc.ABC):
         validate_assignment = True
         extra = "allow"
         arbitrary_types_allowed = True
+
+    @abc.abstractmethod
+    def init_nornir(self) -> None:
+        pass
 
     @abc.abstractmethod
     def get(self) -> None:

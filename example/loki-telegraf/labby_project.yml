@@ -1,10 +1,11 @@
 ---
 main:
-  name: loki-telegraf-2
+  name: loki-telegraf
   description: POC of network devices sending logs to Telegraf and Loki
   contributors: ["David Flores <@netpanda>"]
   version: "0.0.1"
   labels: ["telemetry"]
+  template: "./templates/main.j2"
   # NOTE: Needed when building Nornir inventory
   mgmt_network: 192.168.0.100/28
   mgmt_creds:
@@ -15,17 +16,18 @@ nodes_spec:
   - template: "Cisco IOS CSR1kv 17.3.1a"
     nodes: ["csr-r3"]
     net_os: "cisco_ios"
-    mgmt_interface: "Gi1"
+    mgmt_port: "Gi1"
 
   - template: "Arista EOS vEOS 4.25.0FX"
     nodes: ["eos-r1", "eos-r2", "eos-r3"]
     net_os: "arista_eos"
-    mgmt_interface: "Management1"
+    mgmt_port: "Management1"
 
   - template: "Cisco IOS IOSvL3 15.7(3)M3"
     nodes: ["ios-r1", "ios-r2"]
     net_os: "cisco_ios"
-    mgmt_interface: "Gi0/0"
+    mgmt_port: "Gi0/0"
+    labels: ["est"]
 
   - template: "Cloud"
     nodes: ["cloud"]
@@ -53,7 +55,12 @@ links_spec:
     links:
       - { "port": "Gi0/1", "node_b": "ios-r2", "port_b": "Gi0/1" }
       - { "port": "Gi0/2", "node_b": "csr-r3", "port_b": "Gi2" }
-      - { "port": "Gi0/3", "node_b": "eos-r1", "port_b": "Ethernet1", "filter": { "packet_loss": 77 } }
+      - {
+          "port": "Gi0/3",
+          "node_b": "eos-r1",
+          "port_b": "Ethernet1",
+          "filter": { "packet_loss": 77 },
+        }
   - node: "ios-r2"
     links:
       - { "port": "Gi0/2", "node_b": "csr-r3", "port_b": "Gi3" }
@@ -74,13 +81,273 @@ vars:
 
   groups:
     dub:
-      asn: 65177
+      snmp:
+        communities:
+          - community: public
+            action: ro
+        location: dublin
+
+      syslog:
+        default_level: info
+        server: 192.168.0.77
+        port: 7014
+        protocol: udp
 
     lon:
       asn: 65144
+      snmp:
+        communities:
+          - community: public
+            action: ro
+        location: london
+
+      syslog:
+        default_level: info
+        server: 192.168.0.77
+        port: 7016
+        protocol: udp
 
   hosts:
-    arista-r1:
+    eos-r1:
+      group: dub
+
       interfaces:
-        name: "Ethernet2"
-        description: "Some interface test"
+        - name: "Ethernet1"
+          description: "External to LON"
+          ipv4_address: 172.21.255.2/30
+          enabled: true
+
+        - name: "Ethernet2"
+          ipv4_address: 172.21.0.129/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Ethernet3"
+          ipv4_address: 172.21.0.1/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Loopback0"
+          ipv4_address: 172.21.77.1/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.21.77.1"
+
+      bgp:
+        asn: 65177
+        router_id: "172.21.77.1"
+        redistribute:
+          - protocol: connected
+        neighbors:
+          - neighbor: "172.21.255.1"
+            asn: 65144
+          - neighbor: "172.21.77.3"
+            asn: 65177
+
+    eos-r2:
+      group: dub
+
+      interfaces:
+        - name: "Ethernet2"
+          ipv4_address: 172.21.0.130/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Ethernet4"
+          ipv4_address: 172.21.2.2/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Loopback0"
+          ipv4_address: 172.21.77.2/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.21.77.2"
+
+    eos-r3:
+      group: dub
+
+      interfaces:
+        - name: "Ethernet1"
+          description: "External to LON"
+          ipv4_address: 172.21.254.2/30
+          enabled: true
+
+        - name: "Ethernet3"
+          ipv4_address: 172.21.0.3/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Ethernet4"
+          ipv4_address: 172.21.2.3/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Loopback0"
+          ipv4_address: 172.21.77.3/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.21.77.3"
+
+      bgp:
+        asn: 65177
+        router_id: "172.21.77.3"
+        redistribute:
+          - protocol: connected
+        neighbors:
+          - neighbor: "172.21.254.1"
+            asn: 65144
+          - neighbor: "172.21.77.1"
+            asn: 65177
+
+    ios-r1:
+      group: lon
+
+      interfaces:
+        - name: "Gi0/1"
+          ipv4_address: 172.22.0.129/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Gi0/2"
+          ipv4_address: 172.22.0.1/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Gi0/3"
+          description: "External to DUB"
+          ipv4_address: 172.21.255.1/30
+          enabled: true
+
+        - name: "Loopback0"
+          ipv4_address: 172.22.77.1/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.22.77.1"
+
+      bgp:
+        asn: 65144
+        router_id: "172.22.77.1"
+        redistribute:
+          - protocol: connected
+        neighbors:
+          - neighbor: "172.21.255.2"
+            asn: 65177
+          - neighbor: "172.22.77.3"
+            asn: 65144
+
+    ios-r2:
+      group: lon
+
+      interfaces:
+        - name: "Gi0/1"
+          ipv4_address: 172.22.0.130/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Gi0/2"
+          ipv4_address: 172.22.2.2/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Loopback0"
+          ipv4_address: 172.22.77.2/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.22.77.2"
+
+    csr-r3:
+      group: lon
+
+      interfaces:
+        - name: "Gi4"
+          description: "External to LON"
+          ipv4_address: 172.21.254.1/30
+          enabled: true
+
+        - name: "Gi2"
+          ipv4_address: 172.22.0.3/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Gi3"
+          ipv4_address: 172.22.2.3/25
+          enabled: true
+          ospf:
+            process: 77
+            area: 0
+            network_type: point-to-point
+
+        - name: "Loopback0"
+          ipv4_address: 172.22.77.3/32
+          ospf:
+            process: 77
+            area: 0
+
+      ospf:
+        process: 77
+        router_id: "172.22.77.3"
+
+      bgp:
+        asn: 65144
+        router_id: "172.22.77.3"
+        redistribute:
+          - protocol: connected
+        neighbors:
+          - neighbor: "172.21.254.2"
+            asn: 65177
+          - neighbor: "172.22.77.1"
+            asn: 65144

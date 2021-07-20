@@ -1,6 +1,6 @@
 import typer
 
-# import labby.commands.projects
+import labby.commands.build
 import labby.commands.configuration
 import labby.commands.run
 import labby.commands.get
@@ -41,6 +41,7 @@ app.add_typer(labby.commands.create.app, name="create")
 app.add_typer(labby.commands.delete.app, name="delete")
 app.add_typer(labby.commands.update.app, name="update")
 app.add_typer(labby.commands.configuration.app, name="config")
+app.add_typer(labby.commands.build.app, name="build")
 
 
 def version_callback(value: bool):

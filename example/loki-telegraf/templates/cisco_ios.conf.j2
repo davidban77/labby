@@ -1,0 +1,119 @@
+{% set node_vars = hosts[node.name] %}
+{% set group_vars = groups[node_vars.group] %}
+hostname {{ node.name }}
+!
+!
+!
+lldp run
+!
+!
+!
+{% for interface in node_vars.interfaces %}
+interface {{ interface.name }}
+{%   if interface.description is defined %}
+   description {{ interface.description }}
+{% endif %}
+{%   if interface.ipv4_address is defined %}
+   ip address {{ interface.ipv4_address | ipaddr(render='address') }} {{ interface.ipv4_address | ipaddr(render='netmask') }}
+{%   endif %}
+{%   if interface.enabled | default(false) %}
+   no shutdown
+{%   endif %}
+{%   if interface.ospf is defined %}
+   ip ospf {{ interface.ospf.process }} area {{ interface.ospf.area }}
+{%     if interface.ospf.network_type is defined %}
+   ip ospf network {{ interface.ospf.network_type }}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+!
+!
+!
+!
+{% if node_vars.bgp is defined %}
+router bgp {{ node_vars.bgp.asn }}
+   bgp log-neighbor-changes
+{%   if node_vars.bgp.router_id is defined %}
+   bgp router-id {{ node_vars.bgp.router_id }}
+{%   endif %}
+{%   for redis in node_vars.bgp.redistribute | default([]) %}
+{%     if redis.route_map is defined %}
+   redistribute {{ redis.protocol }} route-map {{ redis.route_map }}
+{%     else %}
+   redistribute {{ redis.protocol }}
+{%     endif %}
+{%   endfor %}
+{%   for neighbor in node_vars.bgp.neighbors | default([]) %}
+   neighbor {{ neighbor.neighbor }} remote-as {{ neighbor.asn }}
+{%     if neighbor.description is defined %}
+   neighbor {{ neighbor.neighbor }} description {{ neighbor.description }}
+{%     endif %}
+{%     if neighbor.update_source is defined %}
+   neighbor {{ neighbor.neighbor }} update-source {{ neighbor.update_source }}
+{%     endif %}
+{%     if neighbor.password is defined %}
+   neighbor {{ neighbor.neighbor }} password {{ neighbor.password }}
+{%     endif %}
+{%     if neighbor.ebgp_multihop is defined %}
+   neighbor {{ neighbor.neighbor }} ebgp-multihop {{ neighbor.ebgp_multihop }}
+{%     endif %}
+{%     if neighbor.ttl_security is defined %}
+   neighbor {{ neighbor.neighbor }} ttl-security
+   neighbor {{ neighbor.neighbor }} ttl-security hops {{ neighbor.ttl_security.hops }}
+{%     endif %}
+{%     if neighbor.route_map_in is defined %}
+   neighbor {{ neighbor.neighbor }} route-map in {{ neighbor.route_map_in }}
+{%     endif %}
+{%     if neighbor.route_map_out is defined %}
+   neighbor {{ neighbor.neighbor }} route-map out {{ neighbor.route_map_out }}
+{%     endif %}
+{%     if neighbor.route_reflector is defined %}
+   neighbor {{ neighbor.neighbor }} route-reflector-client
+{%     endif %}
+{%     if neighbor.route_server is defined %}
+   neighbor {{ neighbor.neighbor }} route-server-client
+{%     endif %}
+{%     if neighbor.next_hop_self is defined %}
+   neighbor {{ neighbor.neighbor }} next-hop-self
+{%     endif %}
+{%   endfor %}
+{% endif %}
+!
+!
+!
+!
+{% if node_vars.ospf is defined %}
+router ospf {{ node_vars.ospf.process }}
+   router-id {{ node_vars.ospf.router_id }}
+{% endif %}
+!
+!
+!
+!
+{% if group_vars.snmp is defined %}
+{%   for community in group_vars.snmp.communities | default([]) %}
+snmp-server community {{ community.community }} {{ community.action | lower }}
+{%   endfor %}
+{%   if group_vars.snmp.location is defined %}
+snmp-server location {{ group_vars.snmp.location }}
+{%   endif %}
+{%   if group_vars.snmp.contact is defined %}
+snmp-server contact {{ group_vars.snmp.contact }}
+{%   endif %}
+{%   if group_vars.snmp.server_config is defined %}
+snmp-server host {{ group_vars.snmp.server_config.ip }} version {{ group_vars.snmp.server_config.version | default('2c') }} {{ group_vars.snmp.server_config.community }}
+{%   endif %}
+{% endif %}
+!
+!
+!
+!
+{% if group_vars.syslog is defined %}
+logging userinfo
+logging origin-id hostname
+logging host {{ group_vars.syslog.server }} transport {{ group_vars.syslog.protocol }} port {{ group_vars.syslog.port }}
+{% endif %}
+!
+!
+!
+end

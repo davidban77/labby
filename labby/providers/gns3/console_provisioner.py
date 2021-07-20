@@ -65,13 +65,10 @@ BOOTSTRAP_SETTINGS = {
 }
 
 
-def cisco_ios_boot(
-    connector: IOSXEDriver, server_host: str, model: str, console: int, node_name: str, project_name: str
-):
+def cisco_ios_boot(server_host: str, model: str, console: int, node_name: str, project_name: str):
     """Bootstrap actions for Cisco IOS devices.
 
     Args:
-        connector (IOSXEDriver): Scrapli Driver.
         server_host (str): GNS3 server address.
         model (str): GNS3 Node model.
         console (int): GNS3 telnet port number for node's console.
@@ -103,27 +100,11 @@ def cisco_ios_boot(
         utils.console.log(f"[b]({project_name})({node_name})[/] Sent enter command...")
     telnet_session.close()
 
-    # Connect to console
-    utils.console.log(f"[b]({project_name})({node_name})[/] Authenticating to console...")
-    try:
-        connector.open()
-    except ScrapliTimeout:
-        try:
-            utils.console.log(f"[b]({project_name})({node_name})[/] Attempting to connect to terminal...")
-            connector.transport.auth_bypass = True
-            connector.open()
-        except ScrapliTimeout as err:
-            utils.console.log(f"[b]({project_name})({node_name})[/] Console connection timed out: {err}", style="error")
-            raise typer.Exit(1)
-    # connector.open()
-    utils.console.log(f"[b]({project_name})({node_name})[/] Console connection opened", style="good")
 
-
-def arista_eos_boot(connector: EOSDriver, node_name: str, project_name: str, server_host: str, console: int):
+def arista_eos_boot(node_name: str, project_name: str, server_host: str, console: int):
     """Bootstrap actions for Arista EOS devices.
 
     Args:
-        connector (EOSDriver): Scrapli Driver.
         node_name (str): GNS3 node name.
         project_name (str): GNS3 Project name.
         server_host (str): GNS3 server address.
@@ -149,15 +130,6 @@ def arista_eos_boot(connector: EOSDriver, node_name: str, project_name: str, ser
         utils.console.log(f"[b]({project_name})({node_name})[/] Reloading device...")
         time.sleep(20)
     telnet_session.close()
-
-    # Setting prompts for initiating the device
-    connector.transport.username_prompt = "localhost login:"
-    connector.transport.password_prompt = "localhost>"
-
-    # Re-authenticating
-    utils.console.log(f"[b]({project_name})({node_name})[/] Re-opening console connection...")
-    connector.open()
-    utils.console.log(f"[b]({project_name})({node_name})[/] Console connection opened", style="good")
 
 
 def set_node_console_settings(node: GNS3Node, server_host: str) -> Dict[str, Any]:
@@ -213,27 +185,61 @@ def run_bootstrap(
     ) as status:
 
         if node.net_os == "arista_eos":
-            node_console_settings.update(timeout_ops=120, timeout_transport=120)
-            node_console_conn = EOSDriver(**node_console_settings)
             arista_eos_boot(
-                connector=node_console_conn,
                 node_name=node.name,
                 project_name=node.project.name,
                 server_host=server_host,
                 console=node.console,  # type: ignore
             )
 
+            node_console_settings.update(timeout_ops=120, timeout_transport=120)
+            connector = EOSDriver(**node_console_settings)
+
+            # Setting prompts for initiating the device
+            connector.transport.username_prompt = "localhost login:"
+            connector.transport.password_prompt = "localhost>"
+
+            # Re-authenticating
+            try:
+                utils.console.log(f"[b]({node.project.name})({node.name})[/] Authenticating to console...")
+                connector.open()
+            except ScrapliTimeout:
+                try:
+                    utils.console.log(f"[b]({node.project.name})({node.name})[/] Attempting to connect to terminal...")
+                    connector.transport.auth_bypass = True
+                    connector.open()
+                except ScrapliTimeout as err:
+                    utils.console.log(
+                        f"[b]({node.project.name})({node.name})[/] Console connection timed out: {err}", style="error"
+                    )
+                    raise typer.Exit(1)
+
         elif node.net_os == "cisco_ios":
-            node_console_settings.update(timeout_ops=60, timeout_transport=60)
-            node_console_conn = IOSXEDriver(**node_console_settings)
             cisco_ios_boot(
-                connector=node_console_conn,
                 server_host=server_host,
                 model=node.model,  # type: ignore
                 console=node.console,  # type: ignore
                 node_name=node.name,
                 project_name=node.project.name,
             )
+
+            node_console_settings.update(timeout_ops=60, timeout_transport=60)
+            connector = IOSXEDriver(**node_console_settings)
+
+            # Re-authenticating
+            try:
+                utils.console.log(f"[b]({node.project.name})({node.name})[/] Authenticating to console...")
+                connector.open()
+            except ScrapliTimeout:
+                try:
+                    utils.console.log(f"[b]({node.project.name})({node.name})[/] Attempting to connect to terminal...")
+                    connector.transport.auth_bypass = True
+                    connector.open()
+                except ScrapliTimeout as err:
+                    utils.console.log(
+                        f"[b]({node.project.name})({node.name})[/] Console connection timed out: {err}", style="error"
+                    )
+                    raise typer.Exit(1)
 
         else:
             utils.console.log(
@@ -243,7 +249,7 @@ def run_bootstrap(
 
         # Get response and send result status flag
         status.update(status=f"[b]({node.project.name})({node.name})[/] Pushing bootstrap configuration...")
-        response = node_console_conn.send_config(config=config)
+        response = connector.send_config(config=config)
         return response
 
 
@@ -289,22 +295,22 @@ def run_action(
     ) as status:
 
         if node.net_os == "arista_eos":
-            node_console_conn = EOSDriver(**node_console_settings)
+            connector = EOSDriver(**node_console_settings)
             try:
                 status.update(status=f"[b]({node.project.name})({node.name})[/] Attempting authentication...")
-                node_console_conn.transport.username_prompt = "login:"
+                connector.transport.username_prompt = "login:"
                 if password:
-                    node_console_conn.transport.password_prompt = "Password:"
+                    connector.transport.password_prompt = "Password:"
                 else:
-                    node_console_conn.transport.password_prompt = ">"
-                node_console_conn.open()
+                    connector.transport.password_prompt = ">"
+                connector.open()
             except ScrapliTimeout:
                 try:
                     status.update(
                         status=f"[b]({node.project.name})({node.name})[/] Attempting to connect to terminal..."
                     )
-                    node_console_conn.transport.auth_bypass = True
-                    node_console_conn.open()
+                    connector.transport.auth_bypass = True
+                    connector.open()
                 except ScrapliTimeout as err:
                     utils.console.log(
                         f"[b]({node.project.name})({node.name})[/] Console connection timed out: {err}", style="error"
@@ -312,17 +318,17 @@ def run_action(
                     raise typer.Exit(1)
 
         elif node.net_os == "cisco_ios":
-            node_console_conn = IOSXEDriver(**node_console_settings)
+            connector = IOSXEDriver(**node_console_settings)
             try:
                 status.update(status=f"[b]({node.project.name})({node.name})[/] Attempting authentication...")
-                node_console_conn.open()
+                connector.open()
             except ScrapliTimeout:
                 try:
                     status.update(
                         status=f"[b]({node.project.name})({node.name})[/] Attempting to connect to terminal..."
                     )
-                    node_console_conn.transport.auth_bypass = True
-                    node_console_conn.open()
+                    connector.transport.auth_bypass = True
+                    connector.open()
                 except ScrapliTimeout as err:
                     utils.console.log(
                         f"[b]({node.project.name})({node.name})[/] Console connection timed out: {err}", style="error"
@@ -341,9 +347,9 @@ def run_action(
         # Get response and send result status flag
         status.update(status=f"[b]({node.project.name})({node.name})[/] Sending {action}...")
         if action == "command":
-            response = node_console_conn.send_command(command=data, timeout_ops=60)
+            response = connector.send_command(command=data, timeout_ops=60)
         else:
-            response = node_console_conn.send_config(config=data, timeout_ops=60)
+            response = connector.send_config(config=data, timeout_ops=60)
 
-        node_console_conn.close()
+        connector.close()
         return response
