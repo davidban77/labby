@@ -6,20 +6,6 @@ from nornir.core.plugins.inventory import InventoryPlugin
 
 
 def _set_host(data: Dict[str, Any], name: str, groups, host, host_platform) -> Host:
-    # connection_option: Dict[str, Any] = {"scrapli": {"extras": {"auth_strict_key": False}}}
-    # for key, value in data.get("connection_options", {}).items():
-    #     connection_option[key] = ConnectionOptions(
-    #         # hostname=value.get("hostname"),
-    #         hostname=host["hostname"],
-    #         # port=value.get("port"),
-    #         port=value.get("port", 22),
-    #         # username=value.get("username"),
-    #         username=host.get("username", "netops"),
-    #         # password=value.get("password"),
-    #         password=host.get("password", "netops123"),
-    #         platform=host_platform,
-    #         extras=value.get("extras", {"auth_strict_key": False}),
-    #     )
     connection_option = {
         "scrapli": ConnectionOptions(
             port=host.get("port", 22),
@@ -45,9 +31,6 @@ def _set_host(data: Dict[str, Any], name: str, groups, host, host_platform) -> H
 class LabbyNornirInventory(InventoryPlugin):
     def __init__(self, project: LabbyProject) -> None:
         self.project = project
-        # self.project.get()
-        # if not self.project.nodes:
-        #     raise ValueError(f"No Node in Project: {self.project.name}")
 
     def load(self) -> Inventory:
         hosts = Hosts()
@@ -72,6 +55,5 @@ class LabbyNornirInventory(InventoryPlugin):
             hosts[node.name] = _set_host(
                 data=host["data"], name=host["name"], groups=host["groups"], host=host, host_platform=host_platform
             )
-            # print(hosts[node.name].keys(), type(hosts[node.name]))
 
         return Inventory(hosts=hosts, groups=groups, defaults=defaults)

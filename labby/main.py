@@ -10,6 +10,7 @@ import labby.commands.stop
 import labby.commands.create
 import labby.commands.delete
 import labby.commands.update
+import labby.commands.connect
 
 from labby import config
 from labby import utils
@@ -42,6 +43,7 @@ app.add_typer(labby.commands.delete.app, name="delete")
 app.add_typer(labby.commands.update.app, name="update")
 app.add_typer(labby.commands.configuration.app, name="config")
 app.add_typer(labby.commands.build.app, name="build")
+app.add_typer(labby.commands.connect.app, name="connect")
 
 
 def version_callback(value: bool):

@@ -5,15 +5,16 @@ Handles all ad-hoc actions for labby resources.
 Example:
 > labby run --help
 """
-import os
-from netaddr.ip import IPNetwork
+from labby.commands.build import config_task
 import typer
 from enum import Enum
 from typing import Any, Dict, Optional
 
 from pathlib import Path
-from labby import utils, config
 from nornir.core.helpers.jinja_helper import render_from_file
+from nornir_utils.plugins.functions import print_result
+from labby.commands.common import save_task, sync_project_data
+from labby import utils, config
 
 
 app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
@@ -227,51 +228,71 @@ def node_config(
         utils.console.log(f"[b]({project.name})({node.name})[/] Node config not applied", style="error")
 
 
-@node_app.command(name="connect", short_help="Connects to a node.")
-def node_connect(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
-    user: str = typer.Option(None, help="Node user"),
-    # password: str = typer.Option(None, help="Node password"),
-    console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
+@project_app.command(name="nodes-save", short_help="Save Nodes Configuration from a project file.")
+def project_save(
+    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
+    net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
+    name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),
 ):
     """
-    Connects to a Node bia SSH (default and if applicable) or Telnet console.
-
-    For console connection to work, you must have a Telnet client installed.
+    Saves nodes configuration.
 
     Example:
 
-    > labby run node connect -p lab01 -n r1 --user netops --password netops123
+    > labby run project nodes-save --project-file "myproject.yml" --backup /path/to/backup/folder
     """
-    # Get network lab provider
-    provider = config.get_provider()
+    project, project_data = sync_project_data(project_file)
 
-    # Get project
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to connect
-    node = project.search_node(node_name)
-    if not node:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    if node.mgmt_addr is None and console is False:
-        utils.console.log(
-            f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
-        )
-        raise typer.Exit(code=1)
-
-    if any(param is None for param in [user]):
-        utils.console.log("All arguments must be set: user", style="error")
-        raise typer.Exit(code=1)
-
-    # Connect to node
-    if console:
-        server_host = utils.dissect_url(node._base._connector.base_url)[1]  # type: ignore
-        os.system(f"telnet {server_host} {node.console}")
+    # Apply filters
+    if model:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: model == n.data["labby_obj"].model)  # type: ignore
+    elif net_os:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: net_os == n.data["labby_obj"].net_os)  # type: ignore
+    elif name:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: name in n.data["labby_obj"].name)  # type: ignore
     else:
-        os.system(f"ssh {user}@{IPNetwork(node.mgmt_addr).ip}")
+        nr_filtered = project.nornir.filter(filter_func=lambda n: n.data["labby_obj"].config_managed)  # type: ignore
+
+    utils.console.log(
+        f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
+    result = nr_filtered.run(task=save_task)
+    utils.console.rule(title="Start section")
+    print_result(result)
+    utils.console.rule(title="End section")
+
+
+@project_app.command(name="node-configs", short_help="Configures Nodes from a project file.")
+def project_config(
+    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
+    net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
+    name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),
+):
+    """
+    Builds and applies configuration to the nodes specified on the project file.
+
+    Example:
+
+    > labby run project node-configs --project-file "myproject.yml" --backup /path/to/backup/folder
+    """
+    project, project_data = sync_project_data(project_file)
+
+    # Apply filters
+    if model:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: model == n.data["labby_obj"].model)  # type: ignore
+    elif net_os:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: net_os == n.data["labby_obj"].net_os)  # type: ignore
+    elif name:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: name in n.data["labby_obj"].name)  # type: ignore
+    else:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: n.data["labby_obj"].config_managed)  # type: ignore
+
+    utils.console.log(
+        f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
+    result = nr_filtered.run(task=config_task, project_data=project_data, project=project)
+    utils.console.rule(title="Start section")
+    print_result(result)
+    utils.console.rule(title="End section")
