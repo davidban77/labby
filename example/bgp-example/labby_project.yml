@@ -1,7 +1,7 @@
 ---
 main:
-  name: loki-telegraf
-  description: POC of network devices sending logs to Telegraf and Loki
+  name: bgp-example
+  description: POC of network devices Arista and Cisco with BGP sessions
   contributors: ["David Flores <@netpanda>"]
   version: "0.0.1"
   labels: ["telemetry"]
