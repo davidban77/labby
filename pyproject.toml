@@ -17,6 +17,8 @@ netaddr = "^0.8.0"
 Jinja2 = "^2.11.2"
 pydantic = {version = "^1.8.1", extras = ["dotenv"]}
 gns3fy = {git = "https://github.com/davidban77/gns3fy.git", rev = "v1.0.0"}
+PyYAML = "^5.4.1"
+toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"
