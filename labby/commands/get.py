@@ -53,14 +53,14 @@ def project_list(
 
 @project_app.command(short_help="Retrieves details of a project", name="detail")
 def project_detail(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
 ):
     """
     Retrieves Project details.
 
     Example:
 
-    > labby get project detail --project lab01
+    > labby get project detail lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -72,10 +72,6 @@ def project_detail(
     utils.console.log()
     utils.console.log(project.render_links_summary())
     project.to_initial_state()
-
-    # TODO: Delete this
-    # if project.nornir:
-    #     utils.console.log(project.nornir.inventory.hosts)
 
 
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
@@ -119,8 +115,8 @@ def node_template_list(
 
 @node_app.command(short_help="Retrieves details of a node", name="detail")
 def node_detail(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     properties: bool = typer.Option(False, "--properties", "-o", help="Show node properties"),
 ):
     """
@@ -165,7 +161,7 @@ def node_config(
 ):
     """Retrieve node running configuration.
 
-    By default, the configuration is retrieved over the node mgmt port. If you want to retrieve the configuration over
+    By default, the configuration is retrieved over the node mgmt_port. If you want to retrieve the configuration over
     console, you can use the `--console` option.
 
     Example:

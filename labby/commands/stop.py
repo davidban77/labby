@@ -15,7 +15,7 @@ app = typer.Typer(help="Runs Stop/Halt actions on Network Provider Lab Resources
 
 @app.command(short_help="Stops a project")
 def project(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
     stop_nodes: bool = typer.Option(True, help="Strategy to use to start nodes in project"),
 ):
     """
@@ -23,7 +23,7 @@ def project(
 
     Example:
 
-    > labby stop project --project lab01
+    > labby stop project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -37,15 +37,15 @@ def project(
 
 @app.command(short_help="Stops a node")
 def node(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
 ):
     """
     Stops a Node.
 
     Example:
 
-    > labby stop node --project lab01 --node r1
+    > labby stop node r1 --project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)

@@ -155,6 +155,8 @@ def load_yaml_file(path: str) -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
+# TODO: Add logic to read possible encoded envvar from project file for network device creds
+# or at least from environemt variable
 def check_creds(user: str, password: str) -> bool:
     return True
 

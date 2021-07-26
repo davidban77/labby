@@ -1,3 +1,4 @@
+"""Project Data module."""
 import typer
 from typing import Tuple
 from pathlib import Path
@@ -7,7 +8,17 @@ from labby import config, utils
 
 
 class ProjectData:
+    """Labby Project Data object."""
     def __init__(self, project_file: Path) -> None:
+        """Initialize the ProjectData object.
+
+        Args:
+            project_file (Path): The path to the project file.
+
+        Raises:
+            ValueError: If missing required fields in the project file.
+            FileNotFoundError: If the project file does not exist.
+        """
         if project_file.is_file():
             self.project_file = project_file
             self.project_data = self.get_project_data()
@@ -50,7 +61,14 @@ class ProjectData:
 
 
 def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
-    """Get the project from the project file."""
+    """Get the project data from the project file.
+
+    Args:
+        project_file (Path): The path to the project file.
+
+    Returns:
+        Tuple[LabbyProject, ProjectData]: A tuple with the project and the project data.
+    """
     project_data = ProjectData(project_file)
     utils.console.log(f"[b]({project_data.name})[/] Retrieving project specification")
     provider = config.get_provider()
@@ -65,6 +83,17 @@ def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData
 
 
 def sync_project_data(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
+    """Sync the project data from the project file.
+
+    Args:
+        project_file (Path): The path to the project file.
+
+    Raises:
+        typer.Exit: If a node specified in the project file does not exist.
+
+    Returns:
+        Tuple[LabbyProject, ProjectData]: A tuple with the project and the project data.
+    """
     project, project_data = get_project_from_file(project_file)
 
     mgmt_network = IPNetwork(project_data.mgmt_network)

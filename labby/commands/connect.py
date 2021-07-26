@@ -18,7 +18,7 @@ app = typer.Typer(help="Connects to a Network Resource")
 def node(
     node_name: str = typer.Argument(..., help="Node name."),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    user: str = typer.Option(None, "--user", "-u", help="Node user"),
+    user: str = typer.Option(None, "--user", "-u", help="Node user", envvar="LABBY_NODE_USER"),
     console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
 ):
     """

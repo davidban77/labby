@@ -1,3 +1,4 @@
+"""Nornir Tasks module."""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from pathlib import Path
@@ -28,14 +29,31 @@ SAVE_COMMANDS = {
 
 
 def backup_task(task: Task):
+    """Task to retrieves the running config from the device.
+
+    Args:
+        task (Task): Nornir task object
+    """
     task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
 
 
 def save_task(task: Task):
+    """Task to save the running config to startup config.
+
+    Args:
+        task (Task): Nornir task object
+    """
     task.run(task=send_command, command=SAVE_COMMANDS[task.host.platform])  # type: ignore
 
 
 def config_task(task: Task, project_data: ProjectData, project: LabbyProject):
+    """Task to render and apply configuration to devices.
+
+    Args:
+        task (Task): Nornir task object
+        project_data (ProjectData): Labby ProjectData object
+        project (LabbyProject): Labby Project object
+    """
     cfg_data = render_from_file(
         path=str(Path(project_data.template).parent),
         template=Path(project_data.template).name,

@@ -199,6 +199,7 @@ def run_bootstrap(
                 project_name=node.project.name,
                 server_host=server_host,
                 console=node.console,  # type: ignore
+                delay_multiplier=delay_multiplier,
             )
 
             node_console_settings.update(timeout_ops=120 * delay_multiplier, timeout_transport=120 * delay_multiplier)
@@ -230,6 +231,7 @@ def run_bootstrap(
                 console=node.console,  # type: ignore
                 node_name=node.name,
                 project_name=node.project.name,
+                delay_multiplier=delay_multiplier,
             )
 
             node_console_settings.update(timeout_ops=60 * delay_multiplier, timeout_transport=60 * delay_multiplier)
