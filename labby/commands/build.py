@@ -11,7 +11,8 @@ from netaddr import IPNetwork
 from nornir.core.task import AggregatedResult
 from nornir.core.helpers.jinja_helper import render_from_file
 from labby import utils
-from labby.commands.common import get_project_from_file, config_task
+from labby.project_data import get_project_from_file
+from labby.nornir_tasks import config_task
 
 
 app = typer.Typer(help="Builds a complete Network Provider Lab in a declarative way.")

@@ -13,7 +13,8 @@ from typing import Any, Dict, Optional
 from pathlib import Path
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
-from labby.commands.common import save_task, sync_project_data
+from labby.project_data import sync_project_data
+from labby.nornir_tasks import save_task
 from labby import utils, config
 
 

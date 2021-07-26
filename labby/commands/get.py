@@ -5,6 +5,7 @@ Handles all get/retrive information actions of labby resources.
 Example:
 > labby get --help
 """
+from pathlib import Path
 import typer
 from enum import Enum
 from typing import Optional
@@ -151,17 +152,25 @@ def node_detail(
 
 @node_app.command(short_help="Retrieves node running configuration", name="config")
 def node_config(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     console: bool = typer.Option(False, "--console", "-c", help="Retrieve configuration over console"),
-    user: Optional[str] = typer.Option(None, "--user", "-u", help="User to use for console connection"),
-    password: Optional[str] = typer.Option(None, "--password", "-w", help="Password to use for console connection"),
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="User to use for the node connection", envvar="LABBY_NODE_USER"
+    ),
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Password to use for the node connection", envvar="LABBY_NODE_PASSWORD"
+    ),
+    save: Optional[Path] = typer.Option(None, "--save", "-s", help="Save configuration to file specified"),
 ):
     """Retrieve node running configuration.
 
+    By default, the configuration is retrieved over the node mgmt port. If you want to retrieve the configuration over
+    console, you can use the `--console` option.
+
     Example:
 
-    > labby get node detail --project lab01 --node r1
+    > labby get node detail r1 --project lab01 --user netops --save /tmp/config.txt
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -178,9 +187,15 @@ def node_config(
         if node.nornir:
             utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
 
-        node.get_config()
+        config_text = node.get_config()
     else:
-        node.get_config_over_console(user=user, password=password)
+        config_text = node.get_config_over_console(user=user, password=password)
+
+    if save and config_text:
+        save.write_text(config_text)
+        utils.console.log(
+            f"[b]({project.name})({node.name})[/] Saved configuration to: {save.absolute()}", style="good"
+        )
 
 
 @node_app.command(short_help="Retrieves details of a node template", name="template-detail")
