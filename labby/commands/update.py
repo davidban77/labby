@@ -7,13 +7,19 @@ Example:
 """
 from enum import Enum
 import typer
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 from distutils.util import strtobool
 from labby import utils
 from labby import config
 
-
 app = typer.Typer(help="Updates a Network Provider Lab Resource")
+project_app = typer.Typer(help="Updates a Network Provider Project")
+node_app = typer.Typer(help="Updates a Network Provider Node")
+link_app = typer.Typer(help="Updates a Network Provider Link")
+
+app.add_typer(project_app, name="project")
+app.add_typer(node_app, name="node")
+app.add_typer(link_app, name="link")
 
 
 class LinkFilter(str, Enum):  # noqa: D101
@@ -40,32 +46,45 @@ def is_truthy(arg: Any):
     return bool(strtobool(arg))
 
 
-@app.command(short_help="Updates a project")
-def project(
+def parse_value(value: str, bool_flag: bool, int_flag: bool, float_flag: bool) -> Any:
+    """Parse a string into a Python object.
+
+    Args:
+        value (str): A string to be parsed.
+        bool_flag (bool): A flag indicating whether to parse as a Boolean.
+        int_flag (bool): A flag indicating whether to parse as an integer.
+        float_flag (bool): A flag indicating whether to parse as a float.
+
+    Returns:
+        Any: A Python object.
+    """
+    if bool_flag:
+        parsed_value = is_truthy(value)
+    elif int_flag:
+        parsed_value = int(value)
+    elif float_flag:
+        parsed_value = float(value)
+    else:
+        parsed_value = str(value)
+    return parsed_value
+
+
+@project_app.command(name="attr", short_help="Updates a general attribute of a project")
+def project_attr(
+    attr: str = typer.Argument(..., help="Attribute to set"),
+    value: str = typer.Argument(..., help="Value to set"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    parameter: str = typer.Option(..., help="Parameter to set"),
-    string_value: Optional[str] = typer.Option(None, help="String value to be set"),
-    bool_value: Optional[str] = typer.Option(None, help="Boolean value to be set"),
-    int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
-    float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
+    bool_flag: bool = typer.Option(False, "--bool", "-b", help="Value to be parsed as a boolean"),
+    int_flag: bool = typer.Option(False, "--int", "-i", help="Value to be parsed as an integer"),
+    float_flag: bool = typer.Option(False, "--float", "-f", help="Value to be parsed as a float"),
 ):
-    """Update a Project based on a parameter and its value.
+    """Update a Project's general attribute.
 
     Example:
 
-    > labby update project -p lab01 --parameter auto_close --bool-value yes
+    > labby update project attr --project lab01 --boolean auto_close yes
     """
-    if string_value:
-        parsed_value = string_value
-    elif bool_value:
-        parsed_value = is_truthy(bool_value)
-    elif int_value:
-        parsed_value = int(int_value)  # type: ignore
-    elif float_value:
-        parsed_value = float(float_value)  # type: ignore
-    else:
-        utils.console.log("Value needs to be passed.", style="error")
-        raise typer.Exit(1)
+    parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -74,37 +93,50 @@ def project(
         raise typer.Exit(1)
 
     # Update project
-    project.update(**{parameter: parsed_value})
+    project.update(**{attr: parsed_value})
     utils.console.log(project)
 
 
-@app.command(short_help="Updates a node")
-def node(
+@project_app.command(name="labels", short_help="Updates the labels of a project")
+def project_labels(
+    labels: str = typer.Argument(..., help="Labels to set"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
-    parameter: str = typer.Option(..., help="Parameter to set"),
-    string_value: Optional[str] = typer.Option(None, help="String value to be set"),
-    bool_value: Optional[str] = typer.Option(None, help="Boolean value to be set"),
-    int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
-    float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
 ):
-    """Update a Node based on a parameter and its value.
+    """Update the labels of a Project.
 
     Example:
 
-    > labby update node -p lab01 -n r1 --parameter name --string-value new_r1
+    > labby update project labels --project lab01 --labels "lab1,lab2"
     """
-    if string_value:
-        parsed_value = string_value
-    elif bool_value:
-        parsed_value = is_truthy(bool_value)
-    elif int_value:
-        parsed_value = int(int_value)  # type: ignore
-    elif float_value:
-        parsed_value = float(float_value)  # type: ignore
-    else:
-        utils.console.log("Value needs to be passed.", style="error")
+    extracted_labels: List[str] = labels.split(",")
+    provider = config.get_provider()
+    project = provider.search_project(project_name=project_name)
+    if not project:
+        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
+
+    # Update project
+    project.update(labels=extracted_labels)
+    utils.console.log(project)
+
+
+@node_app.command(name="attr", short_help="Updates a general attribute of a node")
+def node_attr(
+    attr: str = typer.Argument(..., help="Attribute to set"),
+    value: str = typer.Argument(..., help="Value to set"),
+    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
+    project_name: str = typer.Option(..., "--project", "-p", help="Projectname", envvar="LABBY_PROJECT"),
+    bool_flag: bool = typer.Option(False, "--bool", "-b", help="Value to be parsed as a boolean"),
+    int_flag: bool = typer.Option(False, "--int", "-i", help="Value to be parsed as an integer"),
+    float_flag: bool = typer.Option(False, "--float", "-f", help="Value to be parsed as a float"),
+):
+    """Update a Node's general attribute.
+
+    Example:
+
+    > labby update node attr --project lab01 --node r1 name new_r1
+    """
+    parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -118,36 +150,26 @@ def node(
         raise typer.Exit(1)
 
     # Update node
-    node.update(**{parameter: parsed_value})
+    node.update(**{attr: parsed_value})
     utils.console.log(node)
 
 
-@app.command(short_help="Updates a node template")
+@node_app.command(name="template", short_help="Updates a general attribute of a node template")
 def node_template(
+    attr: str = typer.Argument(..., help="Attribute to set"),
+    value: str = typer.Argument(..., help="Value to set"),
     template_name: str = typer.Option(..., "--template", "-t", help="Node Template name"),
-    parameter: str = typer.Option(..., help="Parameter to set"),
-    string_value: Optional[str] = typer.Option(None, help="String value to be set"),
-    bool_value: Optional[str] = typer.Option(None, help="Boolean value to be set"),
-    int_value: Optional[int] = typer.Option(None, help="Integer value to be set"),
-    float_value: Optional[float] = typer.Option(None, help="Float value to be set"),
+    bool_flag: bool = typer.Option(False, "--bool", "-b", help="Value to be parsed as a boolean"),
+    int_flag: bool = typer.Option(False, "--int", "-i", help="Value to be parsed as an integer"),
+    float_flag: bool = typer.Option(False, "--float", "-f", help="Value to be parsed as a float"),
 ):
-    """Update a Node Template based on a parameter and its value.
+    """Update a Node Template's general attribute.
 
     Example:
 
-    > labby update template -t "Arista EOS vEOS 4.25F" --parameter ram --int-value 2048
+    > labby update node template -t "Arista EOS vEOS 4.25F" --int ram 2048
     """
-    if string_value:
-        parsed_value = string_value
-    elif bool_value:
-        parsed_value = is_truthy(bool_value)
-    elif int_value:
-        parsed_value = int(int_value)  # type: ignore
-    elif float_value:
-        parsed_value = float(float_value)  # type: ignore
-    else:
-        utils.console.log("Value needs to be passed.", style="error")
-        raise typer.Exit(1)
+    parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
     template = provider.search_template(template_name)
@@ -156,31 +178,35 @@ def node_template(
         raise typer.Exit(1)
 
     # Update node template
-    template.update(**{parameter: parsed_value})
+    template.update(**{attr: parsed_value})
     utils.console.log(template)
 
 
-@app.command(short_help="Updates a link filter")
+@link_app.command(name="filter", short_help="Updates a link filter")
 def link_filter(
+    attr: LinkFilter = typer.Argument(..., help="Filter to apply to the link"),
+    value: str = typer.Argument(..., help="Value of Link Filter to apply to the link"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     node_a: str = typer.Option(..., "--node-a", "-na", help="Node name from ENDPOINT A"),
     port_a: str = typer.Option(..., "--port-a", "-pa", help="Port name from node on ENDPOINT A"),
     node_b: str = typer.Option(..., "--node-b", "-nb", help="Node name from ENDPOINT B"),
     port_b: str = typer.Option(..., "--por-b", "-pb", help="Port name from node on ENDPOINT B"),
-    filter_type: LinkFilter = typer.Option(..., help="Filter to apply to the link"),
-    filter_value: str = typer.Option(..., help="Value of Link Filter to apply to the link"),
+    bool_flag: bool = typer.Option(False, "--bool", "-b", help="Value to be parsed as a boolean"),
+    int_flag: bool = typer.Option(False, "--int", "-i", help="Value to be parsed as an integer"),
+    float_flag: bool = typer.Option(False, "--float", "-f", help="Value to be parsed as a float"),
 ):
-    """Update a Link based on a parameter and its value.
+    """Update a Link Filter.
+
+    The filter applied are dependant on the underlying Network lab provider.
+    By default we are setting GNS3 filter types capabilities to be used on the link.
 
     Example:
 
-    > labby update link -p lab01 -na r1 -pa Ethernet2 -nb r2 -pb Ethernet2 --filter-type packet_loss --filter-value 77
+    > labby update link filter -p lab01 -na r1 -pa Ethernet2 -nb r2 -pb Ethernet2 --int packet_loss 77
     """
-    filters: Dict[str, Any]
-    if filter_type != "bpf_expression":
-        filters = dict({filter_type: int(filter_value)})
-    else:
-        filters = dict({filter_type: filter_value})
+    parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
+
+    filters: Dict[str, Any] = dict({attr: parsed_value})
 
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)

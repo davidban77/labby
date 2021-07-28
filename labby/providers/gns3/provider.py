@@ -1,3 +1,4 @@
+"""GNS3 main provider module."""
 import typer
 from labby.providers.gns3.template import GNS3NodeTemplate
 import time
@@ -13,6 +14,8 @@ from labby.providers.gns3.utils import bool_status, project_status, string_statu
 
 
 class GNS3Provider(LabbyProvider):
+    """GNS3 provider class."""
+
     def __init__(
         self,
         name: str,
@@ -22,14 +25,28 @@ class GNS3Provider(LabbyProvider):
         password: Optional[str] = None,
         verify_cert: bool = False,
     ):
+        """GNS3 provider class.
+
+        Args:
+            name (str): Name of the GNS3 provider
+            server_url (str): GNS3 server URL
+            kind (str, optional): Type of GNS3 server (default: gns3)
+            user (Optional[str], optional): User to login to GNS3 server
+            password (Optional[str], optional): Password to login to GNS3 server
+            verify_cert (bool, optional): Verify the server's SSL certificate (default: False)
+        """
         super().__init__(name=name, kind=kind)
         self._base: Server = Server(url=server_url, user=user, cred=password, verify=verify_cert)
 
-    # def get_projects(self) -> List[GNS3Project]:
-    #     self._base.get_projects()
-    #     return [GNS3Project(prj.name, prj) for prj in self._base.projects.values()]  # type: ignore
-
     def search_project(self, project_name: str) -> Optional[GNS3Project]:
+        """Search a project in the GNS3 server.
+
+        Args:
+            project_name (str): Name of the project to search
+
+        Returns:
+            Optional[GNS3Project]: Project object or None
+        """
         r_gns3_project = self._base.search_project(project_name)
         if not r_gns3_project:
             return None
@@ -47,6 +64,15 @@ class GNS3Provider(LabbyProvider):
         return _project
 
     def create_project(self, project_name: str, labels: List[str] = [], **kwargs) -> GNS3Project:
+        """Create a project in the GNS3 server.
+
+        Args:
+            project_name (str): Name of the project to create
+            labels (List[str], optional): List of labels to apply to the project
+
+        Returns:
+            GNS3Project: Project object
+        """
         _project = self.search_project(project_name)
         if _project:
             console.log(f"Project [cyan i]{project_name}[/] already created. Nothing to do...", style="warning")
@@ -62,16 +88,34 @@ class GNS3Provider(LabbyProvider):
             return project
 
     def search_template(self, template_name: str) -> Optional[GNS3NodeTemplate]:
+        """Search a template in the GNS3 server.
+
+        Args:
+            template_name (str): Name of the template to search
+
+        Returns:
+            Optional[GNS3NodeTemplate]: Template object or None
+        """
         gns3_template = self._base.search_template(template_name)
         if not gns3_template:
             return None
 
         template = GNS3NodeTemplate(name=template_name, template=gns3_template)
-        # console.log(template)
-
         return template
 
     def create_template(self, template_name: str, labels: List[str] = [], **data) -> GNS3NodeTemplate:
+        """Create a template in the GNS3 server.
+
+        Args:
+            template_name (str): Name of the template to create
+            labels (List[str], optional): List of labels to apply to the template
+
+        Raises:
+            typer.Exit: Attribute template_type must be set
+
+        Returns:
+            GNS3NodeTemplate: Template object
+        """
         template = self.search_template(template_name)
         if template:
             console.log(f"Node Template [cyan i]{template.name}[/] already created. Nothing to do...", style="warning")
@@ -88,12 +132,17 @@ class GNS3Provider(LabbyProvider):
             console.log(f"[b]({template.name})[/] Template created", style="good")
             return template
 
-    # def delete_project(self, project_name: str) -> None:
-    #     _project = self.search_project(project_name)
-    #     if _project:
-    #         _project.delete()
-
     def render_templates_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+        """Render templates list.
+
+        Args:
+            field (Optional[str], optional): Field to filter on
+            value (Optional[str], optional): Value to filter on
+
+        Returns:
+            ConsoleRenderable: Table
+        """ """
+        """
         table = Table(title="GNS3 Templates", highlight=True)
         table.add_column("Device Template")
         table.add_column("Category")
@@ -117,14 +166,26 @@ class GNS3Provider(LabbyProvider):
             )
         return table
 
-    def render_project_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
-        table = Table(title="GNS3 Projects")
+    def render_project_list(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
+        """Render project list.
+
+        Args:
+            field (Optional[str], optional): Field to filter on
+            value (Optional[str], optional): Value to filter on
+            labels (Optional[List[str]], optional): List of labels to filter on
+
+        Returns:
+            ConsoleRenderable: Table
+        """
+        table = Table(title="GNS3 Projects", highlight=True)
         table.add_column("Project Name")
         table.add_column("Status")
         table.add_column("Auto Start")
         table.add_column("Auto Close")
         table.add_column("Auto Open")
-        table.add_column("Supplier")
+        table.add_column("Labels")
         self._base.get_projects()
         if field:
             projects = [x for x in self._base.projects.values() if getattr(x, field) == value]
@@ -133,12 +194,22 @@ class GNS3Provider(LabbyProvider):
         for prj in projects:
             if prj is None:
                 continue
+
+            # Get labels from lock file
+            project_lock_file_data = lock_file.get_project_data(prj.name)  # type: ignore
+            project_labels = project_lock_file_data["labels"] if project_lock_file_data else []
+
+            # Skip project if labels are not present
+            if labels:
+                if not any(x in project_labels for x in labels):
+                    continue
+
             table.add_row(
                 prj.name,
                 project_status(prj.status),
                 bool_status(prj.auto_start),
                 bool_status(prj.auto_close),
                 bool_status(prj.auto_open),
-                prj.supplier,
+                str(project_labels),
             )
         return table

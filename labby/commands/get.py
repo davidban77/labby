@@ -8,7 +8,7 @@ Example:
 from pathlib import Path
 import typer
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from labby import utils, config
 
 
@@ -37,8 +37,13 @@ class NodeFilter(str, Enum):  # noqa: D101
 
 @project_app.command(name="list", short_help="Retrieves summary list of projects")
 def project_list(
-    filter: Optional[ProjectFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[ProjectFilter] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of projects configured on server.
@@ -46,9 +51,13 @@ def project_list(
     Example:
 
     > labby get project list --filter status --value opened
+
+    Or based on labels
+
+    > labby get project list --label telemetry --label test
     """
     provider = config.get_provider()
-    utils.console.log(provider.render_project_list(field=filter, value=value))
+    utils.console.log(provider.render_project_list(field=filter, value=value, labels=labels))
 
 
 @project_app.command(short_help="Retrieves details of a project", name="detail")
@@ -77,8 +86,13 @@ def project_detail(
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
 def node_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[NodeFilter] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of nodes configured on a project.
@@ -86,6 +100,10 @@ def node_list(
     Example:
 
     > labby get node list --project lab01 --filter status --value started
+
+    Or based on labels
+
+    > labby get node list --project lab01 --label edge --label mgmt
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -93,7 +111,7 @@ def node_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_nodes_summary(field=filter, value=value))
+    utils.console.log(project.render_nodes_summary(field=filter, value=value, labels=labels))
     project.to_initial_state()
 
 
@@ -216,8 +234,13 @@ def node_template_detail(
 @link_app.command(name="list", short_help="Retrieves summary list of links in a project")
 def link_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[str] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of links configured on a project.
@@ -225,6 +248,10 @@ def link_list(
     Example:
 
     > labby get link list --project lab01
+
+    Or based on labels
+
+    > labby get link list --project lab01 --label inter-dc
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -232,7 +259,7 @@ def link_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_links_summary(field=filter, value=value))
+    utils.console.log(project.render_links_summary(field=filter, value=value, labels=labels))
     project.to_initial_state()
 
 

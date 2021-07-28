@@ -247,11 +247,15 @@ class LabbyProject(BaseModel, abc.ABC):
     #     pass
 
     @abc.abstractmethod
-    def render_nodes_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_nodes_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass
 
     @abc.abstractmethod
-    def render_links_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_links_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass
 
     @abc.abstractmethod
@@ -308,5 +312,7 @@ class LabbyProvider(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def render_project_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_project_list(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass
