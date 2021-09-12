@@ -1,7 +1,7 @@
 """Nornir Tasks module."""
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-from datetime import datetime
+# from datetime import datetime
 from pathlib import Path
 from nornir.core.task import Task
 from nornir_scrapli.tasks import send_config, send_command
@@ -49,10 +49,11 @@ def save_task(task: Task, backup: Optional[Path]):
     if response.failed:
         utils.console.log(f"Could not save {task.host.name} configuration to memory", style="error")
 
-    # Backup
+    # TODO: Verify if Backup task can be reused in Nornir style
     if backup:
         response = task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
-        backup_file = backup / f"{task.host.name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.cfg"
+        # backup_file = backup / f"{task.host.name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.cfg"
+        backup_file = backup / f"{task.host.name}.cfg"
         with backup_file.open("w") as f:
             f.write(response.result)
 

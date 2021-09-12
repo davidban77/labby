@@ -9,7 +9,6 @@ import typer
 from pathlib import Path
 from typing import Optional
 from netaddr import IPNetwork
-# from nornir.core.task import AggregatedResult
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
 from rich.prompt import Prompt
@@ -121,6 +120,47 @@ def bootstrap_nodes(
             node.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
+def config_nodes(
+    project: LabbyProject,
+    project_data: ProjectData,
+    model: Optional[str] = None,
+    net_os: Optional[str] = None,
+    name: Optional[str] = None,
+    silent: bool = False,
+):
+    """Runs configuration tasks for all devices in the project.
+
+    Args:
+        project (LabbyProject): The project to build.
+        project_data (ProjectData): The project data processed from project file.
+        model (str): The model to filter the devices from.
+        net_os (str): The net_os to filter the devices from.
+        name (str): The name blob to filter the devices from.
+        silent (bool, optional): If true, will not print the result. Defaults to False.
+    """
+    # Apply filters
+    if model:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: model == n.data["labby_obj"].model)  # type: ignore
+    elif net_os:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: net_os == n.data["labby_obj"].net_os)  # type: ignore
+    elif name:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: name in n.data["labby_obj"].name)  # type: ignore
+    else:
+        nr_filtered = project.nornir.filter(filter_func=lambda n: n.data["labby_obj"].config_managed)  # type: ignore
+
+    utils.console.log(
+        f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
+    result = nr_filtered.run(task=config_task, project_data=project_data, project=project)
+    if not silent:
+        utils.console.rule(title="Start section")
+        print_result(result)
+        utils.console.rule(title="End section")
+    utils.console.log(
+        f"[b]({project.name})[/] Devices configured: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
+
+
 def build_topology(project: LabbyProject, project_data: ProjectData):
     """Builds a project topology.
 
@@ -204,7 +244,7 @@ def project(
 
     # Bootstrap nodes
     is_bootstrap_required = Prompt.ask(
-        "Do you want to bootstrap nodes?", console=utils.console, choices=["yes", "no"], default="yes"
+        "Do you want to bootstrap the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
     )
     if is_bootstrap_required == "yes":
         bootstrap_nodes(
@@ -216,31 +256,12 @@ def project(
             delay_multiplier=delay_multiplier,
         )
 
-    # Render configs
-    project.init_nornir()
-    if project.nornir is None:
-        utils.console.log("[b]({})[/] Nornir not initialized".format(project.name), style="error")
-        raise typer.Exit(1)
-
-    utils.console.log(f"[b]({project.name})[/] Rendering configs", style="good")
-    _ = project.nornir.run(task=config_task, project_data=project_data, project=project)
-
-    # # Render configs
-    # if project_data.template:
-    #     for node_name, node in project.nodes.items():
-    #         cfg_data = render_from_file(
-    #             path=str(Path(project_data.template).parent),
-    #             template=Path(project_data.template).name,
-    #             jinja_filters={"ipaddr": utils.ipaddr_renderer},
-    #             **dict(project=project, node=node, **project_data.vars),
-    #         )
-
-    #         # Configure nodes
-    #         project.init_nornir()
-    #         if project.nornir is None:
-    #             raise ValueError("Nornir not initialized")
-    #         responses: AggregatedResult = project.nornir.run(task=config_task, config=cfg_data)
-    #         print(responses)
+    # Configure nodes
+    is_config_required = Prompt.ask(
+        "Do you want to configure the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
+    )
+    if is_config_required == "yes":
+        config_nodes(project=project, project_data=project_data)
 
 
 @app.command(short_help="Builds a Project Topology.")
@@ -298,6 +319,7 @@ def configs(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
     net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),
+    silent: bool = typer.Option(False, "--silent", "-s", help="Silent mode", envvar="LABBY_SILENT"),
 ):
     """
     Runs the configuration process on the devices of a Project.
@@ -308,20 +330,5 @@ def configs(
     """
     project, project_data = get_project_from_file(project_file)
 
-    # Apply filters
-    if model:
-        nr_filtered = project.nornir.filter(filter_func=lambda n: model == n.data["labby_obj"].model)  # type: ignore
-    elif net_os:
-        nr_filtered = project.nornir.filter(filter_func=lambda n: net_os == n.data["labby_obj"].net_os)  # type: ignore
-    elif name:
-        nr_filtered = project.nornir.filter(filter_func=lambda n: name in n.data["labby_obj"].name)  # type: ignore
-    else:
-        nr_filtered = project.nornir.filter(filter_func=lambda n: n.data["labby_obj"].config_managed)  # type: ignore
-
-    utils.console.log(
-        f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
-    )
-    result = nr_filtered.run(task=config_task, project_data=project_data, project=project)
-    utils.console.rule(title="Start section")
-    print_result(result)
-    utils.console.rule(title="End section")
+    # Config Nodes
+    config_nodes(project=project, project_data=project_data, model=model, net_os=net_os, name=name, silent=silent)

@@ -45,7 +45,9 @@ BOOTSTRAP_SETTINGS = {
         "timeout_ops": 2,
     },
     "cisco_nxos": {
-        "auth_bypass": True,
+        "auth_bypass": False,
+        "auth_username": "admin",
+        "auth_password": "",
         "transport": "telnet",
         "comms_return_char": "\r\n",
         "timeout_ops": 2,
@@ -101,6 +103,54 @@ def cisco_ios_boot(
         response = telnet_session.session.expect([b"Press RETURN to get started"], timeout=190 * delay_multiplier)
         telnet_session.session.write(b"\r\n")
         utils.console.log(f"[b]({project_name})({node_name})[/] Sent enter command...")
+    telnet_session.close()
+
+
+def cisco_nxos_boot(
+    server_host: str,
+    model: str,
+    version: str,
+    console: int,
+    node_name: str,
+    project_name: str,
+    delay_multiplier: int = 1,
+):
+    """Bootstrap actions for Cisco NXOS devices.
+
+    Args:
+        server_host (str): GNS3 server address.
+        model (str): GNS3 Node model.
+        version (str): GNS3 Node NXOS version.
+        console (int): GNS3 telnet port number for node's console.
+        node_name (str): GNS3 node name.
+        project_name (str): GNS3 Project name.
+        delay_multiplier (int): Delay multiplier.
+
+    Raises:
+        typer.Exit: When an error has been found on config dialog
+    """
+    utils.console.log(f"[b]({project_name})({node_name})[/] Using Telnet transport for model {model}")
+    telnet_session = TelnetTransport(
+        host=server_host,
+        port=console,
+        comms_return_char="\r\n",
+        auth_bypass=True,
+    )
+    telnet_session.open()
+    response = telnet_session.session.expect([b"loader >"], timeout=40 * delay_multiplier)
+    if response[1]:
+        telnet_session.session.write(f"boot nxos.{version}.bin\r\n".encode())
+        telnet_session.session.write(b"\r\n")
+        time.sleep(10)
+    response = telnet_session.session.expect([b"Abort Power On Auto Provisioning"], timeout=190 * delay_multiplier)
+    if response[0] == -1:
+        utils.console.log(f"[b]({project_name})({node_name})[/] Error found on config dialog")
+        raise typer.Exit(1)
+    if response[1]:
+        utils.console.log(f"[b]({project_name})({node_name})[/] Disabling POA")
+        telnet_session.session.write(b"skip\n")
+        telnet_session.session.write(b"skip\n")
+        time.sleep(10)
     telnet_session.close()
 
 
@@ -236,6 +286,35 @@ def run_bootstrap(
 
             node_console_settings.update(timeout_ops=60 * delay_multiplier, timeout_transport=60 * delay_multiplier)
             connector = IOSXEDriver(**node_console_settings)
+
+            # Re-authenticating
+            try:
+                utils.console.log(f"[b]({node.project.name})({node.name})[/] Authenticating to console...")
+                connector.open()
+            except ScrapliTimeout:
+                try:
+                    utils.console.log(f"[b]({node.project.name})({node.name})[/] Attempting to connect to terminal...")
+                    connector.transport.auth_bypass = True
+                    connector.open()
+                except ScrapliTimeout as err:
+                    utils.console.log(
+                        f"[b]({node.project.name})({node.name})[/] Console connection timed out: {err}", style="error"
+                    )
+                    raise typer.Exit(1)
+
+        elif node.net_os == "cisco_nxos":
+            cisco_nxos_boot(
+                server_host=server_host,
+                model=node.model,  # type: ignore
+                version=node.version,  # type: ignore
+                console=node.console,  # type: ignore
+                node_name=node.name,
+                project_name=node.project.name,
+                delay_multiplier=delay_multiplier,
+            )
+
+            node_console_settings.update(timeout_ops=60 * delay_multiplier, timeout_transport=60 * delay_multiplier)
+            connector = NXOSDriver(**node_console_settings)
 
             # Re-authenticating
             try:
