@@ -1,6 +1,7 @@
 """Nornir Tasks module."""
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+from datetime import datetime
 from pathlib import Path
 from nornir.core.task import Task
 from nornir_scrapli.tasks import send_config, send_command
@@ -37,13 +38,23 @@ def backup_task(task: Task):
     task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
 
 
-def save_task(task: Task):
+def save_task(task: Task, backup: Optional[Path]):
     """Task to save the running config to startup config.
 
     Args:
         task (Task): Nornir task object
+        backup (Path): Path to the backup file
     """
-    task.run(task=send_command, command=SAVE_COMMANDS[task.host.platform])  # type: ignore
+    response = task.run(task=send_command, command=SAVE_COMMANDS[task.host.platform])  # type: ignore
+    if response.failed:
+        utils.console.log(f"Could not save {task.host.name} configuration to memory", style="error")
+
+    # Backup
+    if backup:
+        response = task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
+        backup_file = backup / f"{task.host.name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.cfg"
+        with backup_file.open("w") as f:
+            f.write(response.result)
 
 
 def config_task(task: Task, project_data: ProjectData, project: LabbyProject):

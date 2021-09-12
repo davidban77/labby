@@ -256,6 +256,8 @@ def project_save(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
     net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),
+    backup: Optional[Path] = typer.Option(None, "--backup", "-b", help="Backup directory location"),
+    silent: bool = typer.Option(False, "--silent", "-s", help="Silent mode", envvar="LABBY_SILENT"),
 ):
     """
     Saves nodes configuration.
@@ -265,6 +267,11 @@ def project_save(
     > labby run project nodes-save --project-file "myproject.yml" --backup /path/to/backup/folder
     """
     project, project_data = sync_project_data(project_file)
+
+    # Check backup directory
+    if backup:
+        if not backup.exists():
+            backup.mkdir(parents=True)
 
     # Apply filters
     if model:
@@ -279,10 +286,14 @@ def project_save(
     utils.console.log(
         f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
     )
-    result = nr_filtered.run(task=save_task)
-    utils.console.rule(title="Start section")
-    print_result(result)
-    utils.console.rule(title="End section")
+    result = nr_filtered.run(task=save_task, backup=backup)
+    if not silent:
+        utils.console.rule(title="Start section")
+        print_result(result)
+        utils.console.rule(title="End section")
+    utils.console.log(
+        f"[b]({project.name})[/] Devices config saved: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
 
 
 @project_app.command(name="node-configs", short_help="Configures Nodes from a project file.")

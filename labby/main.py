@@ -26,7 +26,7 @@ from rich.syntax import Syntax
 from nornir.core.plugins.inventory import InventoryPluginRegister
 from labby.nornir.plugins.inventory.labby import LabbyNornirInventory
 
-traceback_install()
+traceback_install(show_locals=True)
 
 
 InventoryPluginRegister.register("LabbyNornirInventory", LabbyNornirInventory)
