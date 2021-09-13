@@ -169,7 +169,8 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
         project_data (ProjectData): The project data processed from project file.
     """
     # Determine mgmt network
-    mgmt_network = IPNetwork(project_data.mgmt_network)
+    mgmt_ips = project_data.mgmt_ips
+    prefixlen = IPNetwork(project_data.mgmt_network["network"]).prefixlen
 
     # Create nodes
     index = 0
@@ -183,21 +184,35 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
                 utils.console.log(f"[b]({project.name})[/] Node already created: [i dark_orange3]{node_name}")
                 continue
 
-            params = dict()
+            labels = node_spec.get("labels", [])
 
-            # Update params
-            params["labels"] = node_spec.get("labels", [])
-
-            if node_spec.get("config_managed"):
-                params["config_managed"] = node_spec.get("config_managed")
+            extra_params = dict()
+            if node_spec.get("config_managed") is not None:
+                extra_params["config_managed"] = node_spec.get("config_managed")
 
             # TODO: Add support to detect changes in node.mgmt_addr assignments
-            params["mgmt_port"] = node_spec.get("mgmt_port")
-            params["mgmt_addr"] = f"{list(mgmt_network.iter_hosts())[index]}/{mgmt_network.prefixlen}"
+            mgmt_port = node_spec.get("mgmt_port")
+
+            # Assign IP Address
+            addr = f"{mgmt_ips[index]}/{prefixlen}"
+            mgmt_addr = None
+            if project_data.mgmt_network.get("gateway") == addr:
+                # Skip the gw address
+                index += 1
+                mgmt_addr == mgmt_ips[index]
+            else:
+                mgmt_addr = addr
             index += 1
 
             utils.console.log(f"[b]({project.name})[/] Creating node: [i dark_orange3]{node_name}")
-            _ = project.create_node(name=node_name, template=node_spec["template"], **params)
+            _ = project.create_node(
+                name=node_name,
+                template=node_spec["template"],
+                labels=labels,
+                mgmt_port=mgmt_port,
+                mgmt_addr=mgmt_addr,
+                **extra_params,
+            )
 
     # Create links
     for link_spec in project_data.links_spec:
@@ -216,7 +231,9 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
 
 @app.command(short_help="Builds a Project in a declarative way.")
 def project(
-    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    project_file: Path = typer.Option(
+        Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
+    ),
     user: str = typer.Option(
         ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
@@ -266,7 +283,9 @@ def project(
 
 @app.command(short_help="Builds a Project Topology.")
 def topology(
-    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    project_file: Path = typer.Option(
+        Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
+    ),
 ):
     """
     Builds a topology from a given project file.
@@ -282,7 +301,9 @@ def topology(
 
 @app.command(short_help="Runs the bootstrap config process on the devices of a Project.")
 def bootstrap(
-    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    project_file: Path = typer.Option(
+        Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
+    ),
     user: str = typer.Option(
         ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
@@ -315,7 +336,9 @@ def bootstrap(
 
 @app.command(short_help="Runs the configuration process on the devices of a Project.")
 def configs(
-    project_file: Path = typer.Option(..., "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"),
+    project_file: Path = typer.Option(
+        Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
+    ),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
     net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),

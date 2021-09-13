@@ -142,7 +142,7 @@ def cisco_nxos_boot(
         telnet_session.session.write(f"boot nxos.{version}.bin\r\n".encode())
         telnet_session.session.write(b"\r\n")
         time.sleep(10)
-    response = telnet_session.session.expect([b"Abort Power On Auto Provisioning"], timeout=190 * delay_multiplier)
+    response = telnet_session.session.expect([b"Abort Power On Auto Provisioning"], timeout=210 * delay_multiplier)
     if response[0] == -1:
         utils.console.log(f"[b]({project_name})({node_name})[/] Error found on config dialog")
         raise typer.Exit(1)

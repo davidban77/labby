@@ -84,6 +84,7 @@ class GNS3Node(LabbyNode):
         labels: List[str] = [],
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
+        config_managed: bool = True,
         **data,
     ) -> None:
         """GNS3 Labby node object.
@@ -96,6 +97,7 @@ class GNS3Node(LabbyNode):
             labels (List[str], optional): Labels for the node. Defaults to [].
             mgmt_addr (Optional[str], optional): Management address. Defaults to None.
             mgmt_port (Optional[str], optional): Management port. Defaults to None.
+            config_managed (bool, optional): Whether the node is managed by the labby. Defaults to False.
         """
         _project = LabbyProjectInfo(name=project_name, id=node.project_id)
         super().__init__(
@@ -106,6 +108,7 @@ class GNS3Node(LabbyNode):
             _base=node,
             mgmt_addr=mgmt_addr,
             mgmt_port=mgmt_port,
+            config_managed=config_managed,
             **data,
         )
         self._template = self._get_gns3_template()
@@ -244,6 +247,8 @@ class GNS3Node(LabbyNode):
         console.log(f"[b]({self.project.name})({self.name})[/] Updating node: {kwargs}", highlight=True)
         if "labels" in kwargs:
             self.labels = kwargs["labels"]
+        elif "config_managed" in kwargs:
+            self.config_managed = kwargs["config_managed"]
         elif "mgmt_addr" in kwargs:
             self.mgmt_addr = kwargs["mgmt_addr"]
         elif "mgmt_port" in kwargs:
@@ -559,4 +564,5 @@ class GNS3Node(LabbyNode):
         table.add_row("[b]labels[/b]", str(self.labels))
         table.add_row("[b]mgmt_addr[/b]", self.mgmt_addr)
         table.add_row("[b]mgmt_port[/b]", self.mgmt_port)
+        table.add_row("[b]config_managed[/b]", str(self.config_managed))
         yield table

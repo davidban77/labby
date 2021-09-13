@@ -282,6 +282,7 @@ class GNS3Project(LabbyProject):
         labels: List[str] = [],
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
+        config_managed: bool = True,
         **kwargs,
     ) -> GNS3Node:
         """Create node.
@@ -315,6 +316,7 @@ class GNS3Project(LabbyProject):
                 labels=labels,
                 mgmt_addr=mgmt_addr,
                 mgmt_port=mgmt_port,
+                config_managed=config_managed,
                 **kwargs,
             )
 
@@ -465,6 +467,7 @@ class GNS3Project(LabbyProject):
             "Console Port",
             "Labels",
             "Mgmt Address",
+            "Config Managed",
             "# Ports",
             title="Nodes Information",
             title_justify="center",
@@ -496,6 +499,7 @@ class GNS3Project(LabbyProject):
                 str(node.console),
                 str(node.labels) if node.labels is not None else "None",
                 node.mgmt_addr,
+                bool_status(node.config_managed),
                 node_ports,
             )
         return table

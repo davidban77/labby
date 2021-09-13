@@ -1,4 +1,5 @@
 """Project Data module."""
+from netaddr.ip import IPRange
 import typer
 from typing import Tuple
 from pathlib import Path
@@ -27,15 +28,18 @@ class ProjectData:
                     raise ValueError(f"Missing required fields in project file: {required}")
             self.name = self.project_data["main"]["name"]
             self.mgmt_network = self.project_data["main"]["mgmt_network"]
-            self.mgmt_creds = self.project_data["main"]["mgmt_creds"]
+            # self.mgmt_creds = self.project_data["main"]["mgmt_creds"]
             self.version = self.project_data["main"].get("version", "1.0")
             self.description = self.project_data["main"].get("description", "")
             self.contributors = self.project_data["main"].get("contributors", [])
             self.template = self.project_data["main"].get("template", "")
             self.labels = self.project_data["main"].get("labels", [])
 
-            # Check creds
-            self.check_creds()
+            # Chek Management IP Addresses
+            self.check_mgmt_ips()
+
+            # # Check creds
+            # self.check_creds()
 
             # Project nodes and links
             self.nodes_spec = self.project_data.get("nodes_spec", [])
@@ -54,10 +58,24 @@ class ProjectData:
         """Get the project data from the project file."""
         return utils.load_yaml_file(str(self.project_file))
 
-    def check_creds(self) -> None:
-        """Check if the credentials are valid."""
-        if not utils.check_creds(self.mgmt_network, self.mgmt_creds):
-            raise ValueError("Invalid credentials for the management network")
+    def check_mgmt_ips(self) -> None:
+        """Check if the management IP addresses are valid."""
+        if self.mgmt_network.get("ip_range"):
+            try:
+                self.mgmt_ips = IPRange(self.mgmt_network["ip_range"][0], self.mgmt_network["ip_range"][1])
+            except Exception as err:
+                raise ValueError(f"Invalid management IP range: {err}")
+        else:
+            try:
+                hosts = list(self.mgmt_network["network"].iter_hosts())
+                self.mgmt_ips = IPRange(hosts[0], hosts[-1])
+            except Exception as err:
+                raise ValueError(f"Invalid management IP range: {err}")
+
+    # def check_creds(self) -> None:
+    #     """Check if the credentials are valid."""
+    #     if not utils.check_creds(self.mgmt_network, self.mgmt_creds):
+    #         raise ValueError("Invalid credentials for the management network")
 
 
 def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
