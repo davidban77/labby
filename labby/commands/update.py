@@ -82,7 +82,7 @@ def project_attr(
 
     Example:
 
-    > labby update project attr --project lab01 --boolean auto_close yes
+    > labby update project attr --project lab01 --bool auto_close yes
     """
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
