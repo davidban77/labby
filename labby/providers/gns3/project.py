@@ -1,36 +1,53 @@
-# import typer
+"""GNS3 Project module."""
 import re
 import time
 from typing import Any, List, Optional, Dict
 from rich import box
 from rich.console import Console, ConsoleOptions, ConsoleRenderable, RenderResult
 from rich.table import Table
-
-# from rich.progress import track
 from pydantic import Field
+from nornir import InitNornir
 from gns3fy.projects import Project
-
-# from gns3fy.templates import get_templates
 from labby.models import LabbyProject
 from labby.providers.gns3.node import GNS3Node
 from labby.providers.gns3.link import GNS3Link
 from labby.providers.gns3.utils import bool_status, link_status, node_status, node_net_os, template_type, project_status
 from labby.utils import console
 from labby import lock_file
-from nornir import InitNornir
 
 
-def get_link_name(node_a, port_a, node_b, port_b) -> str:
+def get_link_name(node_a: str, port_a: str, node_b: str, port_b: str) -> str:
+    """Return the name of a link.
+
+    Args:
+        node_a (str): Side A node name.
+        port_a (str): Side A port name.
+        node_b (str): Side B node name.
+        port_b (str): Side B port name.
+
+    Returns:
+        str: Link name.
+    """
     return f"{node_a}: {port_a} == {node_b}: {port_b}"
 
 
 class GNS3Project(LabbyProject):
+    """GNS3 Project class."""
+
     nodes: Dict[str, GNS3Node] = Field(default_factory=dict)  # type: ignore
     links: Dict[str, GNS3Link] = Field(default_factory=dict)  # type: ignore
     _base: Project
     _initial_state: Optional[str]
 
     def __init__(self, name: str, project: Project, labels: List[str] = [], **data) -> None:
+        """Initialize a GNS3 Project instance.
+
+        Args:
+            name (str): Project name.
+            project (Project): GNS3 Project instance.
+            labels (List[str], optional): List of labels.
+            data (Dict[str, Any]): Project data.
+        """
         project.get()
         initial_state = project.status
         super().__init__(name=name, labels=labels, _base=project, _initial_state=initial_state, **data)
@@ -42,6 +59,7 @@ class GNS3Project(LabbyProject):
         self.init_nornir()
 
     def init_nornir(self) -> None:
+        """Initialize Norir instance."""
         self.nornir = InitNornir(
             runner={
                 "plugin": "threaded",
@@ -53,6 +71,16 @@ class GNS3Project(LabbyProject):
         )
 
     def _update_labby_project_attrs(self, nodes_refresh: bool = False, links_refresh: bool = False):
+        """Update labby project attributes.
+
+        Args:
+            nodes_refresh (bool, optional): Refresh nodes attributes.
+            links_refresh (bool, optional): Refresh links attributes.
+
+        Raises:
+            ValueError: If a node template could not be resolved
+            ValueError: If a link name could not be resolved
+        """
         self.status = self._base.status
         self.id = self._base.project_id
         if nodes_refresh:
@@ -87,21 +115,43 @@ class GNS3Project(LabbyProject):
                 self.links.update({_link.name: GNS3Link(name=_link.name, project_name=self.name, link=_link, **kwargs)})
 
     def to_initial_state(self):
+        """Set project status to initial state."""
         if self._initial_state == "closed":
             self.stop(stop_nodes=False)
 
     def get_web_url(self) -> str:
+        """Return the project web url.
+
+        Returns:
+            str: Project web url.
+        """ """
+        """
         pattern = re.compile(r"/v\d")
         server_url = pattern.sub("", self._base._connector.base_url)
         return f"{server_url}/static/web-ui/server/1/project/{self.id}"
 
     def get(self, nodes_refresh: bool = False, links_refresh: bool = False) -> None:
+        """Get project attributes.
+
+        Args:
+            nodes_refresh (bool, optional): Refresh nodes attributes.
+            links_refresh (bool, optional): Refresh links attributes.
+        """
         console.log(f"[b]({self.name})[/] Collecting project data")
         self._base.get()
         self._update_labby_project_attrs(nodes_refresh, links_refresh)
         self.init_nornir()
 
     def start(self, start_nodes: Optional[str] = None, nodes_delay: int = 5) -> bool:
+        """Start project.
+
+        Args:
+            start_nodes (Optional[str], optional): Start nodes.
+            nodes_delay (int, optional): Nodes delay between starts.
+
+        Returns:
+            bool: True if project started.
+        """
         console.log(f"[b]({self.name})[/] Starting project")
         self._base.open()
         # Delay to give project to finish initilization
@@ -123,6 +173,14 @@ class GNS3Project(LabbyProject):
         return True
 
     def stop(self, stop_nodes: bool = True) -> bool:
+        """Stop project.
+
+        Args:
+            stop_nodes (bool, optional): Stop nodes before.
+
+        Returns:
+            bool: True if project stopped.
+        """
         console.log(f"[b]({self.name})[/] Stopping project")
 
         # Stop nodes
@@ -142,6 +200,11 @@ class GNS3Project(LabbyProject):
         return True
 
     def update(self, **kwargs) -> None:
+        """Update project attributes.
+
+        Args:
+            **kwargs: Attributes to update.
+        """
         if self.status == "closed":
             self.start()
 
@@ -158,6 +221,11 @@ class GNS3Project(LabbyProject):
         # self._update_labby_project_attrs(refresh=True)
 
     def delete(self) -> bool:
+        """Delete project.
+
+        Returns:
+            bool: True if project deleted.
+        """
         console.log(f"[b]({self.name})[/] Deleting project")
         project_deleted = self._base.delete()
         time.sleep(2)
@@ -174,19 +242,18 @@ class GNS3Project(LabbyProject):
             return False
 
     def start_nodes(self, start_nodes: str, nodes_delay: int = 5) -> None:
+        """Start nodes.
+
+        Args:
+            start_nodes (str): Start nodes method. Options are: "all", "one_by_one".
+            nodes_delay (int, optional): Nodes delay between starts.
+        """
         if start_nodes == "all":
             console.log(f"[b]({self.name})[/] Starting all nodes in project {self.name}...")
             self._base.nodes_action(action="start", poll_wait_time=nodes_delay)
             # Delay to give some time for device bootup
             time.sleep(5)
         elif start_nodes == "one_by_one":
-            # for node in track(self._base.nodes.values(), description=f"[b]({self.name})[/] Starting nodes..."):
-            #     if node.status == "started":
-            #         console.log(f"[b]({self.name})[/] Node [cyan i]{node.name}[/] already started...")
-            #     else:
-            #         console.log(f"[b]({self.name})[/] Starting node: [cyan i]{node.name}[/]")
-            #         node.start()
-            #         time.sleep(nodes_delay)
             with console.status(f"[b]({self.name})[/] Starting nodes...", spinner="aesthetic") as status:
                 for node in self.nodes.values():
                     if node.status == "started":
@@ -202,6 +269,7 @@ class GNS3Project(LabbyProject):
         console.log(f"[b]({self.name})[/] Project nodes have been started", style="good")
 
     def stop_nodes(self) -> None:
+        """Stop nodes."""
         console.log(f"[b]({self.name})[/] Stopping nodes")
         self._base.nodes_action(action="stop")
         time.sleep(2)
@@ -214,8 +282,21 @@ class GNS3Project(LabbyProject):
         labels: List[str] = [],
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
+        config_managed: bool = True,
         **kwargs,
     ) -> GNS3Node:
+        """Create node.
+
+        Args:
+            name (str): Node name.
+            template (str): Node template.
+            labels (List[str], optional): Node labels.
+            mgmt_addr (Optional[str], optional): Node management address.
+            mgmt_port (Optional[str], optional): Node management port.
+
+        Returns:
+            GNS3Node: Node instance.
+        """
         if self.status == "closed":
             self.start()
 
@@ -235,6 +316,7 @@ class GNS3Project(LabbyProject):
                 labels=labels,
                 mgmt_addr=mgmt_addr,
                 mgmt_port=mgmt_port,
+                config_managed=config_managed,
                 **kwargs,
             )
 
@@ -253,23 +335,15 @@ class GNS3Project(LabbyProject):
             self.init_nornir()
             return node
 
-    # def delete_node(self, name: str) -> bool:
-    #     if self.status == "closed":
-    #         self.start()
-
-    #     console.log(f"[b]({self.name})({name})[/] Deleting node")
-    #     node_deleted = self._base.delete_node(name=name)
-    #     time.sleep(2)
-    #     self.get(nodes_refresh=True, links_refresh=True)
-
-    #     if not node_deleted:
-    #         console.log(f"[b]({self.name})[/] Node {name} was not deleted", style="warning")
-    #         return False
-
-    #     console.log(f"[b]({self.name})({name})[/] Node deleted")
-    #     return True
-
     def search_node(self, name: str) -> Optional[GNS3Node]:
+        """Search node in project.
+
+        Args:
+            name (str): Node name.
+
+        Returns:
+            Optional[GNS3Node]: Node instance.
+        """
         if self.status == "closed":
             self.start()
 
@@ -288,57 +362,9 @@ class GNS3Project(LabbyProject):
 
             # Refresh nornir object on host
             if node.nornir is None:
-                # print(type(self.nornir.inventory.hosts[name]))
-                # print(self.nornir.inventory.hosts[name])
-                # node.nornir = self.nornir.filter(host=name)
                 node.nornir = self.nornir.filter(filter_func=lambda h: h.name == name)  # type: ignore
-                # print(node.nornir.inventory.hosts[name].values())
-                # node.nornir = self.nornir.inventory.hosts[name]
 
         return node
-
-    # def update_node(self, name: str, **kwargs) -> None:
-    #     node = self.search_node(name)
-    #     if node is None:
-    #         console.log(f"[b]({self.name})({name})[/] Node not found", style="warning")
-    #         raise typer.Exit(1)
-
-    #     with console.status(f"[b]({self.name})({node.name})[/] Updating node: {kwargs}", spinner="aesthetic") as _:
-    #         node.update(**kwargs)
-    #     lock_file.apply_node_data(node, self)
-
-    # def update_node(self, name: str, **kwargs) -> None:
-    #     node = self.search_node(name)
-    #     if node is None:
-    #         console.log(f"[b]({self.name})({name})[/] Node not found", style="warning")
-    #         raise typer.Exit(1)
-
-    #     with console.status(f"[b]({self.name})({node.name})[/] Updating node: {kwargs}", spinner="aesthetic") as _:
-    #         node.update(**kwargs)
-    #     lock_file.apply_node_data(node, self)
-
-    # def bootstrap_node(self, name: str, config: str, boot_delay: int = 5) -> bool:
-    #     console.log(f"[b]({self.name})({name})[/] Bootstraping node")
-    #     node = self.search_node(name)
-    #     console.log(node)
-    #     if node.status != "started":
-    #         node.start()
-    #         time.sleep(boot_delay)
-    #     if not node:
-    #         console.log(f"[b]({self.name})[/]Node [cyan i]{name}[/] not found. Nothing to do...", style="error")
-    #         raise typer.Exit(1)
-    #     server_host = dissect_url(self._base._connector.base_url)[1]
-    #     if not server_host:
-    #         console.log(f"[b]({self.name})({node.name})[/] GNS3 server host could not be parsed", style="error")
-    #         raise typer.Exit(1)
-
-    #     console.log(f"[b]({self.name})({name})[/] Running bootstrap config")
-    #     if bootstrap(server_host=server_host, node=node, config=config):
-    #         console.log(f"[b]({self.name})({node.name})[/] Bootstrapped node", style="good")
-    #         return True
-    #     else:
-    #         console.log(f"[b]({self.name})({node.name})[/] Node could not be configured", style="error")
-    #         return False
 
     def create_link(
         self,
@@ -350,6 +376,19 @@ class GNS3Project(LabbyProject):
         labels: List[str] = [],
         **kwargs,
     ) -> GNS3Link:
+        """Create link.
+
+        Args:
+            node_a (str): Side A Node name.
+            port_a (str): Side A Port name.
+            node_b (str): Side B Node name.
+            port_b (str): Side B Port name.
+            filters (Optional[Dict[str, Any]], optional): Filters to use.
+            labels (List[str], optional): Link labels.
+
+        Returns:
+            GNS3Link: Link instance.
+        """
         if self.status == "closed":
             self.start()
 
@@ -370,31 +409,22 @@ class GNS3Project(LabbyProject):
             time.sleep(2)
             if filters:
                 _link.apply_metric(**filters)
-            # console.log(_link)
             console.log(f"[b]({self.name})({_link.name})[/] Link created", style="good")
             lock_file.apply_link_data(_link, self)
             return _link
 
-    # def delete_link(self, node_a: str, port_a: str, node_b: str, port_b: str) -> bool:
-    #     if self.status == "closed":
-    #         self.start()
-
-    #     console.log(f"[b]({self.name})({node_a}: {port_a} <==> {port_b}: {node_b})[/] Deleting link")
-    #     link_deleted = self._base.delete_link(node_a, port_a, node_b, port_b)
-    #     time.sleep(2)
-    #     self.get(nodes_refresh=True, links_refresh=True)
-
-    #     if not link_deleted:
-    #         console.log(
-    #             f"[b]({self.name})[/] Link {node_a}: {port_a} <==> {port_b}: {node_b} was not deleted",
-    #             style="warning",
-    #         )
-    #         return False
-
-    #     console.log(f"[b]({self.name})[/] Link [cyan i]{node_a}: {port_a} <==> {port_b}: {node_b}[/] deleted")
-    #     return True
-
     def search_link(self, node_a: str, port_a: str, node_b: str, port_b: str) -> Optional[GNS3Link]:
+        """Search link in project.
+
+        Args:
+            node_a (str): Side A Node name.
+            port_a (str): Side A Port name.
+            node_b (str): Side B Node name.
+            port_b (str): Side B Port name.
+
+        Returns:
+            Optional[GNS3Link]: Link instance.
+        """
         # Refresh attributes
         self.get()
 
@@ -412,7 +442,18 @@ class GNS3Project(LabbyProject):
 
         return link
 
-    def render_nodes_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_nodes_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
+        """Render a Project's nodes attributes summary.
+
+        Args:
+            field (Optional[str], optional): Field to filter on.
+            value (Optional[str], optional): Value to filter on.
+
+        Returns:
+            ConsoleRenderable: Renderable table of the nodes attributes.
+        """
         table = Table(
             "Name",
             "Status",
@@ -426,6 +467,7 @@ class GNS3Project(LabbyProject):
             "Console Port",
             "Labels",
             "Mgmt Address",
+            "Config Managed",
             "# Ports",
             title="Nodes Information",
             title_justify="center",
@@ -438,6 +480,12 @@ class GNS3Project(LabbyProject):
             nodes = list(self.nodes.values())
         for node in nodes:
             node_ports = "None" if node.interfaces is None else str(len(node.interfaces))
+
+            # Skip node if labels are not present
+            if labels:
+                if not any(x in node.labels for x in labels):
+                    continue
+
             table.add_row(
                 f"[b]{node.name}[/]",
                 node_status(node.status),
@@ -451,11 +499,26 @@ class GNS3Project(LabbyProject):
                 str(node.console),
                 str(node.labels) if node.labels is not None else "None",
                 node.mgmt_addr,
+                bool_status(node.config_managed),
                 node_ports,
             )
         return table
 
-    def render_links_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_links_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
+        """Render a Project's links attributes summary.
+
+        Args:
+            field (Optional[str], optional): Field to filter on.
+            value (Optional[str], optional): Value to filter on.
+
+        Raises:
+            ValueError: If a link does not have an endpoint defined.
+
+        Returns:
+            ConsoleRenderable: Renderable table of the links attributes.
+        """
         table = Table(
             "Node A",
             "Port A",
@@ -475,9 +538,16 @@ class GNS3Project(LabbyProject):
             links = [x for x in self.links.values() if getattr(x, field) == value]
         else:
             links = list(self.links.values())
+
         for link in links:
             if link.endpoint is None:
                 raise ValueError(f"Link {link} does not have endpoint defined")
+
+            # Skip node if labels are not present
+            if labels:
+                if not any(x in link.labels for x in labels):
+                    continue
+
             table.add_row(
                 f"[b]{link.endpoint.node_a}[/]",
                 f"{link.endpoint.port_a}",
@@ -492,6 +562,18 @@ class GNS3Project(LabbyProject):
         return table
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        """Rich repr for a project.
+
+        Args:
+            console (Console): Console instance.
+            options (ConsoleOptions): Console options.
+
+        Returns:
+            RenderResult: Console render result.
+
+        Yields:
+            Iterator[RenderResult]: Console render result.
+        """
         yield f"[b]Project:[/b] {self.name}"
         table = Table(
             "Status",

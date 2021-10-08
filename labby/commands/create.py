@@ -25,7 +25,7 @@ class LinkFilter(str, Enum):  # noqa: D101
 
 @app.command(short_help="Creates a project")
 def project(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
     label: Optional[List[str]] = typer.Option(None, help="Add labels to created project"),
 ):
     """
@@ -33,7 +33,7 @@ def project(
 
     Example:
 
-    > labby create project --project lab01 --label mpls --label v0.1.0
+    > labby create project lab01 --label mpls --label v0.1.0
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -49,8 +49,8 @@ def project(
 
 @app.command(short_help="Creates a node")
 def node(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     template_name: str = typer.Option(..., "--template", "-t", help="Node template"),
     mgmt_port: Optional[str] = typer.Option(None, help="Management Interface used on the device"),
     mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
@@ -61,7 +61,7 @@ def node(
 
     Example:
 
-    > labby create node --project lab01 --node r1 --template "Arista EOS vEOS 4.25.0FX" --label mpls_pe
+    > labby create node r1 --project lab01 --template "Arista EOS vEOS 4.25.0FX" --label mpls_pe
 
     To verify available node templates you can run:
 

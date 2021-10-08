@@ -1,0 +1,18 @@
+hostname {{ node_name }}
+!
+feature nxapi
+feature scp-server
+cfs eth distribute
+feature bash-shell
+feature interface-vlan
+feature lldp
+! USER
+username {{ user }} password 0 {{ password }} role network-admin
+!
+interface {{ mgmt_port }}
+ip address {{ mgmt_addr | ipaddr(render='address') }} {{ mgmt_addr | ipaddr(render='netmask') }}
+no shutdown
+!
+exit
+exit
+copy running-config startup-config

@@ -7,12 +7,10 @@ RUN apt-get clean && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends vim git
 
-RUN pip install --upgrade pip \
-  && pip install pipx \
-  && pipx ensurepath
+RUN pip install --upgrade pip
 
 WORKDIR /$HOME
 
-RUN pipx install git+https://github.com/davidban77/labby
+RUN pip install git+https://github.com/davidban77/labby
 
 ENTRYPOINT [ "bash" ]

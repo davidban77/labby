@@ -95,7 +95,7 @@ class LabbyNode(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def bootstrap(self, config: str, boot_delay: int = 5) -> bool:
+    def bootstrap(self, config: str, boot_delay: int = 5, delay_multiplier: int = 1) -> bool:
         pass
 
     @abc.abstractmethod
@@ -116,16 +116,16 @@ class LabbyNode(BaseModel, abc.ABC):
 
     @abc.abstractmethod
     def apply_config_over_console(
-        self, config: str, user: Optional[str] = None, password: Optional[str] = None
+        self, config: str, user: Optional[str] = None, password: Optional[str] = None, delay_multiplier: int = 1
     ) -> bool:
         pass
 
     @abc.abstractmethod
-    def get_config(self) -> bool:
+    def get_config(self) -> Optional[str]:
         pass
 
     @abc.abstractmethod
-    def get_config_over_console(self, user: Optional[str] = None, password: Optional[str] = None) -> bool:
+    def get_config_over_console(self, user: Optional[str] = None, password: Optional[str] = None) -> Optional[str]:
         pass
 
 
@@ -247,11 +247,15 @@ class LabbyProject(BaseModel, abc.ABC):
     #     pass
 
     @abc.abstractmethod
-    def render_nodes_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_nodes_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass
 
     @abc.abstractmethod
-    def render_links_summary(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_links_summary(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass
 
     @abc.abstractmethod
@@ -308,5 +312,7 @@ class LabbyProvider(BaseModel, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def render_project_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
+    def render_project_list(
+        self, field: Optional[str] = None, value: Optional[str] = None, labels: Optional[List[str]] = []
+    ) -> ConsoleRenderable:
         pass

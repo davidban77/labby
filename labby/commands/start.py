@@ -22,7 +22,7 @@ class StartNodes(str, Enum):  # noqa: D101
 
 @app.command(short_help="Starts a project")
 def project(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
     start_nodes: Optional[StartNodes] = typer.Option(None, help="Strategy to use to start nodes in project"),
     delay: int = typer.Option(10, help="Time to wait starting nodes"),
 ):
@@ -30,7 +30,7 @@ def project(
     Starts a Project and optionally you can start the nodes.
 
     Example:
-    > labby start project --project lab01 --start-nodes one_by_one --delay 20
+    > labby start project lab01 --start-nodes one_by_one --delay 20
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -44,15 +44,15 @@ def project(
 
 @app.command(short_help="Starts a node")
 def node(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
 ):
     """
     Starts a Node.
 
     Example:
 
-    > labby start node --project lab01 --node r1
+    > labby start node r1 --project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)

@@ -1,32 +1,25 @@
+"""Project Data module."""
+from netaddr.ip import IPRange
 import typer
 from typing import Tuple
 from pathlib import Path
 from netaddr import IPNetwork
-from nornir.core.task import Task
-from nornir_scrapli.tasks import send_config, send_command
-from nornir.core.helpers.jinja_helper import render_from_file
 from labby.models import LabbyProject
 from labby import config, utils
 
 
-SHOW_RUN_COMMANDS = {
-    "arista_eos": "show run",
-    "cisco_ios": "show run",
-    "cisco_iosxe": "show run",
-    "cisco_nxos": "show run",
-}
-
-
-SAVE_COMMANDS = {
-    "arista_eos": "wr mem",
-    "cisco_ios": "wr mem",
-    "cisco_iosxe": "wr mem",
-    "cisco_nxos": "copy running-config startup-config",
-}
-
-
 class ProjectData:
+    """Labby Project Data object."""
     def __init__(self, project_file: Path) -> None:
+        """Initialize the ProjectData object.
+
+        Args:
+            project_file (Path): The path to the project file.
+
+        Raises:
+            ValueError: If missing required fields in the project file.
+            FileNotFoundError: If the project file does not exist.
+        """
         if project_file.is_file():
             self.project_file = project_file
             self.project_data = self.get_project_data()
@@ -35,15 +28,18 @@ class ProjectData:
                     raise ValueError(f"Missing required fields in project file: {required}")
             self.name = self.project_data["main"]["name"]
             self.mgmt_network = self.project_data["main"]["mgmt_network"]
-            self.mgmt_creds = self.project_data["main"]["mgmt_creds"]
+            # self.mgmt_creds = self.project_data["main"]["mgmt_creds"]
             self.version = self.project_data["main"].get("version", "1.0")
             self.description = self.project_data["main"].get("description", "")
             self.contributors = self.project_data["main"].get("contributors", [])
             self.template = self.project_data["main"].get("template", "")
             self.labels = self.project_data["main"].get("labels", [])
 
-            # Check creds
-            self.check_creds()
+            # Chek Management IP Addresses
+            self.check_mgmt_ips()
+
+            # # Check creds
+            # self.check_creds()
 
             # Project nodes and links
             self.nodes_spec = self.project_data.get("nodes_spec", [])
@@ -62,32 +58,35 @@ class ProjectData:
         """Get the project data from the project file."""
         return utils.load_yaml_file(str(self.project_file))
 
-    def check_creds(self) -> None:
-        """Check if the credentials are valid."""
-        if not utils.check_creds(self.mgmt_network, self.mgmt_creds):
-            raise ValueError("Invalid credentials for the management network")
+    def check_mgmt_ips(self) -> None:
+        """Check if the management IP addresses are valid."""
+        if self.mgmt_network.get("ip_range"):
+            try:
+                self.mgmt_ips = IPRange(self.mgmt_network["ip_range"][0], self.mgmt_network["ip_range"][1])
+            except Exception as err:
+                raise ValueError(f"Invalid management IP range: {err}")
+        else:
+            try:
+                hosts = list(self.mgmt_network["network"].iter_hosts())
+                self.mgmt_ips = IPRange(hosts[0], hosts[-1])
+            except Exception as err:
+                raise ValueError(f"Invalid management IP range: {err}")
 
-
-def backup_task(task: Task):
-    task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
-
-
-def save_task(task: Task):
-    task.run(task=send_command, command=SAVE_COMMANDS[task.host.platform])  # type: ignore
-
-
-def config_task(task: Task, project_data: ProjectData, project: LabbyProject):
-    cfg_data = render_from_file(
-        path=str(Path(project_data.template).parent),
-        template=Path(project_data.template).name,
-        jinja_filters={"ipaddr": utils.ipaddr_renderer},
-        **dict(project=project, node=task.host.data["labby_obj"], **project_data.vars),
-    )
-    task.run(task=send_config, config=cfg_data)
+    # def check_creds(self) -> None:
+    #     """Check if the credentials are valid."""
+    #     if not utils.check_creds(self.mgmt_network, self.mgmt_creds):
+    #         raise ValueError("Invalid credentials for the management network")
 
 
 def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
-    """Get the project from the project file."""
+    """Get the project data from the project file.
+
+    Args:
+        project_file (Path): The path to the project file.
+
+    Returns:
+        Tuple[LabbyProject, ProjectData]: A tuple with the project and the project data.
+    """
     project_data = ProjectData(project_file)
     utils.console.log(f"[b]({project_data.name})[/] Retrieving project specification")
     provider = config.get_provider()
@@ -102,6 +101,17 @@ def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData
 
 
 def sync_project_data(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
+    """Sync the project data from the project file.
+
+    Args:
+        project_file (Path): The path to the project file.
+
+    Raises:
+        typer.Exit: If a node specified in the project file does not exist.
+
+    Returns:
+        Tuple[LabbyProject, ProjectData]: A tuple with the project and the project data.
+    """
     project, project_data = get_project_from_file(project_file)
 
     mgmt_network = IPNetwork(project_data.mgmt_network)

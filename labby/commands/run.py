@@ -13,7 +13,8 @@ from typing import Any, Dict, Optional
 from pathlib import Path
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
-from labby.commands.common import save_task, sync_project_data
+from labby.project_data import sync_project_data
+from labby.nornir_tasks import save_task
 from labby import utils, config
 
 
@@ -56,7 +57,7 @@ def file_check(value: Path) -> Path:
 
 
 @project_app.command(short_help="Launches a project on a browser")
-def launch(project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT")):
+def launch(project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT")):
     """
     Launches a Project on a browser.
 
@@ -75,12 +76,19 @@ def launch(project_name: str = typer.Option(..., "--project", "-p", help="Projec
 
 @node_app.command(short_help="Initial bootsrtap config on a Node")
 def bootstrap(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     bconfig: Optional[Path] = typer.Option(None, "--config", "-c", help="Bootstrap configuration file."),
-    user: Optional[str] = typer.Option(None, help="Initial user to configure on the system."),
-    password: Optional[str] = typer.Option(None, help="Initial password to configure on the system."),
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
+    ),
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
+    ),
+    delay_multiplier: int = typer.Option(
+        1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
+    ),
 ):
     r"""
     Sets a bootstrap config on a Node.
@@ -89,11 +97,11 @@ def bootstrap(
 
     - By passing the bootstrap configuration directly from a file:
 
-    > labby run node bootstrap --project lab01 --config r1.txt --node r1
+    > labby run node bootstrap --project lab01 --config r1.txt r1
 
     - By using labby bootstrap templates
 
-    > labby run node bootstrap --user netops --password netops123 --project lab01 --node r1
+    > labby run node bootstrap -p lab01 --user netops --password netops123 r1
     """
     # Get network lab provider
     provider = config.get_provider()
@@ -152,23 +160,35 @@ def bootstrap(
         utils.console.log(f"[b]({project.name})({node.name})[/] Bootstrap config rendered", style="good")
 
     # Run node bootstrap config process
-    node.bootstrap(config=cfg_data, boot_delay=boot_delay)
+    node.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 @node_app.command(name="config", short_help="Configures a Node.")
 def node_config(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     config_template: Path = typer.Option(..., "--template", "-t", help="Config template file"),
     vars_file: Path = typer.Option(..., "--vars", "-v", help="Variables YAML file. For example: vars.yml"),
-    user: str = typer.Option(None, help="Node user"),
-    password: str = typer.Option(None, help="Node password"),
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="User to use for the node connection", envvar="LABBY_NODE_USER"
+    ),
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Password to use for the node connection", envvar="LABBY_NODE_PASSWORD"
+    ),
     console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
+    delay_multiplier: int = typer.Option(
+        1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
+    ),
 ):
     """
     Configures a Node.
 
-    > labby run node config -p lab01 -n r1 --user netops --password netops123 -t bgp.conf.j2 -v r1.yml
+    By default, the configuration is applied over the node mgmt_port. If you want to retrieve the configuration over
+    console, you can use the `--console` option.
+
+    Example:
+
+    > labby run node config r1 -p lab01 --user netops --template bgp.conf.j2 --vars r1.yml --console
     """
     # Get network lab provider
     provider = config.get_provider()
@@ -219,7 +239,9 @@ def node_config(
 
     # Apply node configuration
     if console:
-        applied = node.apply_config_over_console(config=cfg_data, user=user, password=password)
+        applied = node.apply_config_over_console(
+            config=cfg_data, user=user, password=password, delay_multiplier=delay_multiplier
+        )
     else:
         applied = node.apply_config(config=cfg_data, user=user, password=password)
     if applied:
@@ -234,6 +256,8 @@ def project_save(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter devices based on the model provided"),
     net_os: Optional[str] = typer.Option(None, "--net-os", "-n", help="Filter devices based on the net_os provided"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter devices based on the name"),
+    backup: Optional[Path] = typer.Option(None, "--backup", "-b", help="Backup directory location"),
+    silent: bool = typer.Option(False, "--silent", "-s", help="Silent mode", envvar="LABBY_SILENT"),
 ):
     """
     Saves nodes configuration.
@@ -243,6 +267,11 @@ def project_save(
     > labby run project nodes-save --project-file "myproject.yml" --backup /path/to/backup/folder
     """
     project, project_data = sync_project_data(project_file)
+
+    # Check backup directory
+    if backup:
+        if not backup.exists():
+            backup.mkdir(parents=True)
 
     # Apply filters
     if model:
@@ -257,10 +286,14 @@ def project_save(
     utils.console.log(
         f"[b]({project.name})[/] Devices to configure: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
     )
-    result = nr_filtered.run(task=save_task)
-    utils.console.rule(title="Start section")
-    print_result(result)
-    utils.console.rule(title="End section")
+    result = nr_filtered.run(task=save_task, backup=backup)
+    if not silent:
+        utils.console.rule(title="Start section")
+        print_result(result)
+        utils.console.rule(title="End section")
+    utils.console.log(
+        f"[b]({project.name})[/] Devices config saved: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
+    )
 
 
 @project_app.command(name="node-configs", short_help="Configures Nodes from a project file.")

@@ -5,9 +5,10 @@ Handles all get/retrive information actions of labby resources.
 Example:
 > labby get --help
 """
+from pathlib import Path
 import typer
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from labby import utils, config
 
 
@@ -36,8 +37,13 @@ class NodeFilter(str, Enum):  # noqa: D101
 
 @project_app.command(name="list", short_help="Retrieves summary list of projects")
 def project_list(
-    filter: Optional[ProjectFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[ProjectFilter] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of projects configured on server.
@@ -45,21 +51,25 @@ def project_list(
     Example:
 
     > labby get project list --filter status --value opened
+
+    Or based on labels
+
+    > labby get project list --label telemetry --label test
     """
     provider = config.get_provider()
-    utils.console.log(provider.render_project_list(field=filter, value=value))
+    utils.console.log(provider.render_project_list(field=filter, value=value, labels=labels))
 
 
 @project_app.command(short_help="Retrieves details of a project", name="detail")
 def project_detail(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
 ):
     """
     Retrieves Project details.
 
     Example:
 
-    > labby get project detail --project lab01
+    > labby get project detail lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -72,16 +82,17 @@ def project_detail(
     utils.console.log(project.render_links_summary())
     project.to_initial_state()
 
-    # TODO: Delete this
-    # if project.nornir:
-    #     utils.console.log(project.nornir.inventory.hosts)
-
 
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
 def node_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[NodeFilter] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of nodes configured on a project.
@@ -89,6 +100,10 @@ def node_list(
     Example:
 
     > labby get node list --project lab01 --filter status --value started
+
+    Or based on labels
+
+    > labby get node list --project lab01 --label edge --label mgmt
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -96,7 +111,7 @@ def node_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_nodes_summary(field=filter, value=value))
+    utils.console.log(project.render_nodes_summary(field=filter, value=value, labels=labels))
     project.to_initial_state()
 
 
@@ -118,8 +133,8 @@ def node_template_list(
 
 @node_app.command(short_help="Retrieves details of a node", name="detail")
 def node_detail(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     properties: bool = typer.Option(False, "--properties", "-o", help="Show node properties"),
 ):
     """
@@ -151,17 +166,25 @@ def node_detail(
 
 @node_app.command(short_help="Retrieves node running configuration", name="config")
 def node_config(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
     console: bool = typer.Option(False, "--console", "-c", help="Retrieve configuration over console"),
-    user: Optional[str] = typer.Option(None, "--user", "-u", help="User to use for console connection"),
-    password: Optional[str] = typer.Option(None, "--password", "-w", help="Password to use for console connection"),
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="User to use for the node connection", envvar="LABBY_NODE_USER"
+    ),
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Password to use for the node connection", envvar="LABBY_NODE_PASSWORD"
+    ),
+    save: Optional[Path] = typer.Option(None, "--save", "-s", help="Save configuration to file specified"),
 ):
     """Retrieve node running configuration.
 
+    By default, the configuration is retrieved over the node mgmt_port. If you want to retrieve the configuration over
+    console, you can use the `--console` option.
+
     Example:
 
-    > labby get node detail --project lab01 --node r1
+    > labby get node detail r1 --project lab01 --user netops --save /tmp/config.txt
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -178,9 +201,15 @@ def node_config(
         if node.nornir:
             utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
 
-        node.get_config()
+        config_text = node.get_config()
     else:
-        node.get_config_over_console(user=user, password=password)
+        config_text = node.get_config_over_console(user=user, password=password)
+
+    if save and config_text:
+        save.write_text(config_text)
+        utils.console.log(
+            f"[b]({project.name})({node.name})[/] Saved configuration to: {save.absolute()}", style="good"
+        )
 
 
 @node_app.command(short_help="Retrieves details of a node template", name="template-detail")
@@ -205,8 +234,13 @@ def node_template_detail(
 @link_app.command(name="list", short_help="Retrieves summary list of links in a project")
 def link_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
-    value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
+    filter: Optional[str] = typer.Option(
+        None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
+    ),
+    value: Optional[str] = typer.Option(
+        None, "--value", "-v", help="Attribute value to filter on. Works with `--filter`"
+    ),
+    labels: Optional[List[str]] = typer.Option(None, "--label", "-l", help="Labels to filter on."),
 ):
     """
     Retrieve a summary list of links configured on a project.
@@ -214,6 +248,10 @@ def link_list(
     Example:
 
     > labby get link list --project lab01
+
+    Or based on labels
+
+    > labby get link list --project lab01 --label inter-dc
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)
@@ -221,7 +259,7 @@ def link_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_links_summary(field=filter, value=value))
+    utils.console.log(project.render_links_summary(field=filter, value=value, labels=labels))
     project.to_initial_state()
 
 

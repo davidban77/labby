@@ -13,15 +13,13 @@ app = typer.Typer(help="Deletes a Resource on Network Provider Lab")
 
 
 @app.command(short_help="Deletes a project")
-def project(
-    project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-):
+def project(project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT")):
     """
     Deletes a Project.
 
     Example:
 
-    > labby delete project --project lab01
+    > labby delete project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name)
@@ -36,15 +34,15 @@ def project(
 
 @app.command(short_help="Deletes a node")
 def node(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
 ):
     """
     Deletes a Node.
 
     Example:
 
-    > labby delete node --project lab01 --node r1
+    > labby delete node r1 --project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)

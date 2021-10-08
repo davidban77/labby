@@ -15,15 +15,15 @@ app = typer.Typer(help="Runs Restart actions on Network Provider Lab Resources")
 
 @app.command(short_help="Restarts a node")
 def node(
+    node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    node_name: str = typer.Option(..., "--node", "-n", help="Node name"),
 ):
     """
     Restarts a Node.
 
     Example:
 
-    > labby start node --project lab01 --node r1
+    > labby restart node r1 --project lab01
     """
     provider = config.get_provider()
     project = provider.search_project(project_name=project_name)

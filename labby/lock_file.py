@@ -31,7 +31,14 @@ def gen_node_data(node: LabbyNode) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: {node_name: {labels: labels, mgmt_port: mgmt_port, mgmt_addr}}
     """
-    return {node.name: {"labels": node.labels, "mgmt_port": node.mgmt_port, "mgmt_addr": node.mgmt_addr}}
+    return {
+        node.name: {
+            "labels": node.labels,
+            "mgmt_port": node.mgmt_port,
+            "mgmt_addr": node.mgmt_addr,
+            "config_managed": node.config_managed,
+        }
+    }
 
 
 def gen_link_data(link: LabbyLink) -> Dict[str, Any]:
