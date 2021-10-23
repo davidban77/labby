@@ -3,6 +3,7 @@ import re
 import typer
 import functools
 import yaml
+
 # from labby import settings
 from typing import Dict, List, Any, MutableMapping, Tuple, Optional, Literal
 from rich.console import Console
@@ -126,6 +127,7 @@ def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str
 
 def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
     """Catches errors and exceptions and rich prints it."""
+
     def decorator_error_catcher(func):
         @functools.wraps(func)
         def wrapper_error_catcher(*args, **kwargs):
@@ -141,6 +143,7 @@ def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
                 console.print("[red]Exiting...[/]\n")
             except Exception:
                 console.print_exception()
+
         return wrapper_error_catcher
 
     if _func is None:

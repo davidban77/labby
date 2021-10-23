@@ -1,6 +1,7 @@
 """Nornir Tasks module."""
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+
 # from datetime import datetime
 from pathlib import Path
 from nornir.core.task import Task

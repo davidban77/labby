@@ -10,6 +10,7 @@ from labby import config, utils
 
 class ProjectData:
     """Labby Project Data object."""
+
     def __init__(self, project_file: Path) -> None:
         """Initialize the ProjectData object.
 
