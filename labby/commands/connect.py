@@ -22,7 +22,7 @@ def node(
     console: bool = typer.Option(False, "--console", "-c", help="Apply configuration over console"),
 ):
     """
-    Connects to a Node bia SSH (default and if applicable) or Telnet console.
+    Connects to a Node via SSH (default and if applicable) or Telnet console.
 
     For console connection to work, you must have a Telnet client installed.
 
