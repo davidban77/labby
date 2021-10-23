@@ -117,8 +117,6 @@ def environments(
     layout["environments"].split(*env_layouts)
     layout["providers"].split(*prov_layouts)
     env = config.get_environment()
-    layout["footer"].update(
-        Text(f"Active Environment: {env.name.upper()}", style="bold magenta", justify="center")
-    )
+    layout["footer"].update(Text(f"Active Environment: {env.name.upper()}", style="bold magenta", justify="center"))
     utils.header(f"Config file at: [bold]{config_file.absolute()}[/]")
     utils.console.print(layout)

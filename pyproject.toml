@@ -24,6 +24,8 @@ toml = "^0.10.2"
 pytest = "^6.1.2"
 black = "^20.8b1"
 flake8 = "^3.8.4"
+invoke = "^1.6.0"
+pylint = "^2.11.1"
 
 [tool.black]
 line-length = 120
@@ -34,6 +36,36 @@ inherit = false
 match = "(?!__init__).*\\.py"
 match-dir = "(?!tests)[^\\.].*"
 add_ignore = "D212,D412"
+
+[tool.pylint.basic]
+# No docstrings required for private methods (Pylint default), or for test_ functions, or for inner Meta classes.
+no-docstring-rgx="^(_|test_|Meta$)"
+
+[tool.pylint.messages_control]
+# Line length is enforced by Black, so pylint doesn't need to check it.
+# Pylint and Black disagree about how to format multi-line arrays; Black wins.
+disable = """,
+    line-too-long,
+    bad-continuation,
+    raise-missing-from
+    """
+
+[tool.pylint.SIMILARITIES]
+# Minimum lines number of a similarity.
+min-similarity-lines = 10
+# Ignore comments when computing similarities.
+ignore-comments = "yes"
+# Ignore docstrings when computing similarities.
+ignore-docstrings = "yes"
+# Ignore imports when computing similarities.
+ignore-imports = "yes"
+
+[tool.pylint.miscellaneous]
+# Don't flag TODO as a failure, let us commit with things that still need to be done in the code
+notes = """,
+    FIXME,
+    XXX,
+    """
 
 [tool.poetry.scripts]
 labby = "labby.main:app"
