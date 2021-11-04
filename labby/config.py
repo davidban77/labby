@@ -160,10 +160,10 @@ class LinkSpec(BaseSettings):
     Specifications for links.
     
     Attributes:
-        node_a (str): 
-        port_a (str):
-        node_b (str):
-        port_b (str):
+        node_a (str): Name for node a.
+        port_a (str): Name for port a.
+        node_b (str): Name for node b.
+        port_b (str): Name for port b.
     """
     node_a: str
     port_a: str

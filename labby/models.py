@@ -1,3 +1,4 @@
+"""The models module for Labby."""
 import abc
 from typing import Dict, Optional, List, Any
 from nornir.core import Nornir
@@ -7,6 +8,18 @@ from rich.console import ConsoleRenderable
 
 
 class LabbyNodeTemplate(BaseModel):
+    """
+    Labby Node template.
+
+    Attributes:
+        name (str): Name of the node.
+        id (Optional[str]): ID for the node.
+        kind (Optional[str]):
+        image (Optional[str]):
+        net_os (Optional[str]): The net os for the node.
+        model (Optional[str]): The model for the node.
+        version (Optional[str]): The version of the node/net_os?
+    """
     name: str
     id: Optional[str]
     kind: Optional[str]
