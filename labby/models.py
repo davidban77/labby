@@ -70,24 +70,24 @@ class LabbyNode(BaseModel, abc.ABC):
     A Labby Node.
 
     Attributes:
-        name (Optional[str]): The name of the node.
-        id (Optional[str]): The identification for the node.
-        template (Optional[str]): The template for the node.
-        kind (Optional[str]): The type of the node.
-        project (LabbyProjectInfo): The project the node belongs to.
-        status (Optional[str]): The status of the node.
-        console (Optiona[int]):
-        category (Optional[str]):
+        name (Optional[str]): Name of the node.
+        id (Optional[str]): Identification for the node.
+        template (Optional[str]): Template for the node.
+        kind (Optional[str]): Type of the node.
+        project (LabbyProjectInfo): Project the node belongs to.
+        status (Optional[str]): Status of the node.
+        console (Optiona[int]): The console port.
+        category (Optional[str]): Category of the node.
         net_os (Optional[str]): The net_os for the node.
         model (Optional[str]): The model of the node.
         version (Optional[str]): The version of the node.
-        interfaces (Dict[str, LabbyPort]): 
+        interfaces (Dict[str, LabbyPort]): Interface for the Node.
         mgmt_port (Optional[str]): The management port for the node.
         mgmt_addr (Optional[str]): The management address for the node.
         properties (Optional[Dict[str, Any]]): The different properties for the node.
         labels (List[str]): The different labels for the node.
-        config_managed (bool): 
-        nornir (Optional[Nornir]):
+        config_managed (bool): Configuration managed.
+        nornir (Optional[Nornir]): Nornir object.
     """
     name: str
     id: Optional[str]
@@ -262,7 +262,7 @@ class LabbyProject(BaseModel, abc.ABC):
         nodes (Dict[str, LabbyNode]): A dictionary of all the nodes in the project.
         links (Dict[str, LabbyLink]): A dictionary of all the links in the project.
         labels (List[str]): All the different labels of the project.
-        nornir (Optional[Nornir]):
+        nornir (Optional[Nornir]): Nornir Object.
     """
     name: str
     id: Optional[str]  # Inherited from provider

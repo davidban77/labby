@@ -33,8 +33,8 @@ class GNS3NodeTemplate(LabbyNodeTemplate):
     GNS3 Node template.
 
     Attributes:
-        compute_id (Optional[str]): 
-        builtin (bool): (default=False).
+        compute_id (Optional[str]): GN3S ID of the server running the node. 
+        builtin (bool): If the node is a GNS3 type of node (default=False).
         category (Optional[str]): Catergory of the template.
     """
     compute_id: Optional[str] = "local"
