@@ -68,6 +68,7 @@ class ProviderSettings(BaseSettings):
     verify_cert: bool = False
 
     class Config:
+        """Configuration class for ProviderSettings."""
         env_prefix = "LABBY_PROVIDER_"
 
 
@@ -83,6 +84,7 @@ class NornirInventoryOptions(BaseSettings):
     group_file: Path = Path.cwd() / "inventory/hosts.yml"
 
     class Config(LabbyBaseConfig):
+        """Configuration class for NornirInventoryOptions."""
         env_prefix = "LABBY_NORNIR_INVENTORY_OPTIONS_"
 
 
@@ -98,6 +100,7 @@ class NornirInventory(BaseSettings):
     options: NornirInventoryOptions
 
     class Config(LabbyBaseConfig):
+        """Configuration for NornirInventory."""
         env_prefix = "LABBY_NORNIR_INVENTORY_"
 
 
@@ -113,6 +116,7 @@ class NornirRunner(BaseSettings):
     options: Dict[str, Any] = {"num_workers": 5}
 
     class Config(LabbyBaseConfig):
+        """Configuration class for NornirRunner."""
         env_prefix = "LABBY_NORNIR_RUNNER_"
 
 
@@ -134,6 +138,7 @@ class EnvironmentSettings(BaseSettings):
     meta: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
+        """Configuration class for EnvironmentSettings."""
         env_prefix = "LABBY_ENVIRONMENT_"
 
 
@@ -145,8 +150,8 @@ class NodeSpec(BaseSettings):
         template (str): The templetate the node is using.
         nodes (List[str]): Lists of all the nodes.
         device_type (str): The type for the device being used.
-        mgmt_interface (Optional[str]):
-        config_managed (bool): Value to check whether the configuration has been managed.
+        mgmt_interface (Optional[str]): Management interface.
+        config_managed (bool): Value to check whether the configuration has been managed (default=True).
     """
     template: str
     nodes: List[str]
@@ -183,9 +188,9 @@ class ProjectSettings(BaseSettings):
         version (Optional[str]): The version of this project.
         nodes_spec (List[str]): The nodes specifications.
         links_spec (List[LinkSpec]): The links specifications.
-        mgmt_net (Optional[IPvAnyNetwork]): 
-        mgmt_user (str): Username for mgmt.
-        mgmt_password (SecretStr): Password for mgmt.
+        mgmt_net (Optional[IPvAnyNetwork]): Management network.
+        mgmt_user (str): Username for management.
+        mgmt_password (SecretStr): Password for management.
         nornir_inventory (Optional[NornirInventory]):
     """
     name: str
@@ -200,6 +205,7 @@ class ProjectSettings(BaseSettings):
     nornir_inventory: Optional[NornirInventory] = None
 
     class Config(LabbyBaseConfig):
+        """Configuration class for ProjectSettings."""
         env_prefix = "LABBY_PROJECT_"
 
 
@@ -210,13 +216,14 @@ class LabbySettings(BaseSettings):
     Attributes:
         environment (EnviromentSettings): The settings for the environment.
         lock_file (Path): The path of the lock file.
-        debug (bool): The debug state (default="False").
+        debug (bool): The debug state (default=False).
     """
     environment: EnvironmentSettings
     lock_file: Path
     debug: bool = False
 
     class Config(LabbyBaseConfig):
+        """Configuration class for LabbySettings."""
         # env_prefix = "LABBY_SETTINGS_"
         pass
 
@@ -227,7 +234,7 @@ def generate_default_provider_name(server_url: str) -> Optional[str]:
     
     Args:
         server_url (str): The URL for the server as a string.
-    
+
     Returns:
         The provider name of an url.
     """
@@ -236,19 +243,16 @@ def generate_default_provider_name(server_url: str) -> Optional[str]:
 
 def get_config_current_path() -> Path:
     """Returns labby.toml path of current dir."""
-
     return Path.cwd() / "labby.toml"
 
 
 def get_config_base_path() -> Path:
     """Returns labby.toml in user's home .config/labby dir."""
-
     return Path(typer.get_app_dir(APP_NAME, force_posix=True).replace(".labby", ".config/labby")) / "labby.toml"
 
 
 def get_config_path() -> Path:
     """Verifies config on current dir and lastly against user's home .config/labby dir."""
-
     config_file = get_config_current_path()
     if not config_file.exists():
         config_file = get_config_base_path()
@@ -275,7 +279,7 @@ def get_environment() -> EnvironmentSettings:
 
 def get_provider() -> LabbyProvider:
     """
-    Return the provider name from current enviroment. 
+    Return the provider name from current enviroment.
 
     Raises:
         typer.Exit: If configuration is not set.
@@ -329,7 +333,6 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
 
 def get_nornir_runner_settings(nornir_data: Dict[str, Any]) -> NornirRunner:
     """Returns the Norning Runnner settings."""
-    
     nornir_args: Dict[str, Any] = {}
     if "plugin" in nornir_data:
         nornir_args.update(plugin=nornir_data["plugin"])
@@ -462,8 +465,8 @@ def get_project_link_spec(link_data: Dict[str, Any]) -> List[LinkSpec]:
 
 def load_project(project_file: Optional[Path]):
     """
-    Loads a "your_project".toml and adds all the attributes to ProjectSettings,
-    and initializes an instance of ProjectSettings onto the variable PROJECT_SETTINGS 
+    Loads a "your_project".toml and adds all the attributes to ProjectSettings.
+    It initializes an instance of ProjectSettings onto the variable PROJECT_SETTINGS 
     which is defined globaly.
 
     Args:
