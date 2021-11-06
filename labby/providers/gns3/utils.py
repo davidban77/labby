@@ -1,3 +1,4 @@
+"""Utils module for GNS3."""
 from typing import Optional
 
 
@@ -50,6 +51,7 @@ def node_net_os(net_os: Optional[str]) -> str:
 
 
 def template_type(t_type: Optional[str]) -> str:
+    """Returns template type."""
     TEMPLATE_TYPE = {
         "qemu": "[rosy_brown]qemu[/]",
         "docker": "[bright_blue]docker[/]",

@@ -32,7 +32,7 @@ REQUIRED_PROJECT_FIELDS = ["main", "nodes_spec", "links_spec"]
 
 class LabbyBaseConfig:
     """
-    Basic configuration variables for labby files.
+    Basic configuration for Labby.
 
     Attributes:
         env_prefix (str): Prefix for base file config.
@@ -72,7 +72,7 @@ class ProviderSettings(BaseSettings):
         env_prefix = "LABBY_PROVIDER_"
 
 
-class NornirInventoryOptions(BaseSettings):
+class NornirInventoryOptions(BaseSettings): # noqa
     """
     [DEFINITION]
 
@@ -88,7 +88,7 @@ class NornirInventoryOptions(BaseSettings):
         env_prefix = "LABBY_NORNIR_INVENTORY_OPTIONS_"
 
 
-class NornirInventory(BaseSettings):
+class NornirInventory(BaseSettings): # noqa
     """
     [DEFINITION]
 
@@ -104,7 +104,7 @@ class NornirInventory(BaseSettings):
         env_prefix = "LABBY_NORNIR_INVENTORY_"
 
 
-class NornirRunner(BaseSettings):
+class NornirRunner(BaseSettings): # noqa
     """
     [Definition]
 
@@ -128,7 +128,7 @@ class EnvironmentSettings(BaseSettings):
         name (str): Name for the enviroment.
         description (Optional[str]): Description for the enviroment.
         provider (ProviderSettings): The settings for the providers.
-        nornir_runner (NornirRunner):
+        nornir_runner (NornirRunner): The nornir_runner for the environment.
         meta (Dict[str, Any]): Extra key and value to add to the environment settings object.
     """
     name: str
@@ -191,7 +191,7 @@ class ProjectSettings(BaseSettings):
         mgmt_net (Optional[IPvAnyNetwork]): Management network.
         mgmt_user (str): Username for management.
         mgmt_password (SecretStr): Password for management.
-        nornir_inventory (Optional[NornirInventory]):
+        nornir_inventory (Optional[NornirInventory]): Nornir inventroy for current project.
     """
     name: str
     description: Optional[str]
@@ -430,7 +430,7 @@ def load_config(
     # register_service(environment.provider.name, environment.provider.type)
 
 
-def get_nornir_inventory_settings(nornir_data: Dict[str, Any], project_file: Path) -> NornirInventory:
+def get_nornir_inventory_settings(nornir_data: Dict[str, Any], project_file: Path) -> NornirInventory: # noqa
     group_file = Path(nornir_data["group_file"])
     if not group_file.is_absolute():
         group_file = project_file.parent / group_file
@@ -466,6 +466,8 @@ def get_project_link_spec(link_data: Dict[str, Any]) -> List[LinkSpec]:
 def load_project(project_file: Optional[Path]):
     """
     Loads a "your_project".toml and adds all the attributes to ProjectSettings.
+
+    Description:
     It initializes an instance of ProjectSettings onto the variable PROJECT_SETTINGS 
     which is defined globaly.
 

@@ -15,7 +15,7 @@ class LabbyNodeTemplate(BaseModel):
         name (str): Name of the node.
         id (Optional[str]): ID for the node.
         kind (Optional[str]): A kind of template.
-        image (Optional[str]):
+        image (Optional[str]): Image for the template.
         net_os (Optional[str]): The net os for the node.
         model (Optional[str]): The model for the node.
         version (Optional[str]): The version of the node/net_os?
@@ -386,7 +386,7 @@ class LabbyProvider(BaseModel, abc.ABC):
 
     Attribute:
         name (str): The name of the provider.
-        kind (str):
+        kind (str): The kind of provider.
     """
     name: str
     kind: str

@@ -1,3 +1,4 @@
+"""GNS3 Link module, for handling GNS3 links."""
 from labby.providers.gns3.utils import bool_status, link_status
 from labby import lock_file
 import time
@@ -11,14 +12,31 @@ from labby.utils import console
 
 
 class GNS3LinkEndpoint(LabbyLinkEndpoint):
+    """GNS3 Link Endpoints."""
     pass
 
 
 class GNS3Link(LabbyLink):
+    """
+    GNS3 Link class.
+
+    Attributes:
+        endpoint (Optional[GNS3LinkEndpoint]): Endpoint for the GNS3 link.
+    """
     endpoint: Optional[GNS3LinkEndpoint]
     _base: Link
 
     def __init__(self, name: str, project_name: str, link: Link, labels: List[str] = [], **data) -> None:
+        """
+        Initiliazes GNS3Link.
+        
+        Attributes:
+            name (str): Name of link.
+            project_name (str): Name of project the link belongs to.
+            link: A GNS3 link.
+            labels (List[str]): Labels for the link.
+            data: Data for the link.
+        """
         _project = LabbyProjectInfo(name=project_name, id=link.project_id)
         super().__init__(name=name, labels=labels, project=_project, _base=link, **data)
         self._update_labby_link_attrs()
@@ -39,11 +57,13 @@ class GNS3Link(LabbyLink):
         )
 
     def get(self) -> None:
+        """Collects link data, and logs it to console."""
         console.log(f"[b]({self.project.name})({self.name})[/] Collecting link data")
         self._base.get()
         self._update_labby_link_attrs()
 
     def update(self, **kwargs) -> None:
+        """Updates link data, and logs it to console."""
         console.log(f"[b]({self.project.name})({self.name})[/] Updating link: {kwargs}", highlight=True)
         if "labels" in kwargs:
             self.labels = kwargs["labels"]
@@ -56,6 +76,7 @@ class GNS3Link(LabbyLink):
         lock_file.apply_link_data(self)
 
     def apply_metric(self, **kwargs) -> bool:
+        """Applies a filter for link."""
         console.log(f"[b]({self.project.name})({self.name})[/] Applying filter: {kwargs}", highlight=True)
         filter_applied = self._base.apply_filters(**kwargs)
         time.sleep(2)
@@ -68,6 +89,7 @@ class GNS3Link(LabbyLink):
             return False
 
     def delete(self) -> bool:
+        """Deletes the link."""
         console.log(f"[b]({self.project.name})({self.name})[/] Deleting link")
         link_deleted = self._base.delete()
         time.sleep(2)
@@ -82,6 +104,7 @@ class GNS3Link(LabbyLink):
             return False
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        """Renders a table onto console displaying all of the link data."""
         yield f"[b]Link:[/b] {self.name}"
         table = Table(
             "Node A",
