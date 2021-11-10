@@ -1,3 +1,4 @@
+"""The main module for labby. All of the labby commands are loaded in this module."""
 import typer
 import toml
 
@@ -50,6 +51,7 @@ app.add_typer(labby.commands.connect.app, name="connect")
 
 
 def version_callback(value: bool):
+    """Prints the current version of labby."""
     from labby import __version__
 
     if value:
@@ -83,6 +85,7 @@ def main(
         envvar="LABBY_PROVIDER",
     ),
 ):
+    """Main function that loads labby configuration file."""
     if ctx.invoked_subcommand == "init":
         return
     if not config_file:
@@ -122,9 +125,7 @@ def init(
         ),
     )
 ):
-    """
-    Create basic configuration file for labby. It will guide you through some options
-    you can set.
+    """Create basic configuration file for labby. It will guide you through some options you can set.
 
     Example:
 

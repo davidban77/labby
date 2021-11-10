@@ -54,7 +54,7 @@ def gen_link_data(link: LabbyLink) -> Dict[str, Any]:
 
 
 def gen_project_data(project: LabbyProject):
-    """Generate Project data for lock file
+    """Generate Project data for lock file.
 
     Args:
         project (LabbyProject): Labby Project object
@@ -254,6 +254,7 @@ def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]
     Args:
         link_name (str): Name of the link.
         project_name (str): Name of the project.
+        
     Returns:
         Optional[Dict[str, Any]]: Link data if available.
     """
