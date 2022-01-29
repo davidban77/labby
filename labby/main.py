@@ -1,5 +1,6 @@
 import typer
 import toml
+import elasticapm
 
 import labby.commands.build
 import labby.commands.configuration
@@ -83,6 +84,16 @@ def main(
         envvar="LABBY_PROVIDER",
     ),
 ):
+    es_client = elasticapm.Client(
+        {
+            "SERVICE_NAME": "elk-apm-demo",
+            "SERVICE_VERSION": "1.0.0",
+            "SECRET_TOKEN": "",
+            "SERVER_URL": "http://localhost:8200",
+            "DEBUG": True,
+        }
+    )
+    elasticapm.instrument()
     if ctx.invoked_subcommand == "init":
         return
     if not config_file:
@@ -92,7 +103,7 @@ def main(
             if not config_file.is_file():
                 utils.console.print("[red]Configuration specified is not a file[/]")
                 raise typer.Exit(code=1)
-    ctx.obj = dict(config_file=config_file)
+    ctx.obj = dict(config_file=config_file, es_client=es_client)
     config.load_config(config_file=config_file, environment_name=environment, provider_name=provider, debug=verbose)
 
     if config.SETTINGS is None:
