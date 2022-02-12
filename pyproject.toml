@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-typer = "^0.3.2"
+typer = "^0.4.0"
 rich = "^10.1.0"
 nornir = "^3.0.0"
 scrapli = "2020.10.10"
