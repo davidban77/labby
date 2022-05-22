@@ -6,9 +6,11 @@ Example:
 > labby get --help
 """
 from pathlib import Path
-import typer
 from enum import Enum
 from typing import List, Optional
+
+import typer
+
 from labby import utils, config
 
 
@@ -22,14 +24,20 @@ app.add_typer(node_app, name="node")
 app.add_typer(link_app, name="link")
 
 
-class ProjectFilter(str, Enum):  # noqa: D101
+class ProjectFilter(str, Enum):
+    """Project Filter enum."""
+
+    # pylint: disable=invalid-name
     status = "status"
     auto_start = "auto_start"
     auto_open = "auto_open"
     auto_close = "auto_close"
 
 
-class NodeFilter(str, Enum):  # noqa: D101
+class NodeFilter(str, Enum):
+    """Node Filter enum."""
+
+    # pylint: disable=invalid-name
     node_type = "node_type"
     category = "category"
     status = "status"
@@ -37,7 +45,7 @@ class NodeFilter(str, Enum):  # noqa: D101
 
 @project_app.command(name="list", short_help="Retrieves summary list of projects")
 def project_list(
-    filter: Optional[ProjectFilter] = typer.Option(
+    pfilter: Optional[ProjectFilter] = typer.Option(
         None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
     ),
     value: Optional[str] = typer.Option(
@@ -57,7 +65,7 @@ def project_list(
     > labby get project list --label telemetry --label test
     """
     provider = config.get_provider()
-    utils.console.log(provider.render_project_list(field=filter, value=value, labels=labels))
+    utils.console.log(provider.render_project_list(field=pfilter, value=value, labels=labels))
 
 
 @project_app.command(short_help="Retrieves details of a project", name="detail")
@@ -86,7 +94,7 @@ def project_detail(
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
 def node_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[NodeFilter] = typer.Option(
+    nfilter: Optional[NodeFilter] = typer.Option(
         None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
     ),
     value: Optional[str] = typer.Option(
@@ -111,13 +119,13 @@ def node_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_nodes_summary(field=filter, value=value, labels=labels))
+    utils.console.log(project.render_nodes_summary(field=nfilter, value=value, labels=labels))
     project.to_initial_state()
 
 
 @node_app.command(name="template-list", short_help="Retrieves summary list of node templates in a Provider")
 def node_template_list(
-    filter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
+    nfilter: Optional[NodeFilter] = typer.Option(None, help="If used you MUST provide expected `--value`"),
     value: Optional[str] = typer.Option(None, help="Value to be used with `--filter`"),
 ):
     """
@@ -128,7 +136,7 @@ def node_template_list(
     > labby get node template-list
     """
     provider = config.get_provider()
-    utils.console.log(provider.render_templates_list(field=filter, value=value))
+    utils.console.log(provider.render_templates_list(field=nfilter, value=value))
 
 
 @node_app.command(short_help="Retrieves details of a node", name="detail")
@@ -234,7 +242,7 @@ def node_template_detail(
 @link_app.command(name="list", short_help="Retrieves summary list of links in a project")
 def link_list(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
-    filter: Optional[str] = typer.Option(
+    lfilter: Optional[str] = typer.Option(
         None, "--filter", "-f", help="Attribute name to filter on. Works with `--value`"
     ),
     value: Optional[str] = typer.Option(
@@ -259,7 +267,7 @@ def link_list(
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     utils.console.log()
-    utils.console.log(project.render_links_summary(field=filter, value=value, labels=labels))
+    utils.console.log(project.render_links_summary(field=lfilter, value=value, labels=labels))
     project.to_initial_state()
 
 

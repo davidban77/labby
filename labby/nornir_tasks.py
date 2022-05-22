@@ -1,16 +1,17 @@
 """Nornir Tasks module."""
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-
-# from datetime import datetime
 from pathlib import Path
+
 from nornir.core.task import Task
 from nornir_scrapli.tasks import send_config, send_command
 from nornir.core.helpers.jinja_helper import render_from_file
+
 from labby.models import LabbyProject
 from labby import utils
 
 if TYPE_CHECKING:
+    # pylint: disable=all
     from labby.project_data import ProjectData
 
 
@@ -55,8 +56,8 @@ def save_task(task: Task, backup: Optional[Path]):
         response = task.run(task=send_command, command=SHOW_RUN_COMMANDS[task.host.platform])  # type: ignore
         # backup_file = backup / f"{task.host.name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.cfg"
         backup_file = backup / f"{task.host.name}.cfg"
-        with backup_file.open("w") as f:
-            f.write(response.result)
+        with backup_file.open("w") as fil:
+            fil.write(response.result)
 
 
 def config_task(task: Task, project_data: ProjectData, project: LabbyProject):

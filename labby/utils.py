@@ -1,16 +1,15 @@
 """Utility module for Labby."""
-# from pathlib import Path
 import re
-import typer
-import functools
-import yaml
-
-# from labby import settings
 from typing import Dict, List, Any, MutableMapping, Tuple, Optional, Literal
+
+import typer
+import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
 from netaddr import IPNetwork
+
+from labby import __version__
 
 
 IpAddressFilter = Literal["address", "netmask"]
@@ -23,17 +22,18 @@ console = Console(color_system="auto", log_path=False, record=True, theme=custom
 
 
 def banner():
+    # pylint: disable=anomalous-backslash-in-string
     """A function to print out the banner for labby to the terminal."""
     console.print(
-        """
+        f"""
 [green]
   _       _     _
  | | __ _| |__ | |__  _   _
  | |/ _` | '_ \| '_ \| | | |
  | | (_| | |_) | |_) | |_| |
  |_|\__,_|_.__/|_.__/ \__, |
-                      |___/
-[/]
+                      |___/  [bold]v{__version__}[/bold]
+[/green]
         """
     )
     return "=>"
@@ -81,22 +81,22 @@ def flatten(data: MutableMapping[str, Any], parent_key="", sep=".") -> Dict[str,
         A new dictionary, with the elements of the original dictionary but flattened.
     """
     items: List = []
-    for k, v in data.items():
+    for k, value in data.items():
         new_key = parent_key + sep + k if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten(v, new_key, sep=sep).items())
-        elif isinstance(v, list):
-            for si in v:
-                if isinstance(si, dict):
-                    items.extend(flatten(si, new_key, sep=sep).items())
+        if isinstance(value, dict):
+            items.extend(flatten(value, new_key, sep=sep).items())
+        elif isinstance(value, list):
+            for sub_ins in value:
+                if isinstance(sub_ins, dict):
+                    items.extend(flatten(sub_ins, new_key, sep=sep).items())
                 else:
-                    items.append((new_key, si))
+                    items.append((new_key, sub_ins))
         else:
-            items.append((new_key, v))
+            items.append((new_key, value))
     return dict(items)
 
 
-def mergedicts(dict1: MutableMapping, dict2: MutableMapping) -> Dict[str, Any]:
+def mergedicts(dict1: MutableMapping, dict2: MutableMapping) -> MutableMapping[str, Any]:
     """
     A function to merge to dictionaries.
 
@@ -121,7 +121,7 @@ def mergedicts(dict1: MutableMapping, dict2: MutableMapping) -> Dict[str, Any]:
     return dict1
 
 
-def delete_nested_key(dicti: MutableMapping, path: str) -> Dict[str, Any]:
+def delete_nested_key(dicti: MutableMapping, path: str) -> MutableMapping[str, Any]:
     """
     Deletes a nested key from a dictionary.
 
@@ -171,43 +171,17 @@ def dissect_url(target: str) -> Tuple[Optional[str], Optional[str], Optional[str
     )
 
 
-def error_catcher(_func: Optional[Any] = None, parameter: Optional[str] = None):
-    """Catches errors and exceptions and rich prints it."""
-
-    def decorator_error_catcher(func):
-        @functools.wraps(func)
-        def wrapper_error_catcher(*args, **kwargs):
-            try:
-                # if parameter == "check_project":
-                #     name = settings.SETTINGS.labby.project
-                #     if name is None:
-                #         console.print("[red]No project specified[/]")
-                #         raise typer.Exit(code=1)
-                value = func(*args, **kwargs)
-                return value
-            except typer.Exit:
-                console.print("[red]Exiting...[/]\n")
-            except Exception:
-                console.print_exception()
-
-        return wrapper_error_catcher
-
-    if _func is None:
-        return decorator_error_catcher
-    else:
-        return decorator_error_catcher(_func)
-
-
 def load_yaml_file(path: str) -> Dict[str, Any]:
     """Loads YAML file."""
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
+    with open(path, "r", encoding="utf-8") as fil:
+        return yaml.safe_load(fil)
 
 
 # TODO: Add logic to read possible encoded envvar from project file for network device creds
 # or at least from environemt variable
 def check_creds(user: str, password: str) -> bool:
     """Needs to be worked on."""
+    # pylint: disable=unused-argument
     return True
 
 

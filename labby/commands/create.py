@@ -7,14 +7,19 @@ Example:
 """
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
 import typer
+
 from labby import utils, config
 
 
 app = typer.Typer(help="Creates a Resource on Network Provider Lab")
 
 
-class LinkFilter(str, Enum):  # noqa: D101
+class LinkFilter(str, Enum):
+    """Link Filter Enum."""
+
+    # pylint: disable=invalid-name
     frequency_drop = "frequency_drop"
     packet_loss = "packet_loss"
     latency = "latency"
@@ -36,15 +41,15 @@ def project(
     > labby create project lab01 --label mpls --label v0.1.0
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if project:
+    prj = provider.search_project(project_name=project_name)
+    if prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] already created. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
 
     # Create project
-    project = provider.create_project(project_name=project_name, labels=labels)
-    utils.console.log(project)
+    prj = provider.create_project(project_name=project_name, labels=labels)
+    utils.console.log(prj)
 
 
 @app.command(short_help="Creates a node")
@@ -68,17 +73,17 @@ def node(
     > labby get node template-list
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
 
     # Create node
-    node = project.create_node(
+    device = prj.create_node(
         name=node_name, template=template_name, labels=labels, mgmt_port=mgmt_port, mgmt_addr=mgmt_addr
     )
-    utils.console.log(node)
+    utils.console.log(device)
 
 
 @app.command(short_help="Creates a link")
@@ -106,12 +111,12 @@ def link(
         else:
             filters = dict({filter_type: filter_value})
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
     labels = [] if not label else label
 
     # Create link
-    link = project.create_link(node_a, port_a, node_b, port_b, filters=filters, labels=labels)
-    utils.console.log(link)
+    enlace = prj.create_link(node_a, port_a, node_b, port_b, filters=filters, labels=labels)
+    utils.console.log(enlace)

@@ -1,6 +1,14 @@
 """The main module for labby. All of the labby commands are loaded in this module."""
+from typing import Any, Dict, Optional
+from pathlib import Path
+
 import typer
 import toml
+from dotenv import load_dotenv
+from rich.traceback import install as traceback_install
+from rich.prompt import Prompt, Confirm
+from rich.syntax import Syntax
+from nornir.core.plugins.inventory import InventoryPluginRegister
 
 import labby.commands.build
 import labby.commands.configuration
@@ -13,19 +21,11 @@ import labby.commands.create
 import labby.commands.delete
 import labby.commands.update
 import labby.commands.connect
-
 from labby import config
 from labby import utils
 from labby.providers import register_service
-
-from typing import Any, Dict, Optional
-from pathlib import Path
-from dotenv import load_dotenv
-from rich.traceback import install as traceback_install
-from rich.prompt import Prompt, Confirm
-from rich.syntax import Syntax
-from nornir.core.plugins.inventory import InventoryPluginRegister
 from labby.nornir.plugins.inventory.labby import LabbyNornirInventory
+from labby import __version__
 
 traceback_install(show_locals=True)
 
@@ -52,8 +52,6 @@ app.add_typer(labby.commands.connect.app, name="connect")
 
 def version_callback(value: bool):
     """Prints the current version of labby."""
-    from labby import __version__
-
     if value:
         utils.console.print(f"Labby version [cyan bold]{__version__}[/]")
         raise typer.Exit()
@@ -85,6 +83,7 @@ def main(
         envvar="LABBY_PROVIDER",
     ),
 ):
+    # pylint: disable=unused-argument
     """Main function that loads labby configuration file."""
     if ctx.invoked_subcommand == "init":
         return
@@ -105,11 +104,11 @@ def main(
     # Register each provider environment
     try:
         register_service(config.SETTINGS.environment.provider.name, config.SETTINGS.environment.provider.kind)
-    except AttributeError:
+    except AttributeError as err:
         utils.console.print(
             "An attribute was not found in configuration. Most likely is a configuration file issue", style="error"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from err
     # Load env vars after processed in config to be used by typer commands
     load_dotenv()
 

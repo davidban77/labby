@@ -1,3 +1,4 @@
+"""Labby Package."""
 import pkg_resources
 
 

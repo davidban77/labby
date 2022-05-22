@@ -1,7 +1,7 @@
 """Collection point for all invoke tasks."""
 
 from invoke import Collection
-from tasks import tests
+from tasks import check
 
 # Setup Invoke Task Collection
-namespace = Collection(tests)
+namespace = Collection(check)

@@ -5,9 +5,11 @@ Handles all start related actions for labby resources.
 Example:
 > labby start --help
 """
-import typer
 from enum import Enum
 from typing import Optional
+
+import typer
+
 from labby import utils
 from labby import config
 
@@ -15,7 +17,10 @@ from labby import config
 app = typer.Typer(help="Runs Start/Boot actions on Network Provider Lab Resources")
 
 
-class StartNodes(str, Enum):  # noqa: D101
+class StartNodes(str, Enum):
+    """Start Nodes Enum."""
+
+    # pylint: disable=invalid-name
     one_by_one = "one_by_one"
     all = "all"
 
@@ -33,13 +38,13 @@ def project(
     > labby start project lab01 --start-nodes one_by_one --delay 20
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Start project
-    project.start(start_nodes=start_nodes, nodes_delay=delay)
+    prj.start(start_nodes=start_nodes, nodes_delay=delay)
 
 
 @app.command(short_help="Starts a node")
@@ -55,15 +60,15 @@ def node(
     > labby start node r1 --project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    node = project.search_node(name=node_name)
-    if not node:
+    device = prj.search_node(name=node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Start node
-    node.start()
-    utils.console.log(node)
+    device.start()
+    utils.console.log(device)

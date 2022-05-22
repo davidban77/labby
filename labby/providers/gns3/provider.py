@@ -1,11 +1,15 @@
 """GNS3 main provider module."""
-import typer
-from labby.providers.gns3.template import GNS3NodeTemplate
+# pylint: disable=protected-access
+# pylint: disable=dangerous-default-value
 import time
 from typing import List, Optional
+
+import typer
 from rich.table import Table
 from rich.console import ConsoleRenderable
 from gns3fy.server import Server
+
+from labby.providers.gns3.template import GNS3NodeTemplate
 from labby.models import LabbyProvider
 from labby.utils import console
 from labby import lock_file
@@ -74,18 +78,19 @@ class GNS3Provider(LabbyProvider):
             GNS3Project: Project object
         """
         _project = self.search_project(project_name)
+
         if _project:
             console.log(f"Project [cyan i]{project_name}[/] already created. Nothing to do...", style="warning")
             return _project
-        else:
-            console.log(f"[b]({project_name})[/] Creating project")
-            gns3_project = self._base.create_project(project_name)
-            project = GNS3Project(project_name, gns3_project, labels, **kwargs)
-            time.sleep(2)
-            # console.log(project)
-            console.log(f"[b]({project_name})[/] Project created", style="good")
-            lock_file.apply_project_data(project)
-            return project
+
+        console.log(f"[b]({project_name})[/] Creating project")
+        gns3_project = self._base.create_project(project_name)
+        project = GNS3Project(project_name, gns3_project, labels, **kwargs)
+        time.sleep(2)
+        # console.log(project)
+        console.log(f"[b]({project_name})[/] Project created", style="good")
+        lock_file.apply_project_data(project)
+        return project
 
     def search_template(self, template_name: str) -> Optional[GNS3NodeTemplate]:
         """Search a template in the GNS3 server.
@@ -117,20 +122,21 @@ class GNS3Provider(LabbyProvider):
             GNS3NodeTemplate: Template object
         """
         template = self.search_template(template_name)
+
         if template:
             console.log(f"Node Template [cyan i]{template.name}[/] already created. Nothing to do...", style="warning")
             return template
-        else:
-            console.log(f"[b]({template_name})[/] Creating node template")
-            if not data.get("template_type"):
-                console.log("Attribute `template_type` must be set", style="error")
-                raise typer.Exit(1)
-            gns3_template = self._base.create_template(name=template_name, template_type=data["template_type"], **data)
-            template = GNS3NodeTemplate(name=template_name, template=gns3_template, labels=labels, **data)
-            time.sleep(2)
-            console.log(template)
-            console.log(f"[b]({template.name})[/] Template created", style="good")
-            return template
+
+        console.log(f"[b]({template_name})[/] Creating node template")
+        if not data.get("template_type"):
+            console.log("Attribute `template_type` must be set", style="error")
+            raise typer.Exit(1)
+        gns3_template = self._base.create_template(name=template_name, template_type=data["template_type"], **data)
+        template = GNS3NodeTemplate(name=template_name, template=gns3_template, labels=labels, **data)
+        time.sleep(2)
+        console.log(template)
+        console.log(f"[b]({template.name})[/] Template created", style="good")
+        return template
 
     def render_templates_list(self, field: Optional[str] = None, value: Optional[str] = None) -> ConsoleRenderable:
         """Render templates list.
@@ -190,7 +196,7 @@ class GNS3Provider(LabbyProvider):
         if field:
             projects = [x for x in self._base.projects.values() if getattr(x, field) == value]
         else:
-            projects = [x for x in self._base.projects.values()]
+            projects = list(self._base.projects.values())
         for prj in projects:
             if prj is None:
                 continue

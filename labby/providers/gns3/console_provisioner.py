@@ -1,9 +1,12 @@
 """GNS3 Node Console provisioner module based on Scrapli and Telnet transport."""
 from __future__ import annotations
-from scrapli.exceptions import ScrapliTimeout
-import typer
 import time
-from labby import utils
+from typing import Any, Dict, Literal, Optional, TYPE_CHECKING
+
+import typer
+from scrapli.exceptions import ScrapliTimeout
+from scrapli.response import Response as ScrapliResponse
+from scrapli.transport.telnet import TelnetTransport
 from scrapli.driver.core import (
     IOSXEDriver,
     EOSDriver,
@@ -11,11 +14,11 @@ from scrapli.driver.core import (
     NXOSDriver,
     JunosDriver,
 )
-from scrapli.response import Response as ScrapliResponse
-from scrapli.transport.telnet import TelnetTransport
-from typing import Any, Dict, Literal, Optional, TYPE_CHECKING
+
+from labby import utils
 
 if TYPE_CHECKING:
+    # pylint: disable=all
     from labby.providers.gns3.node import GNS3Node
 
 
@@ -173,7 +176,7 @@ def arista_eos_boot(node_name: str, project_name: str, server_host: str, console
         timeout_ops=120 * delay_multiplier,
     )
     telnet_session.username_prompt = "localhost login:"
-    telnet_session.password_prompt = "localhost>"
+    telnet_session.password_prompt = "localhost>"  # nosec
     telnet_session.open()
     response = telnet_session.session.expect([b"ZeroTouch"], timeout=30 * delay_multiplier)
     # Verify if match on ZTP
@@ -257,7 +260,7 @@ def run_bootstrap(
 
             # Setting prompts for initiating the device
             connector.transport.username_prompt = "localhost login:"
-            connector.transport.password_prompt = "localhost>"
+            connector.transport.password_prompt = "localhost>"  # nosec
 
             # Re-authenticating
             try:
@@ -396,9 +399,9 @@ def run_action(
                 status.update(status=f"[b]({node.project.name})({node.name})[/] Attempting authentication...")
                 connector.transport.username_prompt = "login:"
                 if password:
-                    connector.transport.password_prompt = "Password:"
+                    connector.transport.password_prompt = "Password:"  # nosec
                 else:
-                    connector.transport.password_prompt = ">"
+                    connector.transport.password_prompt = ">"  # nosec
                 connector.open()
             except ScrapliTimeout:
                 try:

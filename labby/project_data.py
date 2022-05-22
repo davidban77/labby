@@ -1,11 +1,17 @@
 """Project Data module."""
-from netaddr.ip import IPRange
-import typer
-from typing import Tuple
+from __future__ import annotations
+from typing import Tuple, TYPE_CHECKING
 from pathlib import Path
+
+import typer
+from netaddr.ip import IPRange
 from netaddr import IPNetwork
-from labby.models import LabbyProject
+
 from labby import config, utils
+
+if TYPE_CHECKING:
+    # pylint: disable=all
+    from labby.models import LabbyProject
 
 
 class ProjectData:
@@ -65,13 +71,13 @@ class ProjectData:
             try:
                 self.mgmt_ips = IPRange(self.mgmt_network["ip_range"][0], self.mgmt_network["ip_range"][1])
             except Exception as err:
-                raise ValueError(f"Invalid management IP range: {err}")
+                raise ValueError(f"Invalid management IP range: {err}") from err
         else:
             try:
                 hosts = list(self.mgmt_network["network"].iter_hosts())
                 self.mgmt_ips = IPRange(hosts[0], hosts[-1])
             except Exception as err:
-                raise ValueError(f"Invalid management IP range: {err}")
+                raise ValueError(f"Invalid management IP range: {err}") from err
 
     # def check_creds(self) -> None:
     #     """Check if the credentials are valid."""

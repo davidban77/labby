@@ -6,6 +6,7 @@ Example:
 > labby stop --help
 """
 import typer
+
 from labby import utils
 from labby import config
 
@@ -26,13 +27,13 @@ def project(
     > labby stop project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Stop project
-    project.stop(stop_nodes=stop_nodes)
+    prj.stop(stop_nodes=stop_nodes)
 
 
 @app.command(short_help="Stops a node")
@@ -48,15 +49,15 @@ def node(
     > labby stop node r1 --project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    node = project.search_node(name=node_name)
-    if not node:
+    device = prj.search_node(name=node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Stop node
-    node.stop()
-    utils.console.log(node)
+    device.stop()
+    utils.console.log(device)

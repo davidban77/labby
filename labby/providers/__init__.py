@@ -1,24 +1,27 @@
-# import typer
+"""Labby Providers setup."""
 from .gns3 import GNS3ProviderBuilder
-
-# from labby import config
-# from labby import utils
-
-# from labby import settings
-# from labby.models import ProviderGeneral, ProviderDocker
-# from labby.config import ProviderSettings
-# from labby.models import LabbyProvider
-# from labby import utils
 
 
 class ObjectFactory:
+    """Basic Object Factory class pattern."""
+
     def __init__(self):
+        """Object Factory initialization."""
         self._builders = {}
 
     def register_builder(self, key, builder):
+        """Register builder."""
         self._builders[key] = builder
 
     def create(self, key, **kwargs):
+        """Create Provider record.
+
+        Args:
+            key: Key to access provider cache
+
+        Raises:
+            ValueError: if no provider was found
+        """
         builder = self._builders.get(key)
         if not builder:
             raise ValueError(f"Provider not found {key}")
@@ -26,7 +29,14 @@ class ObjectFactory:
 
 
 class NetworkLabProvider(ObjectFactory):
-    def get(self, service_id, **kwargs):
+    """Network Lab Provider Object Factory."""
+
+    def get(self, service_id: str, **kwargs):
+        """Creates a record of a service for network lab providers.
+
+        Args:
+            service_id (str): Service ID key
+        """
         return self.create(service_id, **kwargs)
 
 
@@ -34,41 +44,16 @@ services = NetworkLabProvider()
 
 
 def register_service(provider_name: str, provider_type: str):
+    """Registers an specific service based on provider name and type.
+
+    Args:
+        provider_name (str): Provider Name
+        provider_type (str): Provider Type
+
+    Raises:
+        NotImplementedError: raised when provider is not implemented
+    """
     if provider_type == "gns3":
         services.register_builder(f"{provider_name}", GNS3ProviderBuilder())
     else:
         raise NotImplementedError(provider_type)
-
-
-# def get_provider(provider_name: str, provider_settings: ProviderSettings) -> LabbyProvider:
-#     provider = services.get(
-#         provider_name,
-#         settings=provider_settings,
-#     )
-#     # if header_msg is not None:
-#     #     utils.provider_header(
-#     #         environment=settings.SETTINGS.labby.environment,
-#     #         provider=settings.SETTINGS.labby.provider,
-#     #         provider_version=provider.get_version(),
-#     #         msg=header_msg,
-#     #     )
-#     return provider
-
-
-# def get_config_provider() -> LabbyProvider:
-#     """[summary]
-
-#     Raises:
-#         typer.Exit: [description]
-
-#     Returns:
-#         LabbyProvider: [description]
-#     """
-#     # Importing at command runtime - not import load time
-#     from labby.config import SETTINGS
-#     if not SETTINGS:
-#         utils.console.log("No config settings applied. Please check configuration file labby.toml", style="error")
-#         raise typer.Exit(1)
-#     return get_provider(
-#         provider_name=SETTINGS.environment.provider.name, provider_settings=SETTINGS.environment.provider
-#     )

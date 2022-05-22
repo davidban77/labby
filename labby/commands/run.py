@@ -5,14 +5,15 @@ Handles all ad-hoc actions for labby resources.
 Example:
 > labby run --help
 """
-from labby.commands.build import config_task
-import typer
 from enum import Enum
 from typing import Any, Dict, Optional
-
 from pathlib import Path
+
+import typer
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
+
+from labby.commands.build import config_task
 from labby.project_data import sync_project_data
 from labby.nornir_tasks import save_task
 from labby import utils, config
@@ -26,7 +27,10 @@ app.add_typer(project_app, name="project")
 app.add_typer(node_app, name="node")
 
 
-class DeviceTypes(str, Enum):  # noqa: D101
+class DeviceTypes(str, Enum):
+    """Device Types Enum."""
+
+    # pylint: disable=invalid-name
     cisco_ios = "cisco_ios"
     cisco_xr = "cisco_xr"
     cisco_nxos = "cisco_nxos"
@@ -50,7 +54,7 @@ def file_check(value: Path) -> Path:
     if not value.exists():
         utils.console.log(f"The file {value} doesn't exist", style="error")
         raise typer.Exit(code=1)
-    elif not value.is_file():
+    if not value.is_file():
         utils.console.log(f"{value} is not a valid file", style="error")
         raise typer.Exit(code=1)
     return value
@@ -65,13 +69,13 @@ def launch(project_name: str = typer.Argument(..., help="Project name", envvar="
     > labby run project-launch --project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Launch project on browser
-    typer.launch(project.get_web_url())
+    typer.launch(prj.get_web_url())
 
 
 @node_app.command(short_help="Initial bootsrtap config on a Node")
@@ -107,32 +111,32 @@ def bootstrap(
     provider = config.get_provider()
 
     # Get project
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Get node to bootstrap
-    node = project.search_node(node_name)
-    if not node:
+    device = prj.search_node(node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Render bootstrap config
     if bconfig:
-        utils.console.log(f"[b]({project.name})({node.name})[/] Reading bootstrap config from file")
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Reading bootstrap config from file")
         file_check(bconfig)
         cfg_data = bconfig.read_text()
 
     else:
-        utils.console.log(f"[b]({project.name})({node.name})[/] Rendering bootstrap config")
-        mgmt_port = node.mgmt_port
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Rendering bootstrap config")
+        mgmt_port = device.mgmt_port
         if mgmt_port is None:
             utils.console.log(
                 f"Node [cyan i]{node_name}[/] mgmt_port parameter must be set. Run update command", style="error"
             )
             raise typer.Exit(code=1)
-        mgmt_addr = node.mgmt_addr
+        mgmt_addr = device.mgmt_addr
         if mgmt_addr is None:
             utils.console.log(
                 f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
@@ -143,24 +147,24 @@ def bootstrap(
             utils.console.log("All arguments must be set: user, password", style="error")
             raise typer.Exit(code=1)
 
-        if node.net_os is None:
+        if device.net_os is None:
             utils.console.log(
                 f"Node [cyan i]{node_name}[/] net_os parameter must be set. Verify node template name", style="error"
             )
             raise typer.Exit(code=1)
 
         # Render bootstrap config
-        template = Path(__file__).parent.parent / "templates" / f"nodes_bootstrap/{node.net_os}.cfg.j2"
+        template = Path(__file__).parent.parent / "templates" / f"nodes_bootstrap/{device.net_os}.cfg.j2"
         cfg_data = render_from_file(
             path=str(template.parent),
             template=template.name,
             jinja_filters={"ipaddr": utils.ipaddr_renderer},
             **dict(mgmt_port=mgmt_port, mgmt_addr=mgmt_addr, user=user, password=password, node_name=node_name),
         )
-        utils.console.log(f"[b]({project.name})({node.name})[/] Bootstrap config rendered", style="good")
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Bootstrap config rendered", style="good")
 
     # Run node bootstrap config process
-    node.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
+    device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 @node_app.command(name="config", short_help="Configures a Node.")
@@ -194,30 +198,30 @@ def node_config(
     provider = config.get_provider()
 
     # Get project
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Get node to configure
-    node = project.search_node(node_name)
-    if not node:
+    device = prj.search_node(node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Check all other parameters are set
-    if node.net_os is None:
+    if device.net_os is None:
         utils.console.log(
             f"Node [cyan i]{node_name}[/] net_os parameter must be set. Verify node template name", style="error"
         )
         raise typer.Exit(code=1)
 
-    if node.mgmt_port is None:
+    if device.mgmt_port is None:
         utils.console.log(
             f"Node [cyan i]{node_name}[/] mgmt_port parameter must be set. Run update command", style="error"
         )
         raise typer.Exit(code=1)
-    if node.mgmt_addr is None:
+    if device.mgmt_addr is None:
         utils.console.log(
             f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
         )
@@ -235,19 +239,19 @@ def node_config(
         jinja_filters={"ipaddr": utils.ipaddr_renderer},
         **config_template_vars,
     )
-    utils.console.log(f"[b]({project.name})({node.name})[/] Node config rendered", style="good")
+    utils.console.log(f"[b]({prj.name})({device.name})[/] Node config rendered", style="good")
 
     # Apply node configuration
     if console:
-        applied = node.apply_config_over_console(
+        applied = device.apply_config_over_console(
             config=cfg_data, user=user, password=password, delay_multiplier=delay_multiplier
         )
     else:
-        applied = node.apply_config(config=cfg_data, user=user, password=password)
+        applied = device.apply_config(config=cfg_data, user=user, password=password)
     if applied:
-        utils.console.log(f"[b]({project.name})({node.name})[/] Node config applied", style="good")
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Node config applied", style="good")
     else:
-        utils.console.log(f"[b]({project.name})({node.name})[/] Node config not applied", style="error")
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Node config not applied", style="error")
 
 
 @project_app.command(name="nodes-save", short_help="Save Nodes Configuration from a project file.")
@@ -266,7 +270,7 @@ def project_save(
 
     > labby run project nodes-save --project-file "myproject.yml" --backup /path/to/backup/folder
     """
-    project, project_data = sync_project_data(project_file)
+    project, _ = sync_project_data(project_file)
 
     # Check backup directory
     if backup:
@@ -289,7 +293,7 @@ def project_save(
     result = nr_filtered.run(task=save_task, backup=backup)
     if not silent:
         utils.console.rule(title="Start section")
-        print_result(result)
+        print_result(result)  # type: ignore
         utils.console.rule(title="End section")
     utils.console.log(
         f"[b]({project.name})[/] Devices config saved: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
@@ -327,5 +331,5 @@ def project_config(
     )
     result = nr_filtered.run(task=config_task, project_data=project_data, project=project)
     utils.console.rule(title="Start section")
-    print_result(result)
+    print_result(result)  # type: ignore
     utils.console.rule(title="End section")
