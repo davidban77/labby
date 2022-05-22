@@ -79,3 +79,11 @@ def linters(context):
     console.log("All tests have executed", style="info")
     if not all(tests_execute.values()):
         sys.exit(1)
+
+
+@task
+def pytest(context, exit_on_failure=True):
+    """Check tests."""
+    command = "pytest"
+
+    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pytest")
