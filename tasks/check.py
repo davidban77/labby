@@ -52,7 +52,7 @@ def bandit(context, exit_on_failure=True):
 @task
 def pylint(context, exit_on_failure=True):
     """Run pylint code analysis."""
-    command = 'find . -name "*.py" | xargs pylint --rcfile pyproject.toml'
+    command = 'find . -name "*.py" -not -path ".venv/*" | xargs pylint --rcfile pyproject.toml'
     return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pylint")
 
 
