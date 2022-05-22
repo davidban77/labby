@@ -38,7 +38,7 @@ def flake8(context, exit_on_failure=True):
 @task
 def pydocstyle(context, exit_on_failure=True):
     """Run pydocstyle to validate docstring formatting adheres to NTC defined standards."""
-    command = "find . -name '*.py' | xargs pydocstyle"
+    command = "find . -name '*.py' -not -path '*/.venv/*' | xargs pydocstyle"
     return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pydocstyle")
 
 
