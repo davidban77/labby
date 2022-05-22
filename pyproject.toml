@@ -66,7 +66,7 @@ exclude = '''
 convention = "google"
 inherit = false
 match = "(?!__init__).*\\.py"
-match-dir = "(?!.venv)[^\\.].*"
+match-dir = "[^\\.].*"
 add_ignore = "D212,D412,D104"
 
 [tool.pylint.basic]

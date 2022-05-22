@@ -1,2 +1,2 @@
 [pydocstyle]
-match_dir = ^(?!\.venv).*
+match_dir = ^(?!\./\.venv).*
