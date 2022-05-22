@@ -6,9 +6,10 @@ Example:
 > labby update --help
 """
 from enum import Enum
-import typer
 from typing import Any, Dict, List
-from distutils.util import strtobool
+
+import typer
+
 from labby import utils
 from labby import config
 
@@ -22,7 +23,17 @@ app.add_typer(node_app, name="node")
 app.add_typer(link_app, name="link")
 
 
-class LinkFilter(str, Enum):  # noqa: D101
+def strtobool(value: Any) -> bool:
+    """Return whether the provided string (or any value really) represents true. Otherwise false."""
+    if not value:
+        return False
+    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
+
+
+class LinkFilter(str, Enum):
+    """Link Filter Enum."""
+
+    # pylint: disable=invalid-name
     frequency_drop = "frequency_drop"
     packet_loss = "packet_loss"
     latency = "latency"
@@ -87,14 +98,14 @@ def project_attr(
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Update project
-    project.update(**{attr: parsed_value})
-    utils.console.log(project)
+    prj.update(**{attr: parsed_value})
+    utils.console.log(prj)
 
 
 @project_app.command(name="labels", short_help="Updates the labels of a project")
@@ -110,14 +121,14 @@ def project_labels(
     """
     extracted_labels: List[str] = labels.split(",")
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Update project
-    project.update(labels=extracted_labels)
-    utils.console.log(project)
+    prj.update(labels=extracted_labels)
+    utils.console.log(prj)
 
 
 @node_app.command(name="attr", short_help="Updates a general attribute of a node")
@@ -139,19 +150,19 @@ def node_attr(
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
-    node = project.search_node(name=node_name)
-    if not node:
+    device = prj.search_node(name=node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Update node
-    node.update(**{attr: parsed_value})
-    utils.console.log(node)
+    device.update(**{attr: parsed_value})
+    utils.console.log(device)
 
 
 @node_app.command(name="template", short_help="Updates a general attribute of a node template")
@@ -172,14 +183,14 @@ def node_template(
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
     provider = config.get_provider()
-    template = provider.search_template(template_name)
-    if not template:
+    tplt = provider.search_template(template_name)
+    if not tplt:
         utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Update node template
-    template.update(**{attr: parsed_value})
-    utils.console.log(template)
+    tplt.update(**{attr: parsed_value})
+    utils.console.log(tplt)
 
 
 @link_app.command(name="filter", short_help="Updates a link filter")
@@ -209,17 +220,17 @@ def link_filter(
     filters: Dict[str, Any] = dict({attr: parsed_value})
 
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    link = project.search_link(node_a, port_a, node_b, port_b)
-    if not link:
+    enlace = prj.search_link(node_a, port_a, node_b, port_b)
+    if not enlace:
         utils.console.log(
             f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
         )
         raise typer.Exit(1)
 
     # Update link
-    link.apply_metric(**filters)
-    utils.console.log(link)
+    enlace.apply_metric(**filters)
+    utils.console.log(enlace)

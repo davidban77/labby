@@ -1,19 +1,23 @@
 """GNS3 Link module, for handling GNS3 links."""
-from labby.providers.gns3.utils import bool_status, link_status
-from labby import lock_file
+# pylint: disable=protected-access
+# pylint: disable=dangerous-default-value
 import time
 from typing import List, Optional
+
 from rich import box
 from rich.table import Table
 from rich.console import Console, RenderResult, ConsoleOptions
 from gns3fy.links import Link
+
+from labby.providers.gns3.utils import bool_status, link_status
+from labby import lock_file
 from labby.models import LabbyLink, LabbyLinkEndpoint, LabbyProjectInfo
 from labby.utils import console
 
 
 class GNS3LinkEndpoint(LabbyLinkEndpoint):
+    # pylint: disable=too-few-public-methods
     """GNS3 Link Endpoints."""
-    pass
 
 
 class GNS3Link(LabbyLink):
@@ -23,13 +27,14 @@ class GNS3Link(LabbyLink):
     Attributes:
         endpoint (Optional[GNS3LinkEndpoint]): Endpoint for the GNS3 link.
     """
+
     endpoint: Optional[GNS3LinkEndpoint]
     _base: Link
 
     def __init__(self, name: str, project_name: str, link: Link, labels: List[str] = [], **data) -> None:
         """
         Initiliazes GNS3Link.
-        
+
         Attributes:
             name (str): Name of link.
             project_name (str): Name of project the link belongs to.
@@ -38,11 +43,11 @@ class GNS3Link(LabbyLink):
             data: Data for the link.
         """
         _project = LabbyProjectInfo(name=project_name, id=link.project_id)
-        super().__init__(name=name, labels=labels, project=_project, _base=link, **data)
+        super().__init__(name=name, labels=labels, project=_project, _base=link, **data)  # type: ignore
         self._update_labby_link_attrs()
 
     def _update_labby_link_attrs(self):
-        self.id = self._base.link_id
+        self.id = self._base.link_id  # pylint: disable=invalid-name
         self.kind = self._base.link_type
         if self._base.suspend:
             self.status = "suspended"
@@ -50,10 +55,10 @@ class GNS3Link(LabbyLink):
             self.status = "present"
         self.filters = self._base.filters
         self.endpoint = GNS3LinkEndpoint(
-            node_a=self._base.nodes[0].node_name,
-            port_a=self._base.nodes[0].name,
-            node_b=self._base.nodes[-1].node_name,
-            port_b=self._base.nodes[-1].name,
+            node_a=self._base.nodes[0].node_name,  # type: ignore
+            port_a=self._base.nodes[0].name,  # type: ignore
+            node_b=self._base.nodes[-1].node_name,  # type: ignore
+            port_b=self._base.nodes[-1].name,  # type: ignore
         )
 
     def get(self) -> None:
@@ -81,29 +86,33 @@ class GNS3Link(LabbyLink):
         filter_applied = self._base.apply_filters(**kwargs)
         time.sleep(2)
         self.get()
+
         if filter_applied:
             console.log(f"[b]({self.project.name})({self.name})[/] Filter applied", style="good")
             return True
-        else:
-            console.log(f"[b]({self.project.name})({self.name})[/] Filter could not be applied", style="warning")
-            return False
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Filter could not be applied", style="warning")
+        return False
 
     def delete(self) -> bool:
         """Deletes the link."""
         console.log(f"[b]({self.project.name})({self.name})[/] Deleting link")
         link_deleted = self._base.delete()
         time.sleep(2)
+
         if link_deleted:
             self.id = None
-            self.status = "deleted"
+            self.status = "deleted"  # pylint: disable=attribute-defined-outside-init
             console.log(f"[b]({self.project.name})({self.name})[/] Link deleted", style="good")
             lock_file.delete_link_data(self.name, self.project.name)
             return True
-        else:
-            console.log(f"[b]({self.project.name})({self.name})[/] Link could not be deleted", style="warning")
-            return False
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Link could not be deleted", style="warning")
+        return False
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        # pylint: disable=unused-argument
+        # pylint: disable=redefined-outer-name
         """Renders a table onto console displaying all of the link data."""
         yield f"[b]Link:[/b] {self.name}"
         table = Table(

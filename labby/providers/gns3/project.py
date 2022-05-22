@@ -1,13 +1,17 @@
 """GNS3 Project module."""
+# pylint: disable=protected-access
+# pylint: disable=dangerous-default-value
 import re
 import time
 from typing import Any, List, Optional, Dict
+
 from rich import box
 from rich.console import Console, ConsoleOptions, ConsoleRenderable, RenderResult
 from rich.table import Table
 from pydantic import Field
 from nornir import InitNornir
 from gns3fy.projects import Project
+
 from labby.models import LabbyProject
 from labby.providers.gns3.node import GNS3Node
 from labby.providers.gns3.link import GNS3Link
@@ -50,7 +54,7 @@ class GNS3Project(LabbyProject):
         """
         project.get()
         initial_state = project.status
-        super().__init__(name=name, labels=labels, _base=project, _initial_state=initial_state, **data)
+        super().__init__(name=name, labels=labels, _base=project, _initial_state=initial_state, **data)  # type: ignore
         if self._initial_state == "closed":
             self.start()
         else:
@@ -82,7 +86,7 @@ class GNS3Project(LabbyProject):
             ValueError: If a link name could not be resolved
         """
         self.status = self._base.status
-        self.id = self._base.project_id
+        self.id = self._base.project_id  # pylint: disable=invalid-name
         if nodes_refresh:
             self.nodes = {}
             for _node in self._base.nodes.values():
@@ -229,6 +233,7 @@ class GNS3Project(LabbyProject):
         console.log(f"[b]({self.name})[/] Deleting project")
         project_deleted = self._base.delete()
         time.sleep(2)
+
         if project_deleted:
             self.id = None
             self.status = "deleted"
@@ -237,9 +242,9 @@ class GNS3Project(LabbyProject):
             console.log(f"[b]({self.name})[/] Project deleted", style="good")
             lock_file.delete_project_data(self.name)
             return True
-        else:
-            console.log(f"[b]({self.name})[/] Project could not be deleted", style="warning")
-            return False
+
+        console.log(f"[b]({self.name})[/] Project could not be deleted", style="warning")
+        return False
 
     def start_nodes(self, start_nodes: str, nodes_delay: int = 5) -> None:
         """Start nodes.
@@ -305,35 +310,34 @@ class GNS3Project(LabbyProject):
             console.log(f"Node [cyan i]{name}[/] already created. Nothing to do...", style="warning")
             return _node
 
-        else:
-            console.log(f"[b]({self.name})({name})[/] Creating node with template [cyan i]{template}[/]")
-            gns3_node = self._base.create_node(name=name, template=template, **kwargs)
-            node = GNS3Node(
-                name=gns3_node.name,
-                template=template,
-                project_name=self.name,
-                node=gns3_node,
-                labels=labels,
-                mgmt_addr=mgmt_addr,
-                mgmt_port=mgmt_port,
-                config_managed=config_managed,
-                **kwargs,
-            )
+        console.log(f"[b]({self.name})({name})[/] Creating node with template [cyan i]{template}[/]")
+        gns3_node = self._base.create_node(name=name, template=template, **kwargs)
+        node = GNS3Node(
+            name=gns3_node.name,
+            template=template,
+            project_name=self.name,
+            node=gns3_node,
+            labels=labels,
+            mgmt_addr=mgmt_addr,
+            mgmt_port=mgmt_port,
+            config_managed=config_managed,
+            **kwargs,
+        )
 
-            # Assign nornir object
-            node.nornir = self.nornir.filter(filter_func=lambda h: h.name == name)  # type: ignore
+        # Assign nornir object
+        node.nornir = self.nornir.filter(filter_func=lambda h: h.name == name)  # type: ignore
 
-            # Save node in project
-            self.nodes[name] = node
-            time.sleep(2)
-            console.log(f"[b]({self.name})({node.name})[/] Node created", style="good")
+        # Save node in project
+        self.nodes[name] = node
+        time.sleep(2)
+        console.log(f"[b]({self.name})({node.name})[/] Node created", style="good")
 
-            # Apply node to lock file
-            lock_file.apply_node_data(node, self)
+        # Apply node to lock file
+        lock_file.apply_node_data(node, self)
 
-            # Refresh Nornir object
-            self.init_nornir()
-            return node
+        # Refresh Nornir object
+        self.init_nornir()
+        return node
 
     def search_node(self, name: str) -> Optional[GNS3Node]:
         """Search node in project.
@@ -393,25 +397,27 @@ class GNS3Project(LabbyProject):
             self.start()
 
         _link = self.search_link(node_a, port_a, node_b, port_b)
+
         if _link:
             console.log(f"Link [cyan i]{_link.name}[/] already created. Nothing to do...", style="warning")
             return _link
-        else:
-            console.log(f"[b]({self.name})[/] Creating link on: [cyan i]{node_a}: {port_a} <==> {port_b}: {node_b}[/]")
-            gns3_link = self._base.create_link(node_a, port_a, node_b, port_b, **kwargs)
-            _link = GNS3Link(
-                name=gns3_link.name if gns3_link.name else get_link_name(node_a, port_a, node_b, port_b),
-                project_name=self.name,
-                link=gns3_link,
-                labels=labels,
-                **kwargs,
-            )
-            time.sleep(2)
-            if filters:
-                _link.apply_metric(**filters)
-            console.log(f"[b]({self.name})({_link.name})[/] Link created", style="good")
-            lock_file.apply_link_data(_link, self)
-            return _link
+
+        console.log(f"[b]({self.name})[/] Creating link on: [cyan i]{node_a}: {port_a} <==> {port_b}: {node_b}[/]")
+        gns3_link = self._base.create_link(node_a, port_a, node_b, port_b, **kwargs)
+        _link = GNS3Link(
+            name=gns3_link.name if gns3_link.name else get_link_name(node_a, port_a, node_b, port_b),
+            project_name=self.name,
+            link=gns3_link,
+            labels=labels,
+            **kwargs,
+        )
+        time.sleep(2)
+        if filters:
+            _link.apply_metric(**filters)
+
+        console.log(f"[b]({self.name})({_link.name})[/] Link created", style="good")
+        lock_file.apply_link_data(_link, self)
+        return _link
 
     def search_link(self, node_a: str, port_a: str, node_b: str, port_b: str) -> Optional[GNS3Link]:
         """Search link in project.
@@ -562,6 +568,8 @@ class GNS3Project(LabbyProject):
         return table
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        # pylint: disable=unused-argument
+        # pylint: disable=redefined-outer-name
         """Rich repr for a project.
 
         Args:

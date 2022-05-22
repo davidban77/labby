@@ -5,13 +5,15 @@ Handles the complete build of a Labby Project.
 Example:
 > labby build project --project-file "myproject.yaml"
 """
-import typer
 from pathlib import Path
 from typing import Optional
+
+import typer
 from netaddr import IPNetwork
 from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
 from rich.prompt import Prompt
+
 from labby import utils
 from labby.models import LabbyProject
 from labby.project_data import ProjectData, get_project_from_file
@@ -47,10 +49,10 @@ def bootstrap_nodes(
 
         for node_name in node_spec.get("nodes", []):
 
-            node = project.search_node(name=node_name)
+            device = project.search_node(name=node_name)
 
             # Validate devices exists in the project
-            if node is None:
+            if device is None:
                 utils.console.log(
                     f"[b]({project.name})[/] Node is not created: [i dark_orange3]{node_name}", style="error"
                 )
@@ -70,21 +72,21 @@ def bootstrap_nodes(
                 )
 
             else:
-                utils.console.log(f"[b]({project.name})({node.name})[/] Rendering bootstrap config")
-                if node.mgmt_port is None:
+                utils.console.log(f"[b]({project.name})({device.name})[/] Rendering bootstrap config")
+                if device.mgmt_port is None:
                     utils.console.log(
                         f"Node [cyan i]{node_name}[/] mgmt_port parameter must be set. Run update command",
                         style="error",
                     )
                     continue
-                if node.mgmt_addr is None:
+                if device.mgmt_addr is None:
                     utils.console.log(
                         f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command",
                         style="error",
                     )
                     continue
 
-                if node.net_os is None:
+                if device.net_os is None:
                     utils.console.log(
                         f"Node [cyan i]{node_name}[/] net_os parameter must be set. Verify node template name",
                         style="error",
@@ -92,7 +94,7 @@ def bootstrap_nodes(
                     continue
 
                 # Render bootstrap config
-                cfg_template = Path(__file__).parent.parent / "templates" / f"nodes_bootstrap/{node.net_os}.cfg.j2"
+                cfg_template = Path(__file__).parent.parent / "templates" / f"nodes_bootstrap/{device.net_os}.cfg.j2"
 
                 # Validate template exists
                 if not cfg_template.exists():
@@ -107,17 +109,17 @@ def bootstrap_nodes(
                     template=cfg_template.name,
                     jinja_filters={"ipaddr": utils.ipaddr_renderer},
                     **dict(
-                        mgmt_port=node.mgmt_port,
-                        mgmt_addr=node.mgmt_addr,
+                        mgmt_port=device.mgmt_port,
+                        mgmt_addr=device.mgmt_addr,
                         user=user,
                         password=password,
                         node_name=node_name,
                     ),
                 )
-            utils.console.log(f"[b]({project.name})({node.name})[/] Bootstrap config rendered", style="good")
+            utils.console.log(f"[b]({project.name})({device.name})[/] Bootstrap config rendered", style="good")
 
             # Run node bootstrap config process
-            node.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
+            device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 def config_nodes(
@@ -154,7 +156,7 @@ def config_nodes(
     result = nr_filtered.run(task=config_task, project_data=project_data, project=project)
     if not silent:
         utils.console.rule(title="Start section")
-        print_result(result)
+        print_result(result)  # type: ignore
         utils.console.rule(title="End section")
     utils.console.log(
         f"[b]({project.name})[/] Devices configured: [i dark_orange3]{list(nr_filtered.inventory.hosts.keys())}[/]"
@@ -162,6 +164,7 @@ def config_nodes(
 
 
 def build_topology(project: LabbyProject, project_data: ProjectData):
+    # pylint: disable=too-many-locals
     """Builds a project topology.
 
     Args:
@@ -177,16 +180,16 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
     for node_spec in project_data.nodes_spec:
         for node_name in node_spec.get("nodes", []):
 
-            node = project.search_node(name=node_name)
+            device = project.search_node(name=node_name)
 
             # Validate devices exists in the project
-            if node:
+            if device:
                 utils.console.log(f"[b]({project.name})[/] Node already created: [i dark_orange3]{node_name}")
                 continue
 
             labels = node_spec.get("labels", [])
 
-            extra_params = dict()
+            extra_params = {}
             if node_spec.get("config_managed") is not None:
                 extra_params["config_managed"] = node_spec.get("config_managed")
 
@@ -197,9 +200,9 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
             addr = f"{mgmt_ips[index]}/{prefixlen}"
             mgmt_addr = None
             if project_data.mgmt_network.get("gateway") == addr:
-                # Skip the gw address
+                # Skip the gw address (TODO: To improve)
                 index += 1
-                mgmt_addr == mgmt_ips[index]
+                mgmt_addr == mgmt_ips[index]  # pylint: disable=pointless-statement
             else:
                 mgmt_addr = addr
             index += 1
@@ -229,8 +232,8 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
             )
 
 
-@app.command(short_help="Builds a Project in a declarative way.")
-def project(
+@app.command(short_help="Builds a Project in a declarative way.", name="project")
+def labby_project(
     project_file: Path = typer.Option(
         Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
     ),
@@ -254,10 +257,10 @@ def project(
 
     > labby build project --project-file "myproject.yaml"
     """
-    project, project_data = get_project_from_file(project_file)
+    prj, project_data = get_project_from_file(project_file)
 
     # Build project
-    build_topology(project=project, project_data=project_data)
+    build_topology(project=prj, project_data=project_data)
 
     # Bootstrap nodes
     is_bootstrap_required = Prompt.ask(
@@ -265,7 +268,7 @@ def project(
     )
     if is_bootstrap_required == "yes":
         bootstrap_nodes(
-            project=project,
+            project=prj,
             project_data=project_data,
             user=user,
             password=password,
@@ -278,7 +281,7 @@ def project(
         "Do you want to configure the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
     )
     if is_config_required == "yes":
-        config_nodes(project=project, project_data=project_data)
+        config_nodes(project=prj, project_data=project_data)
 
 
 @app.command(short_help="Builds a Project Topology.")
@@ -294,9 +297,9 @@ def topology(
 
     > labby build topology --project-file "myproject.yml"
     """
-    project, project_data = get_project_from_file(project_file)
+    prj, project_data = get_project_from_file(project_file)
 
-    build_topology(project=project, project_data=project_data)
+    build_topology(project=prj, project_data=project_data)
 
 
 @app.command(short_help="Runs the bootstrap config process on the devices of a Project.")
@@ -322,10 +325,10 @@ def bootstrap(
 
     > labby build bootstrap --project-file "myproject.yml"
     """
-    project, project_data = get_project_from_file(project_file)
+    prj, project_data = get_project_from_file(project_file)
 
     bootstrap_nodes(
-        project=project,
+        project=prj,
         project_data=project_data,
         user=user,
         password=password,
@@ -351,7 +354,7 @@ def configs(
 
     > labby build configs --project-file "myproject.yml"
     """
-    project, project_data = get_project_from_file(project_file)
+    prj, project_data = get_project_from_file(project_file)
 
     # Config Nodes
-    config_nodes(project=project, project_data=project_data, model=model, net_os=net_os, name=name, silent=silent)
+    config_nodes(project=prj, project_data=project_data, model=model, net_os=net_os, name=name, silent=silent)

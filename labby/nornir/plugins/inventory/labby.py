@@ -1,11 +1,26 @@
-from ipaddress import IPv4Interface
+"""Labby Nornir Inventory Plugin."""
 from typing import Any, Dict
-from labby.models import LabbyProject
+
+from ipaddress import IPv4Interface
 from nornir.core.inventory import Inventory, Hosts, Host, Groups, ConnectionOptions, Defaults
 from nornir.core.plugins.inventory import InventoryPlugin
 
+from labby.models import LabbyProject
+
 
 def _set_host(data: Dict[str, Any], name: str, groups, host, host_platform) -> Host:
+    """Creates Nornir Hosts object from data passed.
+
+    Args:
+        data (Dict[str, Any]): Host data returned to Nornir
+        name (str): Host name
+        groups (_type_): Groups for hosts
+        host (_type_): Host object
+        host_platform (_type_): Host platform
+
+    Returns:
+        Host: Nornir Host
+    """
     connection_option = {
         "scrapli": ConnectionOptions(
             port=host.get("port", 22),
@@ -29,10 +44,23 @@ def _set_host(data: Dict[str, Any], name: str, groups, host, host_platform) -> H
 
 
 class LabbyNornirInventory(InventoryPlugin):
+    # pylint: disable=too-few-public-methods
+    """Labby Nornir Inventory."""
+
     def __init__(self, project: LabbyProject) -> None:
+        """Labby Nornir Inventory Plugin which uses a LabbyProject.
+
+        Args:
+            project (LabbyProject): Labby Project.
+        """
         self.project = project
 
     def load(self) -> Inventory:
+        """Loads inventory data.
+
+        Returns:
+            Inventory: Nornir Inventory
+        """
         hosts = Hosts()
         groups = Groups()
         defaults = Defaults()

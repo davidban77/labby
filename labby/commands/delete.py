@@ -6,6 +6,7 @@ Example:
 > labby delete --help
 """
 import typer
+
 from labby import utils, config
 
 
@@ -22,14 +23,14 @@ def project(project_name: str = typer.Argument(..., help="Project name", envvar=
     > labby delete project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name)
-    if not project:
+    prj = provider.search_project(project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Delete project
-    utils.console.log(project)
-    project.delete()
+    utils.console.log(prj)
+    prj.delete()
 
 
 @app.command(short_help="Deletes a node")
@@ -45,18 +46,18 @@ def node(
     > labby delete node r1 --project lab01
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    node = project.search_node(name=node_name)
-    if not node:
+    device = prj.search_node(name=node_name)
+    if not device:
         utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
 
     # Delete node
-    utils.console.log(node)
-    node.delete()
+    utils.console.log(device)
+    device.delete()
 
 
 @app.command(short_help="Deletes a link")
@@ -75,17 +76,17 @@ def link(
     > labby delete link --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
     provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
+    prj = provider.search_project(project_name=project_name)
+    if not prj:
         utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
         raise typer.Exit(1)
-    link = project.search_link(node_a, port_a, node_b, port_b)
-    if not link:
+    enlace = prj.search_link(node_a, port_a, node_b, port_b)
+    if not enlace:
         utils.console.log(
             f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
         )
         raise typer.Exit(1)
 
     # Delete link
-    utils.console.log(link)
-    link.delete()
+    utils.console.log(enlace)
+    enlace.delete()

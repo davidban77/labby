@@ -1,26 +1,32 @@
 """GNS3 Node module."""
+# pylint: disable=protected-access
+# pylint: disable=dangerous-default-value
 import time
 import re
-import typer
-import labby.providers.gns3.console_provisioner as node_console
 from typing import Dict, List, Optional
-from rich.console import Console, ConsoleOptions, ConsoleRenderable, RenderResult, RenderGroup, render_scope
+
+import typer
+from rich.console import Console, ConsoleOptions, ConsoleRenderable, RenderResult, Group
+from rich.scope import render_scope
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
-from nornir.core.task import Task, AggregatedResult
+from nornir.core.task import Task, AggregatedResult, Result
 from nornir_scrapli.tasks import send_config
 from gns3fy.templates import Template, get_templates
 from gns3fy.nodes import Node
 from gns3fy.ports import Port
+
+import labby.providers.gns3.console_provisioner as node_console
 from labby import config, lock_file
 from labby.providers.gns3.utils import node_net_os, node_status
-from labby.models import LabbyNode, LabbyProjectInfo, LabbyPort
 from labby.utils import console, dissect_url
 from labby.nornir_tasks import backup_task, SHOW_RUN_COMMANDS
+from labby.models import LabbyNode, LabbyProjectInfo, LabbyPort
 
 
 def config_task(task: Task, config: str):
+    # pylint: disable=redefined-outer-name
     """Taks for configuring a node.
 
     Args:
@@ -54,6 +60,7 @@ def dissect_gns3_template_name(template_name: str) -> Optional[Dict[str, str]]:
 
 
 class GNS3Port(LabbyPort):
+    # pylint: disable=too-few-public-methods
     """GNS3 Labby port object."""
 
     def __init__(self, name: str, kind: str, port: Port) -> None:
@@ -69,6 +76,7 @@ class GNS3Port(LabbyPort):
 
 
 class GNS3Node(LabbyNode):
+    # pylint: disable=too-many-instance-attributes
     """GNS3 Labby node object."""
 
     builtin: bool = False
@@ -105,7 +113,7 @@ class GNS3Node(LabbyNode):
             labels=labels,
             template=template,
             project=_project,
-            _base=node,
+            _base=node,  # type: ignore
             mgmt_addr=mgmt_addr,
             mgmt_port=mgmt_port,
             config_managed=config_managed,
@@ -121,16 +129,16 @@ class GNS3Node(LabbyNode):
             ValueError: If the port name or link type info is not available.
             typer.Exit: If the mgmt_port is not part of the node interfaces
         """
-        self.id = self._base.node_id
+        self.id = self._base.node_id  # pylint: disable=invalid-name
         self.console = self._base.console
         self.status = self._base.status
         self.kind = self._base.node_type
         _interfaces = {}
-        for p in self._base.ports:
-            if p.name and p.link_type:
-                _interfaces.update({p.name: GNS3Port(name=p.name, kind=p.link_type, port=p)})
+        for puerto in self._base.ports:
+            if puerto.name and puerto.link_type:
+                _interfaces.update({puerto.name: GNS3Port(name=puerto.name, kind=puerto.link_type, port=puerto)})
             else:
-                raise ValueError(f"Port name or link type info not available: {p} -> {self.name}")
+                raise ValueError(f"Port name or link type info not available: {puerto} -> {self.name}")
         self.interfaces = _interfaces
         self.properties = self._base.properties
 
@@ -167,8 +175,8 @@ class GNS3Node(LabbyNode):
         _templates = get_templates(self._base._connector)
         try:
             tplt = next(_t for _t in _templates if _t.name == self.template)
-        except StopIteration:
-            raise ValueError(f"Node template not found: {self.template}")
+        except StopIteration as err:
+            raise ValueError(f"Node template not found: {self.template}") from err
 
         return tplt
 
@@ -280,11 +288,12 @@ class GNS3Node(LabbyNode):
             console.log(f"[b]({self.project.name})({self.name})[/] Node deleted", style="good")
             lock_file.delete_node_data(self.name, self.project.name)
             return True
-        else:
-            console.log(f"[b]({self.project.name})({self.name})[/] Node could not be deleted", style="warning")
-            return False
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Node could not be deleted", style="warning")
+        return False
 
     def bootstrap(self, config: str, boot_delay: int = 5, delay_multiplier: int = 1) -> bool:
+        # pylint: disable=redefined-outer-name
         """Bootstraps the node.
 
         Args:
@@ -323,18 +332,20 @@ class GNS3Node(LabbyNode):
         response = node_console.run_action(
             action="bootstrap", server_host=server_host, data=config, node=self, delay_multiplier=delay_multiplier
         )
+
         if not response.failed:
             console.log(f"[b]({self.project.name})({self.name})[/] Bootstrapped node", style="good")
             console.rule(title=f"Start of bootstrap capture for: [b cyan]{self.name}")
             console.print(response.result, highlight=True)
             console.rule(title=f"End of bootstrap capture for: [b cyan]{self.name}")
             return True
-        else:
-            console.print(response.result, highlight=True)
-            console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
-            return False
+
+        console.print(response.result, highlight=True)
+        console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
+        return False
 
     def apply_config(self, config: str, user: Optional[str] = None, password: Optional[str] = None) -> bool:
+        # pylint: disable=redefined-outer-name
         """Applies the configuration file to the node.
 
         Args:
@@ -363,12 +374,17 @@ class GNS3Node(LabbyNode):
         try:
             result.raise_on_error()
             return True
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return False
 
     def apply_config_over_console(
-        self, config: str, user: Optional[str] = None, password: Optional[str] = None, delay_multiplier: int = 1
+        self,
+        config: str,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        delay_multiplier: int = 1,
     ) -> bool:
+        # pylint: disable=redefined-outer-name
         """Applies the configuration file to the node over the console.
 
         Args:
@@ -402,20 +418,21 @@ class GNS3Node(LabbyNode):
             password=password,
             delay_multiplier=delay_multiplier,
         )
+
         if not response.failed:
             console.log(f"[b]({self.project.name})({self.name})[/] Node configured over console", style="good")
             console.rule(title=f"Start of config applied for: [b cyan]{self.name}")
             console.print(response.result, highlight=True)
             console.rule(title=f"End of config applied for: [b cyan]{self.name}")
             return True
-        else:
-            console.print(response.result, highlight=True)
-            console.log(
-                f"[b]({self.project.name})({self.name})[/] Node could not be configured over console", style="error"
-            )
-            return False
 
-    def get_config(self) -> Optional[str]:
+        console.print(response.result, highlight=True)
+        console.log(
+            f"[b]({self.project.name})({self.name})[/] Node could not be configured over console", style="error"
+        )
+        return False
+
+    def get_config(self) -> Optional[Result]:
         """Retrieves the configuration file from the node.
 
         Raises:
@@ -439,7 +456,7 @@ class GNS3Node(LabbyNode):
         try:
             result.raise_on_error()
             return result[self.name][-1]
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             console.log(
                 f"[b]({self.project.name})({self.name})[/] Could not retrieve node's configuration", style="error"
             )
@@ -480,13 +497,12 @@ class GNS3Node(LabbyNode):
         console.rule(title=f"Start of configuration retrieved for: [b cyan]{self.name}")
         console.print(response.result, highlight=True)
         console.rule(title=f"End of configuration retrieved for: [b cyan]{self.name}")
+
         if not response.failed:
             return response.result
-        else:
-            console.log(
-                f"[b]({self.project.name})({self.name})[/] Could not retrieve node's configuration", style="error"
-            )
-            return None
+
+        console.log(f"[b]({self.project.name})({self.name})[/] Could not retrieve node's configuration", style="error")
+        return None
 
     def render_ports_detail(self) -> ConsoleRenderable:
         """Renders the ports detail.
@@ -508,7 +524,7 @@ class GNS3Node(LabbyNode):
             else:
                 flag = False
                 list_ports.append(port.name)
-        ports = ", ".join([p for p in list_ports])
+        ports = ", ".join(list_ports)
         return Panel(ports, expand=False, title="[b]Ports[/]", box=box.HEAVY_EDGE)
 
     def render_links_detail(self) -> ConsoleRenderable:
@@ -525,7 +541,7 @@ class GNS3Node(LabbyNode):
                     title=f"Link: {index}",
                 )
             )
-        return Panel(RenderGroup(*paneles), expand=False, title="[b]Links[/]", box=box.HEAVY_EDGE)
+        return Panel(Group(*paneles), expand=False, title="[b]Links[/]", box=box.HEAVY_EDGE)
 
     def render_properties(self) -> ConsoleRenderable:
         """Renders the node's properties.
@@ -536,6 +552,8 @@ class GNS3Node(LabbyNode):
         return render_scope(self.properties if self.properties else {}, title="[b]Properties[/]")
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        # pylint: disable=unused-argument
+        # pylint: disable=redefined-outer-name
         """Renders all the node's properties.
 
         Args:

@@ -5,25 +5,25 @@ Handles labby configuration.
 Example:
 > labby configuration --help
 """
-import typer
-
 from pathlib import Path
-from labby import utils, config
+
+import typer
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.layout import Layout
 from rich.panel import Panel
-from rich.console import render_scope
+from rich.scope import render_scope
 from rich.align import Align
 from rich.box import ROUNDED
 from rich.text import Text
+
+from labby import utils, config
 
 
 app = typer.Typer(help="Configuration for Labby")
 
 
 @app.command(short_help="Labby configuration settings")
-@utils.error_catcher
 def show(
     ctx: typer.Context,
 ):
@@ -49,7 +49,6 @@ def show(
 
 
 @app.command(short_help="Launches configuration file for edit")
-@utils.error_catcher
 def edit(
     ctx: typer.Context,
 ):
@@ -67,7 +66,6 @@ def edit(
 
 
 @app.command(short_help="Show environments configured")
-@utils.error_catcher
 def environments(
     ctx: typer.Context,
 ):
@@ -87,18 +85,18 @@ def environments(
     env_layouts = []
     prov_layouts = []
     for env in config_data["environment"]:
-        p = Panel(
+        pan = Panel(
             f"Environment: [b cyan]{env}[/]\nActive Provider: [b cyan]{config_data['environment'][env]['provider']}",
             title="Environment",
             padding=1,
             highlight=True,
         )
         if "meta" not in config_data["environment"][env]:
-            env_layouts.append(Layout(p))
+            env_layouts.append(Layout(pan))
         else:
             meta_p = Panel(render_scope(config_data["environment"][env]["meta"]), title="Meta")
             env_layout = Layout()
-            env_layout.split(Layout(p), Layout(meta_p))
+            env_layout.split(Layout(pan), Layout(meta_p))
             env_layouts.append(env_layout)
         table = Table(
             "Provider",

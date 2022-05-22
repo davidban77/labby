@@ -1,11 +1,16 @@
 """Lock file operations module."""
+from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, MutableMapping, Optional
 
 import typer
-from labby.models import LabbyLink, LabbyNode, LabbyProject
 from labby import config, utils
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # pylint: disable=all
+    from labby.models import LabbyLink, LabbyNode, LabbyProject
 
 
 def get_lock_file():
@@ -254,7 +259,7 @@ def get_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]
     Args:
         link_name (str): Name of the link.
         project_name (str): Name of the project.
-        
+
     Returns:
         Optional[Dict[str, Any]]: Link data if available.
     """

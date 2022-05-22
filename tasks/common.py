@@ -1,35 +1,38 @@
 """Common utilities for task commands."""
 # pylint: disable=too-many-arguments
+# pylint: disable=dangerous-default-value
+import os
 import sys
-from distutils.util import strtobool
-from typing import Literal
-from dotenv import load_dotenv
+from typing import Any, Dict
+from pathlib import Path
+
+import toml
+from dotenv import dotenv_values
+from invoke.context import Context
+from invoke.runners import Result
 from rich.console import Console
 from rich.theme import Theme
 
+# Load environment variables from .env file and from the OS environment
+ENVVARS = {**dotenv_values(".env"), **dotenv_values("./deployments/envs/creds.env"), **os.environ}
+
 custom_theme = Theme({"info": "cyan", "warning": "bold magenta", "error": "bold red", "good": "bold green"})
-
-
-load_dotenv()
 
 console = Console(color_system="truecolor", log_path=False, record=True, theme=custom_theme, force_terminal=True)
 
-try:
-    import toml
-except ImportError:
-    sys.exit("Please make sure to `pip install toml` or enable the Poetry shell and run `poetry install`.")
+
+with open("pyproject.toml", "r", encoding="utf8") as pyproject:
+    parsed_toml = toml.load(pyproject)
+
+PYTHON_VER = parsed_toml["tool"]["poetry"]["dependencies"]["python"].replace("^", "")
+PROJECT_VERSION = parsed_toml["tool"]["poetry"]["version"]
 
 
-def project_ver():
-    """Find version from pyproject.toml to use for docker image tagging."""
-    with open("pyproject.toml") as file:
-        return toml.load(file)["tool"]["poetry"].get("version", "latest")
-
-
-def project_name():
-    """Find name from pyproject.toml to use for docker image tagging."""
-    with open("pyproject.toml") as file:
-        return toml.load(file)["tool"]["poetry"].get("name", "kittobs-builder")
+def strtobool(value: Any) -> bool:
+    """Return whether the provided string (or any value really) represents true. Otherwise false."""
+    if not value:
+        return False
+    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
 
 
 def is_truthy(arg):
@@ -50,13 +53,35 @@ def is_truthy(arg):
     return bool(strtobool(arg))
 
 
-def run_cmd(context, exec_cmd, exit_on_failure=True) -> bool:
-    """Wrapper to run the invoke task commands."""
+def run_cmd(
+    context: Context,
+    exec_cmd: str,
+    envvars: Dict[str, str] = {},
+    hide: Any = None,
+    exit_on_failure: bool = True,
+    task_name: str = "",
+) -> Result:
+    """Run invoke task commands.
+
+    Args:
+        context (Context): Invoke Context object.
+        exec_cmd (str): Command to execute.
+        envvars (Dict[str, str], optional): Environment variable to pass. Defaults to {}.
+        exit_on_failure (bool, optional): Flag to indicate if the execution should exit if it fails. Defaults to True.
+
+    Exits:
+        It exits program execution if flag `exit_on_failure` is set to True and the command ends with code != 0.
+
+    Returns:
+        Result: A container for information about the result of a command execution.
+    """
     console.log(f"Running command [orange1 i]{exec_cmd}", style="info")
-    result = context.run(
+    result: Result = context.run(
         exec_cmd,
         pty=True,
         warn=True,
+        env=envvars,
+        hide=hide,
     )
     console.log(f"End of command: [orange1 i]{exec_cmd}", style="info")
 
@@ -64,10 +89,18 @@ def run_cmd(context, exec_cmd, exit_on_failure=True) -> bool:
         console.log(f"Error has occurred\n{result.stderr}", style="error")
         sys.exit(result.return_code)
 
-    return result.ok
+    # Pretty print it
+    task_name = task_name if task_name else exec_cmd
+    if result.ok:
+        console.log(f"Successfully ran {task_name}", style="good")
+    else:
+        console.log(f"Issues encountered running {task_name}", style="warning")
+    console.rule(f"End of task: [b i]{task_name}", style="info")
+    console.print()
+    return result
 
 
-def render_bool(value: bool) -> Literal["[green b]Yes", "[red b]No"]:
+def render_bool(value: bool) -> str:
     """Returns Rich string that renders from a boolean value.
 
     Args:
@@ -79,22 +112,20 @@ def render_bool(value: bool) -> Literal["[green b]Yes", "[red b]No"]:
     return "[green b]Yes" if value is True else "[red b]No"
 
 
-def task_executor(result_ok: bool, task_name: str) -> bool:
-    """Wrapper around tasks that evaluates the result status and prints it Rich friendly.
-
-    NOTE: This could have been a decorator but I haven't found a why that it can play nicely with the @task decorator
+def get_file(file_path: str) -> Path:
+    """Verify a file exists and returns its Path object.
 
     Args:
-        result_ok (bool): Run command status
-        task_name (str): Name of the task executed to print out to terminal
+        file_path (str): File path.
+
+    Raises:
+        SystemExit: When file is not found
 
     Returns:
-        bool: Returns back the tasks result status
+        Path: Path object of the file.
     """
-    if result_ok:
-        console.log(f"Successfully ran {task_name}", style="good")
-    else:
-        console.log(f"Issues encountered running {task_name}", style="warning")
-    console.rule(f"End of task: [b i]{task_name}", style="info")
-    console.print()
-    return result_ok
+    _file = Path(file_path)
+    if not _file.exists() and _file.is_file():
+        console.log(f"No file found at: {_file}", style="error")
+        raise SystemExit(1)
+    return _file
