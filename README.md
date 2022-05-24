@@ -44,6 +44,10 @@ poetry install
 
 ---
 
+## Requirements
+
+Labby configuration file
+
 ## How it works
 
 The CLI tool serves multiple purposes, for example it is a way great to discover the projects or network topologies avaiable on the Network Virtualization system, start or stop the nodes, push configuration, etc...
