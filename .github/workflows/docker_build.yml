@@ -3,7 +3,7 @@ name: Docker Build
 on:
   workflow_run:
     workflows: [Run Tests]
-    branches: [main, develop]
+    branches: [main, develop, "release-v**"]
     types: [completed]
 
 jobs:
