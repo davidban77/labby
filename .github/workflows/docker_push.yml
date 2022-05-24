@@ -20,10 +20,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      # Setup the python version, and dependencies
+      - name: Set Up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      # Installing and configuring poetry
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.1.12
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cache venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies (if no cache)
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
+
       - run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: "gitbranch"
 
-      - run: echo "##[set-output name=version;]$(python -c'import labby; print(labby.__version__)')"
+      - run: echo "##[set-output name=version;]$(poetry version | awk 'END {print $NF}')"
         id: "pkg_ver"
 
       - name: Set up QEMU
