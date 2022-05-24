@@ -2,16 +2,13 @@ name: Docker Build
 
 on:
   workflow_run:
-    workflows:
-      - CI
-    branches:
-      - master
-      - df/docker-option
-    types:
-      - completed
+    workflows: [Run Tests]
+    branches: [main, df/docker-option]
+    types: [completed]
 
 jobs:
   build-images:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     needs:
       - "tests"
