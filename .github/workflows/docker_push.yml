@@ -39,7 +39,7 @@ jobs:
         id: "dockermeta"
         uses: "docker/metadata-action@v3"
         with:
-          images: "davidban77/labby,ghcr.io/davidban77/labby"
+          images: "${{ secrets.DOCKERHUB_USERNAME }}/labby"
           flavor: |
             latest=false
           tags: |
@@ -54,13 +54,13 @@ jobs:
         with:
           push: true
           target: labby
-          file: "Dockerfile"
+          file: "./Dockerfile"
           # platforms: "linux/amd64,linux/arm64"
           tags: "${{ steps.dockermeta.outputs.tags }}"
           labels: "${{ steps.dockermeta.outputs.labels }}"
           cache-from: "type=gha,scope=labby-${{ steps.gitbranch.outputs.branch }}"
           cache-to: "type=gha,mode=max,scope=labby-${{ steps.gitbranch.outputs.branch }}"
-          context: "."
+          context: "./"
           build-args: |
             PYTHON_VER=${{ matrix.python-version }}
 
@@ -72,4 +72,4 @@ jobs:
       #     push: true
       #     build-args: "PYTHON_VER=${{ matrix.python-version }}"
       #     target: labby
-      #     tags: davidban77/labby:v${{  }}-py${{ matrix.python-version }}
+      #     tags: ${{ secrets.DOCKERHUB_USERNAME }}/labby:v${{  }}-py${{ matrix.python-version }}
