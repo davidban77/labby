@@ -6,7 +6,7 @@ on:
       - CI
     branches:
       - master
-      - docker-option
+      - df/docker-option
     types:
       - completed
 
