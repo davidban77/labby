@@ -80,6 +80,7 @@ jobs:
             type=semver,pattern=v${{ env.labby_version }},enable=${{ matrix.python-version == 3.7 }}
             type=raw,value=stable,enable=${{ matrix.python-version == 3.7 }}
             type=raw,value=stable-py${{ matrix.python-version }}
+            type=raw,value=v${{ env.labby_version }}-py${{ matrix.python-version }}
           labels: |
             org.opencontainers.image.title=labby
       - name: "Build"
