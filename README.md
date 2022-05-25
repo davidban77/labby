@@ -23,6 +23,7 @@ CLI Tool for interacting with Network Simulation systems to build and interact w
   - [1. Documentation](#1-documentation)
   - [2. Install](#2-install)
     - [2.1 Developer version](#21-developer-version)
+    - [2.2 Using labby docker container](#22-using-labby-docker-container)
   - [3. Requirements](#3-requirements)
   - [4. How it works](#4-how-it-works)
     - [4.1 Labby Configuration file](#41-labby-configuration-file)
@@ -52,6 +53,19 @@ cd labby
 poetry shell
 poetry install
 ```
+
+### 2.2 Using labby docker container
+
+Labby is also packaged under a container, `davidban77/labby`, based on python-slim image.
+
+```shell
+ > docker run -v $HOME/.config/labby/labby.toml:/opt/labby/labby.toml \
+             -v $HOME/.config/labby/.labby.json:/opt/labby/.labby.json \
+             -i -t \
+             davidban77./labby bash
+```
+
+It is particularly useful if you don't want to setup a virtual environment to install all the dependencies.
 
 ---
 
