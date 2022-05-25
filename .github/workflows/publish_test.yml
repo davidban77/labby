@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - '*.*.*'
-  workflow_run:
-    workflows: [Run Tests]
-    types: [completed]
 
 jobs:
   publish-test-pypi:
