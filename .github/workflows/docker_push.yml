@@ -1,12 +1,8 @@
 name: Docker Push
 
 on:
-  # pull_request:
-  #   branches: [main]
-  workflow_run:
-    workflows: [Docker Build]
-    branches: [main, "release-v**", develop]
-    types: [completed]
+  release:
+    types: [published]
 
 jobs:
   build-and-push:
@@ -97,13 +93,3 @@ jobs:
           context: "./"
           build-args: |
             PYTHON_VER=${{ matrix.python-version }}
-
-      # -
-      #   name: Build and push
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     context: .
-      #     push: true
-      #     build-args: "PYTHON_VER=${{ matrix.python-version }}"
-      #     target: labby
-      #     tags: ${{ secrets.DOCKERHUB_USERNAME }}/labby:v${{  }}-py${{ matrix.python-version }}

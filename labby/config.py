@@ -1,6 +1,7 @@
 """The configuration module for labby, used to configure nodes and projects."""
 from __future__ import annotations
 import os
+import re
 import typer
 import toml
 from labby.providers import services
@@ -345,12 +346,19 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
         provider_args.update(user=provider_settings["user"])
 
     if "password" in provider_settings:
-        provider_args.update(password=provider_settings["password"])
+        # Understand ENV string types and try to collect them from environment
+        if provider_settings["password"].startswith("${"):
+            pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", provider_settings["password"])
+            if not pass_pattern:
+                raise ValueError("Password field not formatted correctly. i.e. ${GNS3_PASS}")
+            provider_args.update(password=os.environ[pass_pattern.groupdict()["value"]])
+        else:
+            provider_args.update(password=provider_settings["password"])
 
     if "verify_cert" in provider_settings:
         provider_args.update(verify_cert=provider_settings["verify_cert"])
 
-    return ProviderSettings(**provider_args)
+    return ProviderSettings(**provider_args)  # type: ignore
 
 
 def get_nornir_runner_settings(nornir_data: Dict[str, Any]) -> NornirRunner:
