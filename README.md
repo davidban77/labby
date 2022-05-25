@@ -8,20 +8,30 @@
 [![pypi](https://img.shields.io/pypi/v/labby.svg)](https://pypi.python.org/pypi/labby)
 [![versions](https://img.shields.io/pypi/pyversions/labby.svg)](https://github.com/davidban77/labby)
 [![Develop Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
-[![Main Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
+[![Develop Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
+[![Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
+[![Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
 
 CLI Tool for interacting with Network Simulation systems to build and interact with Network Labs in an automated way.
 
-## Documentation
+## 1. Documentation
 
 > **Note**
-> Under Construction...
+> Under Construction...∏
 
-Links:
+- [Labby](#labby)
+  - [1. Documentation](#1-documentation)
+  - [2. Install](#2-install)
+    - [2.1 Developer version](#21-developer-version)
+  - [3. Requirements](#3-requirements)
+  - [4. How it works](#4-how-it-works)
+    - [4.1 Labby Configuration file](#41-labby-configuration-file)
+    - [4.2 Environments and Providers](#42-environments-and-providers)
+    - [4.3 Projects, Nodes, Templates and Links](#43-projects-nodes-templates-and-links)
+    - [4.4 Labby state file](#44-labby-state-file)
+  - [5. Extra Links](#5-extra-links)
 
-- [Node Configuration Management](docs/NODE_CONFIGURATION.md)
-
-## Install
+## 2. Install
 
 It is as simple as
 
@@ -29,7 +39,7 @@ It is as simple as
 pip install labby
 ```
 
-### Developer version
+### 2.1 Developer version
 
 You will need to use `poetry` to handle installation and dependencies.
 
@@ -45,33 +55,15 @@ poetry install
 
 ---
 
-## Requirements
+## 3. Requirements
 
-For labby to work, you need a configuration file (`labby.toml`) that specifies the [**providers**](#environments-and-providers) you have at your disposal to connect.
+Besides having the `labby` tool installed, you will need:
 
-By default `labby` will search for the configuration file at the current directory, if not found it will search at the labby configuration space of the user's home directory (`$HOME/.config/labby/labby.toml`)
+- A [**provider**](#51-environments-and-providers). For now the only supported is GNS3.
+- A [**labby configuration file**](#51-labby-configuration-file). Sets the necessary settings for connecting to a provider.
+- `telnet` (for console connection) and/or `ssh` installed. So labby can perform some ad-hoc connections actions if needed.
 
-Here is an example configuration file:
-
-```toml
-[main]
-environment = "default"
-
-[environment.default]
-provider = "home-gns3"
-description = "Home lab environment"
-
-    [environment.default.providers.home-gns3]
-    server_url = "http://gns3-server:80"
-    verify_cert = "false"
-    kind = "gns3"
-```
-
-`labby` introduces **providers** which should be seen as the Network Simulation system (a GNS3 server for example), and **environments** which should be seen as the environment where that network simulation is hosted.
-
-The idea behind this structure is to provide flexibility to use multiple providers and labs in different environments (home lab and/or cloud based).
-
-## How it works
+## 4. How it works
 
 Once you have the configuration file setup, and `labby` installed on your system then you are good to go!.
 
@@ -103,7 +95,33 @@ You can connect to the nodes via SSH (if IP address for management is set and is
 
 And like this there are many more features...
 
-### Environments and Providers
+### 4.1 Labby Configuration file
+
+For labby to work, you need a configuration file (`labby.toml`) that specifies the [**providers**](#environments-and-providers) you have at your disposal to connect.
+
+By default `labby` will search for the configuration file at the current directory, if not found it will search at the labby configuration space of the user's home directory (`$HOME/.config/labby/labby.toml`)
+
+Here is an example configuration file:
+
+```toml
+[main]
+environment = "default"
+
+[environment.default]
+provider = "home-gns3"
+description = "Home lab environment"
+
+    [environment.default.providers.home-gns3]
+    server_url = "http://gns3-server:80"
+    verify_cert = "false"
+    kind = "gns3"
+```
+
+`labby` introduces **providers** which should be seen as the Network Simulation system (a GNS3 server for example), and **environments** which should be seen as the environment where that network simulation is hosted.
+
+The idea behind this structure is to provide flexibility to use multiple providers and labs in different environments (home lab and/or cloud based).
+
+### 4.2 Environments and Providers
 
 `labby` relies on *`providers`* to interact, create and destroy with the Network Topologies. The provider supported so far is **GNS3** by the use of [`gns3fy`](https://github.com/davidban77/gns3fy).
 
@@ -111,7 +129,7 @@ A *provider* is just a representation of a Network Simulation systems, like a GN
 
 An *environment* serves as a construct that holds attributes and multiple *providers*.
 
-### Projects, Nodes, Templates and Links
+### 4.3 Projects, Nodes, Templates and Links
 
 Each **provider** provides **projects** which should be seen as network labs. These projects is where you can create **nodes** based from **templates**, and create **links** to finally build a network topology.
 
@@ -124,7 +142,7 @@ Using the GNS3 provider as an example:
 
 Labby is CLI tool to interact with all these entities.
 
-### Labby state file
+### 4.4 Labby state file
 
 `labby` relies havily on the state of the current **provider** to get information about the objects that interacts with.
 
@@ -137,3 +155,7 @@ These are:
 - `mgmt_ip` Management IP Address of the **node**, useful for generating bootstrap configuration and also connecting to the node.
 
 The attributes are generally added at the time of the object creation, but they can also be added at a later stage if needed (this is normally done with `labby update` command).
+
+## 5. Extra Links
+
+- [Node Configuration Management](docs/NODE_CONFIGURATION.md)
