@@ -24,8 +24,10 @@ console = Console(color_system="truecolor", log_path=False, record=True, theme=c
 with open("pyproject.toml", "r", encoding="utf8") as pyproject:
     parsed_toml = toml.load(pyproject)
 
-PYTHON_VER = parsed_toml["tool"]["poetry"]["dependencies"]["python"].replace("^", "")
-PROJECT_VERSION = parsed_toml["tool"]["poetry"]["version"]
+LABBY_VERSION = parsed_toml["tool"]["poetry"]["version"]
+PYTHON_VER = ENVVARS.get("PYTHON_VER")
+if not PYTHON_VER:
+    PYTHON_VER = parsed_toml["tool"]["poetry"]["dependencies"]["python"].replace("^", "")
 
 
 def strtobool(value: Any) -> bool:

@@ -5,7 +5,7 @@ from pathlib import Path
 import typer
 import toml
 from dotenv import load_dotenv
-from rich.traceback import install as traceback_install
+# from rich.traceback import install as traceback_install
 from rich.prompt import Prompt, Confirm
 from rich.syntax import Syntax
 from nornir.core.plugins.inventory import InventoryPluginRegister
@@ -27,7 +27,7 @@ from labby.providers import register_service
 from labby.nornir.plugins.inventory.labby import LabbyNornirInventory
 from labby import __version__
 
-traceback_install(show_locals=True)
+# traceback_install(show_locals=True)
 
 
 InventoryPluginRegister.register("LabbyNornirInventory", LabbyNornirInventory)
@@ -95,6 +95,9 @@ def main(
                 utils.console.print("[red]Configuration specified is not a file[/]")
                 raise typer.Exit(code=1)
     ctx.obj = dict(config_file=config_file)
+
+    # Load .env variables
+    load_dotenv()
     config.load_config(config_file=config_file, environment_name=environment, provider_name=provider, debug=verbose)
 
     if config.SETTINGS is None:
@@ -109,8 +112,6 @@ def main(
             "An attribute was not found in configuration. Most likely is a configuration file issue", style="error"
         )
         raise typer.Exit(1) from err
-    # Load env vars after processed in config to be used by typer commands
-    load_dotenv()
 
 
 @app.command(short_help="Initialises Labby Configuration file.")
