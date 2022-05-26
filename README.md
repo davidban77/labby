@@ -60,7 +60,7 @@ Labby is also packaged under a container, `davidban77/labby`, based on python-sl
  > docker run -v $HOME/.config/labby/labby.toml:/opt/labby/labby.toml \
              -v $HOME/.config/labby/.labby.json:/opt/labby/.labby.json \
              -i -t \
-             davidban77./labby bash
+             davidban77/labby:v0.1.0-py3.8 bash
 ```
 
 It is particularly useful if you don't want to setup a virtual environment to install all the dependencies.
