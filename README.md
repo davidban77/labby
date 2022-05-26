@@ -1,6 +1,5 @@
 # Labby
 
-![CI](https://github.com/davidban77/labby/actions/workflows/ci.yml/badge.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 <!-- [![codecov](https://codecov.io/gh/davidban77/labby/branch/develop/graph/badge.svg)](https://codecov.io/gh/davidban77/labby) -->
 <!-- [![Total alerts](https://img.shields.io/lgtm/alerts/g/davidban77/labby.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/davidban77/labby/alerts/) -->
@@ -9,8 +8,7 @@
 [![versions](https://img.shields.io/pypi/pyversions/labby.svg)](https://github.com/davidban77/labby)
 [![Develop Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
 [![Develop Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
-[![Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
-[![Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
+
 
 CLI Tool for interacting with Network Simulation systems to build and interact with Network Labs in an automated way.
 
