@@ -9,8 +9,7 @@
 [![versions](https://img.shields.io/pypi/pyversions/labby.svg)](https://github.com/davidban77/labby)
 [![Develop Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
 [![Develop Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
-[![Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
-[![Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg?branch=main)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
+
 
 CLI Tool for interacting with Network Simulation systems to build and interact with Network Labs in an automated way.
 
