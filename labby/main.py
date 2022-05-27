@@ -5,6 +5,7 @@ from pathlib import Path
 import typer
 import toml
 from dotenv import load_dotenv
+
 # from rich.traceback import install as traceback_install
 from rich.prompt import Prompt, Confirm
 from rich.syntax import Syntax

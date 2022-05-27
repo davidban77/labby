@@ -235,22 +235,15 @@ typing-extensions = {version = ">=3.7.4.3", markers = "python_version < \"3.8\""
 
 [[package]]
 name = "gns3fy"
-version = "1.0.0"
+version = "1.0.0rc1"
 description = "Python SDK around GNS3 Server REST API"
 category = "main"
 optional = false
-python-versions = "^3.6"
-develop = false
+python-versions = ">=3.6,<4.0"
 
 [package.dependencies]
-pydantic = "^1.0"
-requests = "^2.22"
-
-[package.source]
-type = "git"
-url = "https://github.com/davidban77/gns3fy.git"
-reference = "v1.0.0"
-resolved_reference = "1d21ff16b2453db9a45ef9c542ca58305058e90a"
+pydantic = ">=1.0,<2.0"
+requests = ">=2.22,<3.0"
 
 [[package]]
 name = "idna"
@@ -654,7 +647,7 @@ use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 
 [[package]]
 name = "rich"
-version = "12.4.1"
+version = "12.4.4"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 category = "main"
 optional = false
@@ -884,7 +877,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "7a78be98153247c6abf4a193c052fa01de7be2c28dc799a8b2c1444803f3d1aa"
+content-hash = "9859b364bb1325f662065e77d3ed87fbe981df845f4cc4bf038f9dd1a7cbf56e"
 
 [metadata.files]
 astroid = [
@@ -1047,7 +1040,10 @@ gitpython = [
     {file = "GitPython-3.1.27-py3-none-any.whl", hash = "sha256:5b68b000463593e05ff2b261acff0ff0972df8ab1b70d3cdbd41b546c8b8fc3d"},
     {file = "GitPython-3.1.27.tar.gz", hash = "sha256:1c885ce809e8ba2d88a29befeb385fcea06338d3640712b59ca623c220bb5704"},
 ]
-gns3fy = []
+gns3fy = [
+    {file = "gns3fy-1.0.0rc1-py3-none-any.whl", hash = "sha256:a77729c14043530cc398bebc69b50f404ac3604f271c4d368ec332cf806a1eb9"},
+    {file = "gns3fy-1.0.0rc1.tar.gz", hash = "sha256:1886cb2f70b9a2161379df4fa608e0472317c9913fa9db2fdd795933e7ccefe4"},
+]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
@@ -1381,8 +1377,8 @@ requests = [
     {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
 ]
 rich = [
-    {file = "rich-12.4.1-py3-none-any.whl", hash = "sha256:d13c6c90c42e24eb7ce660db397e8c398edd58acb7f92a2a88a95572b838aaa4"},
-    {file = "rich-12.4.1.tar.gz", hash = "sha256:d239001c0fb7de985e21ec9a4bb542b5150350330bbc1849f835b9cbc8923b91"},
+    {file = "rich-12.4.4-py3-none-any.whl", hash = "sha256:d2bbd99c320a2532ac71ff6a3164867884357da3e3301f0240090c5d2fdac7ec"},
+    {file = "rich-12.4.4.tar.gz", hash = "sha256:4c586de507202505346f3e32d1363eb9ed6932f0c2f63184dea88983ff4971e2"},
 ]
 "ruamel.yaml" = [
     {file = "ruamel.yaml-0.17.21-py3-none-any.whl", hash = "sha256:742b35d3d665023981bd6d16b3d24248ce5df75fdb4e2924e93a05c1f8b61ca7"},
