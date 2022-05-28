@@ -351,7 +351,7 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
             pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", provider_settings["password"])
             if not pass_pattern:
                 raise ValueError("Password field not formatted correctly. i.e. ${GNS3_PASS}")
-            provider_args.update(password=os.environ[pass_pattern.groupdict()["value"]])
+            provider_args.update(password=os.getenv(pass_pattern.groupdict().get("value", ""), ""))
         else:
             provider_args.update(password=provider_settings["password"])
 
