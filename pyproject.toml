@@ -25,9 +25,9 @@ nornir-scrapli = "2020.11.1"
 netaddr = "^0.8.0"
 Jinja2 = "^3.1.2"
 pydantic = {version = "^1.9.1", extras = ["dotenv"]}
-gns3fy = "1.0.0-rc.1"
 PyYAML = "^6.0"
 toml = "^0.10.2"
+gns3fy = {version = ">=1.0.0rc1", allow-prereleases = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
