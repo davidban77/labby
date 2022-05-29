@@ -238,12 +238,12 @@ class LabbySettings(BaseSettings):
 
     Attributes:
         environment (EnviromentSettings): The settings for the environment.
-        lock_file (Path): The path of the lock file.
+        state_file (Path): The path of the lock file.
         debug (bool): The debug state (default=False).
     """
 
     environment: EnvironmentSettings
-    lock_file: Path
+    state_file: Path
     debug: bool = False
 
     class Config(LabbyBaseConfig):
@@ -329,6 +329,27 @@ def save_toml(config_file: Path, data: MutableMapping):
     return
 
 
+def get_value(raw_value: Any) -> Any:
+    """Returns value passed and validates if its a potential environment variable to resolve it.
+
+    Args:
+        raw_value (Any): Any value
+
+    Raises:
+        ValueError: If value passed as environment variable is not on the correct format.
+
+    Returns:
+        Any: Returned value (original or environment variable value)
+    """
+    if isinstance(raw_value, str):
+        if raw_value.startswith("${"):
+            pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", raw_value)
+            if not pass_pattern:
+                raise ValueError("Environment field not formatted correctly. i.e. ${GNS3_PASS}")
+            return os.getenv(pass_pattern.groupdict().get("value", ""), "")
+    return raw_value
+
+
 def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) -> ProviderSettings:
     """Returns the provider settings."""
     provider_args = dict(name=provider_name)
@@ -349,13 +370,14 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
 
     if "password" in provider_settings:
         # Understand ENV string types and try to collect them from environment
-        if provider_settings["password"].startswith("${"):
-            pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", provider_settings["password"])
-            if not pass_pattern:
-                raise ValueError("Password field not formatted correctly. i.e. ${GNS3_PASS}")
-            provider_args.update(password=os.getenv(pass_pattern.groupdict().get("value", ""), ""))
-        else:
-            provider_args.update(password=provider_settings["password"])
+        # if provider_settings["password"].startswith("${"):
+        #     pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", provider_settings["password"])
+        #     if not pass_pattern:
+        #         raise ValueError("Password field not formatted correctly. i.e. ${GNS3_PASS}")
+        #     provider_args.update(password=os.getenv(pass_pattern.groupdict().get("value", ""), ""))
+        # else:
+        #     provider_args.update(password=provider_settings["password"])
+        provider_args.update(password=get_value(provider_settings["password"]))
 
     if "verify_cert" in provider_settings:
         provider_args.update(verify_cert=provider_settings["verify_cert"])
@@ -451,7 +473,10 @@ def load_config(
     # Environment config
     environment = get_env_settings(environment_name, provider_name, config_data)
 
-    options: Dict[str, Any] = {"lock_file": config_file.parent / ".labby.json"}
+    if config_data["main"].get("state_file"):
+        options: Dict[str, Any] = {"state_file": get_value(config_data["main"]["state_file"])}
+    else:
+        options: Dict[str, Any] = {"state_file": config_file.parent / ".labby_state.json"}
 
     if debug is not None:
         options.update(debug=debug)

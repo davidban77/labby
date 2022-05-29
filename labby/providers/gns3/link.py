@@ -10,7 +10,7 @@ from rich.console import Console, RenderResult, ConsoleOptions
 from gns3fy.links import Link
 
 from labby.providers.gns3.utils import bool_status, link_status
-from labby import lock_file
+from labby import state_file
 from labby.models import LabbyLink, LabbyLinkEndpoint, LabbyProjectInfo
 from labby.utils import console
 
@@ -78,7 +78,7 @@ class GNS3Link(LabbyLink):
 
         self.get()
         console.log(f"[b]({self.project.name})({self.name})[/] Link updated", style="good")
-        lock_file.apply_link_data(self)
+        state_file.apply_link_data(self)
 
     def apply_metric(self, **kwargs) -> bool:
         """Applies a filter for link."""
@@ -104,7 +104,7 @@ class GNS3Link(LabbyLink):
             self.id = None
             self.status = "deleted"  # pylint: disable=attribute-defined-outside-init
             console.log(f"[b]({self.project.name})({self.name})[/] Link deleted", style="good")
-            lock_file.delete_link_data(self.name, self.project.name)
+            state_file.delete_link_data(self.name, self.project.name)
             return True
 
         console.log(f"[b]({self.project.name})({self.name})[/] Link could not be deleted", style="warning")

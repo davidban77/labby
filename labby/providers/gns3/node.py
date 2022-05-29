@@ -18,7 +18,7 @@ from gns3fy.nodes import Node
 from gns3fy.ports import Port
 
 import labby.providers.gns3.console_provisioner as node_console
-from labby import config, lock_file
+from labby import config, state_file
 from labby.providers.gns3.utils import node_net_os, node_status
 from labby.utils import console, dissect_url
 from labby.nornir_tasks import backup_task, SHOW_RUN_COMMANDS
@@ -270,7 +270,7 @@ class GNS3Node(LabbyNode):
 
         self.get()
         console.log(f"[b]({self.project.name})({self.name})[/] Node updated", style="good")
-        lock_file.apply_node_data(self)
+        state_file.apply_node_data(self)
 
     def delete(self) -> bool:
         """Deletes the node.
@@ -286,7 +286,7 @@ class GNS3Node(LabbyNode):
             self.id = None
             self.status = "deleted"
             console.log(f"[b]({self.project.name})({self.name})[/] Node deleted", style="good")
-            lock_file.delete_node_data(self.name, self.project.name)
+            state_file.delete_node_data(self.name, self.project.name)
             return True
 
         console.log(f"[b]({self.project.name})({self.name})[/] Node could not be deleted", style="warning")

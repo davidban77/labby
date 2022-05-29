@@ -12,7 +12,7 @@ from gns3fy.server import Server
 from labby.providers.gns3.template import GNS3NodeTemplate
 from labby.models import LabbyProvider
 from labby.utils import console
-from labby import lock_file
+from labby import state_file
 from labby.providers.gns3.project import GNS3Project
 from labby.providers.gns3.utils import bool_status, project_status, string_status, template_type
 
@@ -67,12 +67,12 @@ class GNS3Provider(LabbyProvider):
             return None
 
         # Retrive info from lock file
-        project_lock_file_data = lock_file.get_project_data(project_name)
-        if project_lock_file_data is None:
+        project_state_file_data = state_file.get_project_data(project_name)
+        if project_state_file_data is None:
             _project = GNS3Project(project_name, r_gns3_project)
-            lock_file.apply_project_data(_project)
+            state_file.apply_project_data(_project)
         else:
-            labels = project_lock_file_data["labels"]
+            labels = project_state_file_data["labels"]
             _project = GNS3Project(project_name, r_gns3_project, labels=labels)
         console.log(_project)
 
@@ -100,7 +100,7 @@ class GNS3Provider(LabbyProvider):
         time.sleep(2)
         # console.log(project)
         console.log(f"[b]({project_name})[/] Project created", style="good")
-        lock_file.apply_project_data(project)
+        state_file.apply_project_data(project)
         return project
 
     def search_template(self, template_name: str) -> Optional[GNS3NodeTemplate]:
@@ -213,8 +213,8 @@ class GNS3Provider(LabbyProvider):
                 continue
 
             # Get labels from lock file
-            project_lock_file_data = lock_file.get_project_data(prj.name)  # type: ignore
-            project_labels = project_lock_file_data["labels"] if project_lock_file_data else []
+            project_state_file_data = state_file.get_project_data(prj.name)  # type: ignore
+            project_labels = project_state_file_data["labels"] if project_state_file_data else []
 
             # Skip project if labels are not present
             if labels:
