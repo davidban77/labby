@@ -288,6 +288,9 @@ class GNS3Project(LabbyProject):
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
         config_managed: bool = True,
+        net_os: Optional[str] = None,
+        model: Optional[str] = None,
+        version: Optional[str] = None,
         **kwargs,
     ) -> GNS3Node:
         """Create node.
@@ -321,6 +324,9 @@ class GNS3Project(LabbyProject):
             mgmt_addr=mgmt_addr,
             mgmt_port=mgmt_port,
             config_managed=config_managed,
+            net_os=net_os,
+            model=model,
+            version=version,
             **kwargs,
         )
 
@@ -357,12 +363,11 @@ class GNS3Project(LabbyProject):
         node = self.nodes.get(name)
 
         if node is not None:
-            # Refresh lock data
+            # Refresh with state data
             node_state_file_data = state_file.get_node_data(name, self.name)
             if node_state_file_data is not None:
-                node.labels = node_state_file_data.get("labels", [])
-                node.mgmt_addr = node_state_file_data.get("mgmt_addr")
-                node.mgmt_port = node_state_file_data.get("mgmt_port")
+                for attr in state_file.NODE_STATE_ATTRS:
+                    setattr(node, attr, node_state_file_data[attr])
 
             # Refresh nornir object on host
             if node.nornir is None:

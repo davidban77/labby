@@ -13,6 +13,18 @@ if TYPE_CHECKING:
     from labby.models import LabbyLink, LabbyNode, LabbyProject
 
 
+NODE_STATE_ATTRS = [
+    "labels",
+    "mgmt_port",
+    "mgmt_addr",
+    "config_managed",
+    "template",
+    "net_os",
+    "model",
+    "version",
+]
+
+
 def get_state_file():
     """Get state_file object from SETTINGS.
 
@@ -42,6 +54,10 @@ def gen_node_data(node: LabbyNode) -> Dict[str, Any]:
             "mgmt_port": node.mgmt_port,
             "mgmt_addr": node.mgmt_addr,
             "config_managed": node.config_managed,
+            "template": node.template,
+            "net_os": node.net_os,
+            "model": node.model,
+            "version": node.version,
         }
     }
 
