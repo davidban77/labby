@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
+from labby.commands.common import get_labby_objs_from_project
 from labby import utils, config
 
 
@@ -72,11 +73,9 @@ def node(
 
     > labby get node template-list
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     labels = [] if not label else label
 
     # Create node
@@ -110,11 +109,10 @@ def link(
             filters = dict({filter_type: int(filter_value)})
         else:
             filters = dict({filter_type: filter_value})
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     labels = [] if not label else label
 
     # Create link

@@ -7,8 +7,8 @@ Example:
 """
 import typer
 
+from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_project
 from labby import utils
-from labby import config
 
 
 app = typer.Typer(help="Runs Stop/Halt actions on Network Provider Lab Resources")
@@ -26,11 +26,8 @@ def project(
 
     > labby stop project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Stop project
     prj.stop(stop_nodes=stop_nodes)
@@ -48,15 +45,8 @@ def node(
 
     > labby stop node r1 --project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    device = prj.search_node(name=node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Stop node
     device.stop()

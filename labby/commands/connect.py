@@ -10,7 +10,8 @@ import os
 import typer
 from netaddr.ip import IPNetwork
 
-from labby import utils, config
+from labby.commands.common import get_labby_objs_from_node
+from labby import utils
 
 
 app = typer.Typer(help="Connects to a Network Resource")
@@ -33,20 +34,8 @@ def node(
 
     > labby connect node r1 -p lab01 --user netops --password netops123
     """
-    # Get network lab provider
-    provider = config.get_provider()
-
-    # Get project
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to connect
-    device = prj.search_node(node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     if device.mgmt_addr is None and console is False:
         utils.console.log(

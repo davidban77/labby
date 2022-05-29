@@ -7,7 +7,8 @@ Example:
 """
 import typer
 
-from labby import utils, config
+from labby.commands.common import get_labby_objs_from_link, get_labby_objs_from_project, get_labby_objs_from_node
+from labby import utils
 
 
 app = typer.Typer(help="Deletes a Resource on Network Provider Lab")
@@ -22,11 +23,8 @@ def project(project_name: str = typer.Argument(..., help="Project name", envvar=
 
     > labby delete project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Delete project
     utils.console.log(prj)
@@ -45,15 +43,8 @@ def node(
 
     > labby delete node r1 --project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    device = prj.search_node(name=node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Delete node
     utils.console.log(device)
@@ -75,17 +66,14 @@ def link(
 
     > labby delete link --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    enlace = prj.search_link(node_a, port_a, node_b, port_b)
-    if not enlace:
-        utils.console.log(
-            f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
-        )
-        raise typer.Exit(1)
+    # Get Labby objects from project and link definition
+    _, _, enlace = get_labby_objs_from_link(
+        project_name=project_name,
+        node_a=node_a,
+        port_a=port_a,
+        node_b=node_b,
+        port_b=port_b,
+    )
 
     # Delete link
     utils.console.log(enlace)
