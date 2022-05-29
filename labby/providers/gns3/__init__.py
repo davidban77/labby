@@ -42,5 +42,7 @@ class GNS3ProviderBuilder:
                 user=settings.user,
                 password=settings.password.get_secret_value() if settings.password else None,
                 verify_cert=settings.verify_cert if settings.verify_cert is not None else False,
+                timeout=settings.timeout,
+                retries=settings.retries,
             )
         return self._instance

@@ -74,6 +74,8 @@ class ProviderSettings(BaseSettings):
     user: Optional[str] = None
     password: Optional[SecretStr] = None
     verify_cert: bool = False
+    timeout: int = 5
+    retries: int = 2
 
     class Config:
         """Configuration class for ProviderSettings."""
@@ -357,6 +359,12 @@ def get_provider_settings(provider_name: str, providers_data: Dict[str, Any]) ->
 
     if "verify_cert" in provider_settings:
         provider_args.update(verify_cert=provider_settings["verify_cert"])
+
+    if "timeout" in provider_settings:
+        provider_args.update(timeout=provider_settings["timeout"])
+
+    if "retries" in provider_settings:
+        provider_args.update(retries=provider_settings["retries"])
 
     return ProviderSettings(**provider_args)  # type: ignore
 
