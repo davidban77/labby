@@ -28,6 +28,8 @@ class GNS3Provider(LabbyProvider):
         user: Optional[str] = None,
         password: Optional[str] = None,
         verify_cert: bool = False,
+        timeout: int = 5,
+        retries: int = 2,
     ):
         """GNS3 provider class.
 
@@ -38,9 +40,18 @@ class GNS3Provider(LabbyProvider):
             user (Optional[str], optional): User to login to GNS3 server
             password (Optional[str], optional): Password to login to GNS3 server
             verify_cert (bool, optional): Verify the server's SSL certificate (default: False)
+            timeout (int, optional): Timeout to reach GNS3 server (default: 5)
+            retries (int, optional): Retries to reack GNS3 server (default: 2)
         """
         super().__init__(name=name, kind=kind)
-        self._base: Server = Server(url=server_url, user=user, cred=password, verify=verify_cert)
+        self._base: Server = Server(
+            url=server_url,
+            user=user,
+            cred=password,
+            verify=verify_cert,
+            timeout=timeout,
+            retries=retries,
+        )
 
     def search_project(self, project_name: str) -> Optional[GNS3Project]:
         """Search a project in the GNS3 server.
