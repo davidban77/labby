@@ -154,8 +154,21 @@ class GNS3Node(LabbyNode):
 
         # Validate mgmt_port
         if self.mgmt_port is not None and self.mgmt_port not in self.interfaces:
-            console.log(f"Mgmt Port {self.mgmt_port} is not part of the node interfaces", style="error")
+            console.log(f"[i]mgmt_port:[/i] [b]{self.mgmt_port}[/b] is not part of the node interfaces", style="error")
             raise typer.Exit(1)
+
+        # Validate mgmt_ip
+        if self.mgmt_addr is not None:
+            if "/" not in self.mgmt_addr:
+                console.log(
+                    f"[i]mgmt_addr:[/i] [b]{self.mgmt_addr}[/b] is not of the correct format (i.e. <ip>/<prefix-lenght>)",
+                    style="error",
+                )
+                raise typer.Exit(1)
+            try:
+                _ = IPv4Interface(self.mgmt_addr)
+            except Exception as err:
+                raise ValueError(f"{err}") from err
 
         # Update attributes from template
         if self._template is not None:
@@ -280,7 +293,7 @@ class GNS3Node(LabbyNode):
                 elif attr == "mgmt_port" and kwargs.get("mgmt_port"):
                     if kwargs["mgmt_port"] not in self.interfaces:
                         console.log(
-                            f"[i]mgmt_port:[/i] **{kwargs['mgmt_port']}** is not part of the node interfaces",
+                            f"[i]mgmt_port:[/i] [b]{kwargs['mgmt_port']}[/b] is not part of the node interfaces",
                             style="error",
                         )
                         raise typer.Exit(1)
@@ -290,7 +303,7 @@ class GNS3Node(LabbyNode):
                 elif attr == "mgmt_addr" and kwargs.get("mgmt_addr"):
                     if "/" not in kwargs["mgmt_addr"]:
                         console.log(
-                            f"[i]mgmt_addr:[/i] **{kwargs['mgmt_addr']}** is not of the correct format ",
+                            f"[i]mgmt_addr:[/i] [b]{kwargs['mgmt_addr']}[/b] is not of the correct format ",
                             "(i.e. <ip>/<prefix-lenght>)",
                             style="error",
                         )
@@ -303,7 +316,8 @@ class GNS3Node(LabbyNode):
 
                 # Update all other attributes
                 else:
-                    setattr(self, attr, kwargs[attr])
+                    if attr in kwargs:
+                        setattr(self, attr, kwargs[attr])
 
         # Update node-GNS3 dependant attributes
         else:

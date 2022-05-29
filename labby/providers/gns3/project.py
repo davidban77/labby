@@ -98,6 +98,10 @@ class GNS3Project(LabbyProject):
                 node_state_file_data = state_file.get_node_data(_node.name, self.name)
                 if node_state_file_data:
                     kwargs.update(**node_state_file_data)
+                    # To avoid duplicate template keys from state file
+                    if _node.template and kwargs.get("template"):
+                        kwargs.pop("template")
+
                 self.nodes.update(
                     {
                         _node.name: GNS3Node(
@@ -367,7 +371,8 @@ class GNS3Project(LabbyProject):
             node_state_file_data = state_file.get_node_data(name, self.name)
             if node_state_file_data is not None:
                 for attr in state_file.NODE_STATE_ATTRS:
-                    setattr(node, attr, node_state_file_data[attr])
+                    if attr in node_state_file_data:
+                        setattr(node, attr, node_state_file_data[attr])
 
             # Refresh nornir object on host
             if node.nornir is None:
