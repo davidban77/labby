@@ -11,6 +11,12 @@ from typing import List, Optional
 
 import typer
 
+from labby.commands.common import (
+    get_labby_objs_from_link,
+    get_labby_objs_from_node,
+    get_labby_objs_from_node_template,
+    get_labby_objs_from_project,
+)
 from labby import utils, config
 
 
@@ -79,16 +85,14 @@ def project_detail(
 
     > labby get project detail lab01
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     utils.console.log()
-    utils.console.log(project.render_nodes_summary())
+    utils.console.log(prj.render_nodes_summary())
     utils.console.log()
-    utils.console.log(project.render_links_summary())
-    project.to_initial_state()
+    utils.console.log(prj.render_links_summary())
+    prj.to_initial_state()
 
 
 @node_app.command(name="list", short_help="Retrieves summary list of nodes in a project")
@@ -113,14 +117,12 @@ def node_list(
 
     > labby get node list --project lab01 --label edge --label mgmt
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     utils.console.log()
-    utils.console.log(project.render_nodes_summary(field=nfilter, value=value, labels=labels))
-    project.to_initial_state()
+    utils.console.log(prj.render_nodes_summary(field=nfilter, value=value, labels=labels))
+    prj.to_initial_state()
 
 
 @node_app.command(name="template-list", short_help="Retrieves summary list of node templates in a Provider")
@@ -152,24 +154,18 @@ def node_detail(
 
     > labby get node detail --project lab01 --node r1
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    node = project.search_node(name=node_name)
-    if not node:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    utils.console.log(node)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
+
+    utils.console.log(device)
     utils.console.log()
-    utils.console.log(node.render_ports_detail())
+    utils.console.log(device.render_ports_detail())
     utils.console.log()
-    utils.console.log(node.render_links_detail())
+    utils.console.log(device.render_links_detail())
     if properties:
         utils.console.log()
-        utils.console.log(node.render_properties())
-    project.to_initial_state()
+        utils.console.log(device.render_properties())
+    prj.to_initial_state()
 
 
 @node_app.command(short_help="Retrieves node running configuration", name="config")
@@ -194,30 +190,21 @@ def node_config(
 
     > labby get node detail r1 --project lab01 --user netops --save /tmp/config.txt
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    node = project.search_node(name=node_name)
-    if not node:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    utils.console.log(node)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
+    utils.console.log(device)
 
     if not console:
-        if node.nornir:
-            utils.console.log(node.nornir.inventory.hosts[node.name].connection_options)
+        if device.nornir:
+            utils.console.log(device.nornir.inventory.hosts[device.name].connection_options)
 
-        config_text = node.get_config()
+        config_text = device.get_config()
     else:
-        config_text = node.get_config_over_console(user=user, password=password)
+        config_text = device.get_config_over_console(user=user, password=password)
 
     if save and config_text:
         save.write_text(config_text)
-        utils.console.log(
-            f"[b]({project.name})({node.name})[/] Saved configuration to: {save.absolute()}", style="good"
-        )
+        utils.console.log(f"[b]({prj.name})({device.name})[/] Saved configuration to: {save.absolute()}", style="good")
 
 
 @node_app.command(short_help="Retrieves details of a node template", name="template-detail")
@@ -231,12 +218,10 @@ def node_template_detail(
 
     > labby get node template-detail --template "Arista EOS vEOS 4.25F"
     """
-    provider = config.get_provider()
-    template = provider.search_template(template_name=template_name)
-    if not template:
-        utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    utils.console.log(template)
+    # Get Labby objects from node's template
+    _, tplt = get_labby_objs_from_node_template(template_name=template_name)
+
+    utils.console.log(tplt)
 
 
 @link_app.command(name="list", short_help="Retrieves summary list of links in a project")
@@ -261,14 +246,12 @@ def link_list(
 
     > labby get link list --project lab01 --label inter-dc
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     utils.console.log()
-    utils.console.log(project.render_links_summary(field=lfilter, value=value, labels=labels))
-    project.to_initial_state()
+    utils.console.log(prj.render_links_summary(field=lfilter, value=value, labels=labels))
+    prj.to_initial_state()
 
 
 @link_app.command(short_help="Retrieves details of a link", name="detail")
@@ -286,16 +269,14 @@ def link_detail(
 
     > labby get link detail --project lab01 -na r1 -pa Ethernet1 -nb r2 -pb Ethernet1
     """
-    provider = config.get_provider()
-    project = provider.search_project(project_name=project_name)
-    if not project:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    link = project.search_link(node_a, port_a, node_b, port_b)
-    if not link:
-        utils.console.log(
-            f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
-        )
-        raise typer.Exit(1)
-    utils.console.log(link)
-    project.to_initial_state()
+    # Get Labby objects from project and link definition
+    _, prj, enlace = get_labby_objs_from_link(
+        project_name=project_name,
+        node_a=node_a,
+        port_a=port_a,
+        node_b=node_b,
+        port_b=port_b,
+    )
+
+    utils.console.log(enlace)
+    prj.to_initial_state()

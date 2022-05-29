@@ -14,9 +14,10 @@ from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
 
 from labby.commands.build import config_task
+from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_project
 from labby.project_data import sync_project_data
 from labby.nornir_tasks import save_task
-from labby import utils, config
+from labby import utils
 
 
 app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
@@ -68,11 +69,8 @@ def launch(project_name: str = typer.Argument(..., help="Project name", envvar="
     Example:
     > labby run project-launch --project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Launch project on browser
     typer.launch(prj.get_web_url())
@@ -98,6 +96,7 @@ def bootstrap(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
 ):
+    # pylint: disable=too-many-locals
     r"""
     Sets a bootstrap config on a Node.
 
@@ -111,20 +110,8 @@ def bootstrap(
 
     > labby run node bootstrap -p lab01 --user netops --password netops123 r1
     """
-    # Get network lab provider
-    provider = config.get_provider()
-
-    # Get project
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to bootstrap
-    device = prj.search_node(node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Render bootstrap config
     if bconfig:
@@ -202,6 +189,7 @@ def node_config(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
 ):
+    # pylint: disable=too-many-locals
     """
     Configures a Node.
 
@@ -212,20 +200,8 @@ def node_config(
 
     > labby run node config r1 -p lab01 --user netops --template bgp.conf.j2 --vars r1.yml --console
     """
-    # Get network lab provider
-    provider = config.get_provider()
-
-    # Get project
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to configure
-    device = prj.search_node(node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Check all other parameters are set
     if device.net_os is None:
