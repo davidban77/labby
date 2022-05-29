@@ -330,6 +330,17 @@ def save_toml(config_file: Path, data: MutableMapping):
 
 
 def get_value(raw_value: Any) -> Any:
+    """Returns value passed and validates if its a potential environment variable to resolve it.
+
+    Args:
+        raw_value (Any): Any value
+
+    Raises:
+        ValueError: If value passed as environment variable is not on the correct format.
+
+    Returns:
+        Any: Returned value (original or environment variable value)
+    """
     if isinstance(raw_value, str):
         if raw_value.startswith("${"):
             pass_pattern = re.search(r"\$\{(?P<value>\w+)\}", raw_value)
