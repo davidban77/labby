@@ -140,15 +140,20 @@ def sync_project_data(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
                 if label not in node.labels:
                     node.labels.append(label)
 
-            node.config_managed = node_spec.get("config_managed", node.config_managed)
-
             # TODO: Add support to detect changes in node.mgmt_addr assignments
-            node.mgmt_port = node_spec.get("mgmt_port", node.mgmt_port)
             node.mgmt_addr = (
                 f"{list(mgmt_network.iter_hosts())[index]}/{mgmt_network.prefixlen}"
                 if node.mgmt_addr is None
                 else node.mgmt_addr
             )
+
+            node.mgmt_port = node_spec.get("mgmt_port", node.mgmt_port)
+            node.config_managed = node_spec.get("config_managed", node.config_managed)
+            node.template = node_spec.get("template", node.template)
+            node.net_os = node_spec.get("net_os", node.net_os)
+            node.model = node_spec.get("model", node.model)
+            node.version = node_spec.get("version", node.version)
+
             index += 1
 
     # Refresh Nornir Inventory

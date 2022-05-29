@@ -3,6 +3,7 @@
 # pylint: disable=dangerous-default-value
 import time
 import re
+from ipaddress import IPv4Interface
 from typing import Dict, List, Optional
 
 import typer
@@ -93,6 +94,9 @@ class GNS3Node(LabbyNode):
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
         config_managed: bool = True,
+        net_os: Optional[str] = None,
+        model: Optional[str] = None,
+        version: Optional[str] = None,
         **data,
     ) -> None:
         """GNS3 Labby node object.
@@ -106,6 +110,9 @@ class GNS3Node(LabbyNode):
             mgmt_addr (Optional[str], optional): Management address. Defaults to None.
             mgmt_port (Optional[str], optional): Management port. Defaults to None.
             config_managed (bool, optional): Whether the node is managed by the labby. Defaults to False.
+            net_os (str, optional): Network Operating System. Defaults to None.
+            model (str, optional): Model of the node. Defaults to None.
+            version (str, optional): Version of the Network Operating System. Defaults to None.
         """
         _project = LabbyProjectInfo(name=project_name, id=node.project_id)
         super().__init__(
@@ -117,6 +124,9 @@ class GNS3Node(LabbyNode):
             mgmt_addr=mgmt_addr,
             mgmt_port=mgmt_port,
             config_managed=config_managed,
+            net_os=net_os,
+            model=model,
+            version=version,
             **data,
         )
         self._template = self._get_gns3_template()
@@ -144,8 +154,21 @@ class GNS3Node(LabbyNode):
 
         # Validate mgmt_port
         if self.mgmt_port is not None and self.mgmt_port not in self.interfaces:
-            console.log(f"Mgmt Port {self.mgmt_port} is not part of the node interfaces", style="error")
+            console.log(f"[i]mgmt_port:[/i] [b]{self.mgmt_port}[/b] is not part of the node interfaces", style="error")
             raise typer.Exit(1)
+
+        # Validate mgmt_ip
+        if self.mgmt_addr is not None:
+            if "/" not in self.mgmt_addr:
+                console.log(
+                    f"[i]mgmt_addr:[/i] [b]{self.mgmt_addr}[/b] is not of the correct format (i.e. <ip>/<prefix-lenght>)",
+                    style="error",
+                )
+                raise typer.Exit(1)
+            try:
+                _ = IPv4Interface(self.mgmt_addr)
+            except Exception as err:
+                raise ValueError(f"{err}") from err
 
         # Update attributes from template
         if self._template is not None:
@@ -244,6 +267,7 @@ class GNS3Node(LabbyNode):
         return True
 
     def update(self, **kwargs) -> None:
+        # pylint: disable=too-many-branches
         """Updates the node attributes.
 
         Raises:
@@ -253,17 +277,49 @@ class GNS3Node(LabbyNode):
             self.start()
 
         console.log(f"[b]({self.project.name})({self.name})[/] Updating node: {kwargs}", highlight=True)
-        if "labels" in kwargs:
-            self.labels = kwargs["labels"]
-        elif "config_managed" in kwargs:
-            self.config_managed = kwargs["config_managed"]
-        elif "mgmt_addr" in kwargs:
-            self.mgmt_addr = kwargs["mgmt_addr"]
-        elif "mgmt_port" in kwargs:
-            self.mgmt_port = kwargs["mgmt_port"]
-            if self.mgmt_port not in self.interfaces:
-                console.log(f"Mgmt Port {self.mgmt_port} is not part of the node interfaces", style="error")
-                raise typer.Exit(1)
+
+        # Update state file attributes
+        if any(attr in kwargs for attr in state_file.NODE_STATE_ATTRS):
+            for attr in state_file.NODE_STATE_ATTRS:
+
+                # Update labels
+                if attr == "labels" and kwargs.get("labels"):
+                    if isinstance(kwargs["labels"], list):
+                        self.labels.extend(kwargs["labels"])
+                    if isinstance(kwargs["labels"], str):
+                        self.labels.append(kwargs["labels"])
+
+                # Check and update mgmt_port
+                elif attr == "mgmt_port" and kwargs.get("mgmt_port"):
+                    if kwargs["mgmt_port"] not in self.interfaces:
+                        console.log(
+                            f"[i]mgmt_port:[/i] [b]{kwargs['mgmt_port']}[/b] is not part of the node interfaces",
+                            style="error",
+                        )
+                        raise typer.Exit(1)
+                    self.mgmt_port = kwargs["mgmt_port"]
+
+                # Check and update mgmt_addr
+                elif attr == "mgmt_addr" and kwargs.get("mgmt_addr"):
+                    if "/" not in kwargs["mgmt_addr"]:
+                        console.log(
+                            f"[i]mgmt_addr:[/i] [b]{kwargs['mgmt_addr']}[/b] is not of the correct format ",
+                            "(i.e. <ip>/<prefix-lenght>)",
+                            style="error",
+                        )
+                        raise typer.Exit(1)
+                    try:
+                        _ = IPv4Interface(kwargs["mgmt_addr"])
+                    except Exception as err:
+                        raise ValueError(f"{err}") from err
+                    self.mgmt_addr = kwargs["mgmt_addr"]
+
+                # Update all other attributes
+                else:
+                    if attr in kwargs:
+                        setattr(self, attr, kwargs[attr])
+
+        # Update node-GNS3 dependant attributes
         else:
             self._base.update(**kwargs)
         time.sleep(2)

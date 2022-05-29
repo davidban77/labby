@@ -13,6 +13,18 @@ if TYPE_CHECKING:
     from labby.models import LabbyLink, LabbyNode, LabbyProject
 
 
+NODE_STATE_ATTRS = [
+    "labels",
+    "mgmt_port",
+    "mgmt_addr",
+    "config_managed",
+    "template",
+    "net_os",
+    "model",
+    "version",
+]
+
+
 def get_state_file():
     """Get state_file object from SETTINGS.
 
@@ -42,6 +54,10 @@ def gen_node_data(node: LabbyNode) -> Dict[str, Any]:
             "mgmt_port": node.mgmt_port,
             "mgmt_addr": node.mgmt_addr,
             "config_managed": node.config_managed,
+            "template": node.template,
+            "net_os": node.net_os,
+            "model": node.model,
+            "version": node.version,
         }
     }
 
@@ -290,7 +306,9 @@ def delete_project_data(project_name: str) -> Optional[Dict[str, Any]]:
         return None
 
     env = config.get_environment()
-    return state_file_data[env.name][env.provider.name]["projects"].pop(project_name, None)
+    _data = state_file_data[env.name][env.provider.name]["projects"].pop(project_name, None)
+    save_data(state_file_data)
+    return _data
 
 
 def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, Any]]:
@@ -313,7 +331,9 @@ def delete_node_data(node_name: str, project_name: str) -> Optional[Dict[str, An
     if project_state_file_data is None:
         return None
 
-    return project_state_file_data["nodes"].pop(node_name, None)
+    _data = project_state_file_data["nodes"].pop(node_name, None)
+    save_data(state_file_data)
+    return _data
 
 
 def delete_link_data(link_name: str, project_name: str) -> Optional[Dict[str, Any]]:
@@ -336,4 +356,6 @@ def delete_link_data(link_name: str, project_name: str) -> Optional[Dict[str, An
     if project_state_file_data is None:
         return None
 
-    return project_state_file_data["links"].pop(link_name, None)
+    _data = project_state_file_data["links"].pop(link_name, None)
+    save_data(state_file_data)
+    return _data
