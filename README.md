@@ -58,7 +58,7 @@ Labby is also packaged under a container, `davidban77/labby`, based on python-sl
 
 ```shell
  > docker run -v $HOME/.config/labby/labby.toml:/opt/labby/labby.toml \
-             -v $HOME/.config/labby/.labby.json:/opt/labby/.labby.json \
+             -v $HOME/.config/labby/.labby_state.json:/opt/labby/.labby_state.json \
              -i -t \
              davidban77/labby:v0.1.0-py3.8 bash
 ```
@@ -158,7 +158,7 @@ Labby is CLI tool to interact with all these entities.
 
 `labby` relies havily on the state of the current **provider** to get information about the objects that interacts with.
 
-Now, labby augments these objects by providing extra attributes and storing them at a central location (`$HOME/.config/labby/.labby.json`).
+Now, labby augments these objects by providing extra attributes and storing them at a central location (`$HOME/.config/labby/.labby_state.json`).
 
 These are:
 

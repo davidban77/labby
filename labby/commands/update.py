@@ -119,7 +119,7 @@ def project_labels(
 
     Example:
 
-    > labby update project labels --project lab01 --labels "lab1,lab2"
+    > labby update project labels --project lab01 "lab-router,lab-edge"
     """
     extracted_labels: List[str] = labels.split(",")
 
