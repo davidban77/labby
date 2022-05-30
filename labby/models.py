@@ -279,7 +279,7 @@ class LabbyProject(BaseModel, abc.ABC):
         """Abstract method for LabbyProject."""
 
     @abc.abstractmethod
-    def get(self) -> None:
+    def get(self, nodes_refresh: bool = False, links_refresh: bool = False) -> None:
         """Abstract method for LabbyProject."""
 
     @abc.abstractmethod
