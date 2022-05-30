@@ -15,7 +15,7 @@ from labby import __version__
 IpAddressFilter = Literal["address", "netmask"]
 
 
-custom_theme = Theme({"warning": "bold magenta", "error": "bold red", "good": "bold green"})
+custom_theme = Theme({"warning": "bold yellow3", "error": "bold red", "good": "bold green"})
 
 
 console = Console(color_system="auto", log_path=False, record=True, theme=custom_theme)

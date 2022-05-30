@@ -342,7 +342,12 @@ def run_bootstrap(
 
         # Get response and send result status flag
         status.update(status=f"[b]({node.project.name})({node.name})[/] Pushing bootstrap configuration...")
-        response = connector.send_config(config=config)
+        try:
+            response = connector.send_config(config=config)
+        except ScrapliTimeout as err:
+            response = ScrapliResponse(host=connector._host, channel_input="")
+            response.failed = True
+            utils.console.log(f"[b]({node.project.name})({node.name})[/] Error: {err}...", style="error")
         return response
 
 
@@ -448,7 +453,12 @@ def run_action(
         if action == "command":
             response = connector.send_command(command=data, timeout_ops=60 * delay_multiplier)
         else:
-            response = connector.send_config(config=data, timeout_ops=60 * delay_multiplier)
+            try:
+                response = connector.send_config(config=data, timeout_ops=60 * delay_multiplier)
+            except ScrapliTimeout as err:
+                response = ScrapliResponse(host=connector._host, channel_input="")
+                response.failed = True
+                utils.console.log(f"[b]({node.project.name})({node.name})[/] Error: {err}...", style="error")
 
         connector.close()
         return response

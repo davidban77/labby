@@ -397,7 +397,7 @@ class GNS3Node(LabbyNode):
             return True
 
         console.print(response.result, highlight=True)
-        console.log(f"[b]({self.project.name})({self.name})[/] Node could not be configured", style="error")
+        console.log(f"[b]({self.project.name})({self.name})[/] Node may have not been configured", style="warning")
         return False
 
     def apply_config(self, config: str, user: Optional[str] = None, password: Optional[str] = None) -> bool:
