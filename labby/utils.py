@@ -177,14 +177,6 @@ def load_yaml_file(path: str) -> Dict[str, Any]:
         return yaml.safe_load(fil)
 
 
-# TODO: Add logic to read possible encoded envvar from project file for network device creds
-# or at least from environemt variable
-def check_creds(user: str, password: str) -> bool:
-    """Needs to be worked on."""
-    # pylint: disable=unused-argument
-    return True
-
-
 def ipaddr_renderer(value: str, *, render: IpAddressFilter) -> str:
     """Renders an IP address related values.
 

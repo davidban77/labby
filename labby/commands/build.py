@@ -251,11 +251,11 @@ def labby_project(
     project_file: Path = typer.Option(
         Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
     ),
-    user: str = typer.Option(
-        ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
-    password: str = typer.Option(
-        ..., "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
     ),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     delay_multiplier: int = typer.Option(
@@ -284,8 +284,8 @@ def labby_project(
         bootstrap_nodes(
             project=prj,
             project_data=project_data,
-            user=user,
-            password=password,
+            user=user if user else project_data.mgmt_creds.user,
+            password=password if password else project_data.mgmt_creds.password,
             boot_delay=boot_delay,
             delay_multiplier=delay_multiplier,
             render_only=False,
@@ -322,11 +322,11 @@ def bootstrap(
     project_file: Path = typer.Option(
         Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
     ),
-    user: str = typer.Option(
-        ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
-    password: str = typer.Option(
-        ..., "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
     ),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     delay_multiplier: int = typer.Option(
@@ -346,8 +346,8 @@ def bootstrap(
     bootstrap_nodes(
         project=prj,
         project_data=project_data,
-        user=user,
-        password=password,
+        user=user if user else project_data.mgmt_creds.user,
+        password=password if password else project_data.mgmt_creds.password,
         boot_delay=boot_delay,
         delay_multiplier=delay_multiplier,
         render_only=render_only,

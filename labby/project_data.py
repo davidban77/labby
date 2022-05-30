@@ -4,6 +4,7 @@ from typing import Tuple, TYPE_CHECKING
 from pathlib import Path
 
 import typer
+from pydantic import BaseModel
 from netaddr.ip import IPRange
 from netaddr import IPNetwork
 
@@ -12,6 +13,11 @@ from labby import config, utils
 if TYPE_CHECKING:
     # pylint: disable=all
     from labby.models import LabbyProject
+
+
+class UserCreds(BaseModel):
+    user: str = ""
+    password: str = ""
 
 
 class ProjectData:
@@ -35,7 +41,7 @@ class ProjectData:
                     raise ValueError(f"Missing required fields in project file: {required}")
             self.name = self.project_data["main"]["name"]
             self.mgmt_network = self.project_data["main"]["mgmt_network"]
-            # self.mgmt_creds = self.project_data["main"]["mgmt_creds"]
+            self.mgmt_creds = UserCreds(**self.project_data["main"]["mgmt_creds"])
             self.version = self.project_data["main"].get("version", "1.0")
             self.description = self.project_data["main"].get("description", "")
             self.contributors = self.project_data["main"].get("contributors", [])
@@ -45,8 +51,9 @@ class ProjectData:
             # Chek Management IP Addresses
             self.check_mgmt_ips()
 
-            # # Check creds
-            # self.check_creds()
+            # Parse user/password if it references an environment variable
+            self.mgmt_creds.user = config.get_value(self.mgmt_creds.user)
+            self.mgmt_creds.password = config.get_value(self.mgmt_creds.password)
 
             # Project nodes and links
             self.nodes_spec = self.project_data.get("nodes_spec", [])
@@ -78,11 +85,6 @@ class ProjectData:
                 self.mgmt_ips = IPRange(hosts[0], hosts[-1])
             except Exception as err:
                 raise ValueError(f"Invalid management IP range: {err}") from err
-
-    # def check_creds(self) -> None:
-    #     """Check if the credentials are valid."""
-    #     if not utils.check_creds(self.mgmt_network, self.mgmt_creds):
-    #         raise ValueError("Invalid credentials for the management network")
 
 
 def get_project_from_file(project_file: Path) -> Tuple[LabbyProject, ProjectData]:
