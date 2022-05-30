@@ -103,7 +103,7 @@ def cisco_ios_boot(
         telnet_session.session.write(b"yes\n")
         time.sleep(10)
     else:
-        response = telnet_session.session.expect([b"Press RETURN to get started"], timeout=190 * delay_multiplier)
+        response = telnet_session.session.expect([b"Press RETURN to get started"], timeout=60 * delay_multiplier)
         telnet_session.session.write(b"\r\n")
         utils.console.log(f"[b]({project_name})({node_name})[/] Sent enter command...")
     telnet_session.close()
