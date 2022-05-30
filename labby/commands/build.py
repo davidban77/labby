@@ -32,6 +32,7 @@ def bootstrap_nodes(
     delay_multiplier: int = 1,
     render_only: bool = False,
 ):
+    # pylint: disable=too-many-branches
     """Runs the bootstrap tasks for all devices in the project.
 
     Args:
