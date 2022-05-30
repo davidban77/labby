@@ -4,25 +4,23 @@ on:
   push:
     tags:
       - '*.*.*'
+  pull_request:
+    branches: ["main"]
 
 jobs:
   publish-test-pypi:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
     env:
-      PYTHON_VER: "${{ matrix.python-version }}"
+      PYTHON_VER: "3.8"
     steps:
       # Checkout the code from the repo
       - name: Checkout repo
         uses: actions/checkout@v3
       # Setup the python version, and dependencies
-      - name: Set Up Python ${{ matrix.python-version }}
+      - name: Set Up Python 3.8
         uses: actions/setup-python@v3
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.8"
       # Installing and configuring poetry
       - name: Install Poetry
         uses: snok/install-poetry@v1
