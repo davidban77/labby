@@ -95,6 +95,7 @@ def bootstrap(
     delay_multiplier: int = typer.Option(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
+    mgmt_gw: Optional[str] = typer.Option(None, help="IP Address of the gateway for the management interface."),
 ):
     # pylint: disable=too-many-locals
     r"""
@@ -150,7 +151,14 @@ def bootstrap(
             path=str(template.parent),
             template=template.name,
             jinja_filters={"ipaddr": utils.ipaddr_renderer},
-            **dict(mgmt_port=mgmt_port, mgmt_addr=mgmt_addr, user=user, password=password, node_name=node_name),
+            **dict(
+                mgmt_port=mgmt_port,
+                mgmt_addr=mgmt_addr,
+                mgmt_gw=mgmt_gw,
+                user=user,
+                password=password,
+                node_name=node_name,
+            ),
         )
         utils.console.log(f"[b]({prj.name})({device.name})[/] Bootstrap config rendered", style="good")
 
