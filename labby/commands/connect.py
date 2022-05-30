@@ -32,7 +32,7 @@ def node(
 
     Example:
 
-    > labby connect node r1 -p lab01 --user netops --password netops123
+    > labby connect node r1 -p lab01 --user netops
     """
     # Get Labby objects from project and node definition
     _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)

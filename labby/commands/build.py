@@ -270,6 +270,7 @@ def labby_project(
     delay_multiplier: int = typer.Option(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
+    force: bool = typer.Option(False, help="Flag to pass yes between all phases."),
 ):
     """
     Build a Project in a declarative way.
@@ -286,9 +287,12 @@ def labby_project(
     build_topology(project=prj, project_data=project_data)
 
     # Bootstrap nodes
-    is_bootstrap_required = Prompt.ask(
-        "Do you want to bootstrap the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
-    )
+    if not force:
+        is_bootstrap_required = Prompt.ask(
+            "Do you want to bootstrap the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
+        )
+    else:
+        is_bootstrap_required = "yes"
     if is_bootstrap_required == "yes":
         bootstrap_nodes(
             project=prj,
@@ -301,9 +305,12 @@ def labby_project(
         )
 
     # Configure nodes
-    is_config_required = Prompt.ask(
-        "Do you want to configure the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
-    )
+    if not force:
+        is_config_required = Prompt.ask(
+            "Do you want to configure the nodes?", console=utils.console, choices=["yes", "no"], default="yes"
+        )
+    else:
+        is_config_required = "yes"
     if is_config_required == "yes":
         config_nodes(project=prj, project_data=project_data)
 

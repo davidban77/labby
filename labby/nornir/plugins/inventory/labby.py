@@ -27,7 +27,19 @@ def _set_host(data: Dict[str, Any], name: str, groups, host, host_platform) -> H
             username=host.get("username", "netops"),
             password=host.get("password", "netops123"),
             platform=host_platform,
-            extras=host.get("extras", {"auth_strict_key": False}),
+            extras=host.get(
+                "extras",
+                {
+                    "auth_strict_key": False,
+                    "transport_options": {
+                        "open_cmd": [
+                            "-o",
+                            "KexAlgorithms=+diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,"
+                            "diffie-hellman-group-exchange-sha1",
+                        ]
+                    },
+                },
+            ),
         )
     }
 
