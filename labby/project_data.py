@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class UserCreds(BaseModel):
+    """Class representing User Credentials."""
+
     user: str = ""
     password: str = ""
 

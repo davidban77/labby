@@ -41,6 +41,7 @@ def bootstrap_nodes(
         password (str): The password to use for the devices.
         boot_delay (int, optional): The boot delay to use for the devices. Defaults to 5.
         delay_multiplier (int, optional): The delay multiplier to use for the devices. Defaults to 1.
+        render_only (bool): Flag to render the configuration only. Defaults to False.
     """
     for node_spec in project_data.nodes_spec:
 
@@ -332,7 +333,7 @@ def bootstrap(
     delay_multiplier: int = typer.Option(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
-    render_only: bool = typer.Option(False, help="Indicates wether the bootstrap config should only be rendered.")
+    render_only: bool = typer.Option(False, help="Indicates wether the bootstrap config should only be rendered."),
 ):
     """
     Runs the bootstrap config process on the devices of a Project.
