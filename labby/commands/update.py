@@ -218,5 +218,5 @@ def link_filter(
     )
 
     # Update link
-    enlace.apply_metric(**filters)
+    enlace.apply_filters(**filters)
     utils.console.log(enlace)

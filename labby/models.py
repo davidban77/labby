@@ -241,7 +241,7 @@ class LabbyLink(BaseModel, abc.ABC):
         """Abstract method for LabbyLink."""
 
     @abc.abstractmethod
-    def apply_metric(self, **kwargs) -> bool:
+    def apply_filters(self, **kwargs) -> bool:
         """Abstract method for LabbyLink."""
 
 

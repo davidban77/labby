@@ -30,6 +30,7 @@ def bootstrap_nodes(
     password: str,
     boot_delay: int = 5,
     delay_multiplier: int = 1,
+    render_only: bool = False,
 ):
     """Runs the bootstrap tasks for all devices in the project.
 
@@ -119,7 +120,12 @@ def bootstrap_nodes(
             utils.console.log(f"[b]({project.name})({device.name})[/] Bootstrap config rendered", style="good")
 
             # Run node bootstrap config process
-            device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
+            if render_only:
+                utils.console.rule(title=f"Start of bootstrap config: [b cyan]{device.name}")
+                utils.console.print(cfg_data, highlight=True)
+                utils.console.rule(title=f"End of bootstrap config: [b cyan]{device.name}")
+            else:
+                device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 def config_nodes(
@@ -282,6 +288,7 @@ def labby_project(
             password=password,
             boot_delay=boot_delay,
             delay_multiplier=delay_multiplier,
+            render_only=False,
         )
 
     # Configure nodes
@@ -325,6 +332,7 @@ def bootstrap(
     delay_multiplier: int = typer.Option(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
+    render_only: bool = typer.Option(False, help="Indicates wether the bootstrap config should only be rendered.")
 ):
     """
     Runs the bootstrap config process on the devices of a Project.
@@ -342,6 +350,7 @@ def bootstrap(
         password=password,
         boot_delay=boot_delay,
         delay_multiplier=delay_multiplier,
+        render_only=render_only,
     )
 
 

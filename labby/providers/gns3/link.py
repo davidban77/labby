@@ -80,7 +80,7 @@ class GNS3Link(LabbyLink):
         console.log(f"[b]({self.project.name})({self.name})[/] Link updated", style="good")
         state_file.apply_link_data(self)
 
-    def apply_metric(self, **kwargs) -> bool:
+    def apply_filters(self, **kwargs) -> bool:
         """Applies a filter for link."""
         console.log(f"[b]({self.project.name})({self.name})[/] Applying filter: {kwargs}", highlight=True)
         filter_applied = self._base.apply_filters(**kwargs)
