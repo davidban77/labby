@@ -9,7 +9,6 @@
 [![Develop Tests](https://github.com/davidban77/labby/actions/workflows/tests.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/tests.yml)
 [![Develop Docker Build](https://github.com/davidban77/labby/actions/workflows/docker_build.yml/badge.svg)](https://github.com/davidban77/labby/actions/workflows/docker_build.yml)
 
-
 CLI Tool for interacting with Network Simulation systems to build and interact with Network Labs in an automated way.
 
 ## 1. Documentation
@@ -60,7 +59,7 @@ Labby is also packaged under a container, `davidban77/labby`, based on python-sl
  > docker run -v $HOME/.config/labby/labby.toml:/opt/labby/labby.toml \
              -v $HOME/.config/labby/.labby_state.json:/opt/labby/.labby_state.json \
              -i -t \
-             davidban77/labby:v0.1.0-py3.8 bash
+             davidban77/labby:v0.2.0-py3.8 bash
 ```
 
 It is particularly useful if you don't want to setup a virtual environment to install all the dependencies.
@@ -71,7 +70,7 @@ It is particularly useful if you don't want to setup a virtual environment to in
 
 Besides having the `labby` tool installed, you will need:
 
-- A [**provider**](#51-environments-and-providers). For now the only supported is GNS3.
+- A [**provider**](#51-environments-and-providers). For now the only supported Network Simulation provider is GNS3.
 - A [**labby configuration file**](#51-labby-configuration-file). Sets the necessary settings for connecting to a provider.
 - `telnet` (for console connection) and/or `ssh` installed. So labby can perform some ad-hoc connections actions if needed.
 
@@ -79,7 +78,7 @@ Besides having the `labby` tool installed, you will need:
 
 Once you have the configuration file setup, and `labby` installed on your system then you are good to go!.
 
-The CLI tool serves multiple purposes, for example it is a way great to discover the projects or network topologies avaiable on the Network Virtualization system, start or stop the nodes, push configuration, etc...
+The CLI tool serves multiple purposes, for example it is a way great to discover the projects or network topologies available on the Network Simulation system, start or stop the nodes, push configuration, etc...
 
 For examplem to show the available projects and their status in GNS3:
 
@@ -89,11 +88,11 @@ Now, let's get the details of the network lab `topology-01`:
 
 ![Project Detail](imgs/labby_project_detail.png)
 
-It is a small topology with 2 Arista `ceos` devices connected between each other, and also connected to a `cloud` and `mgmt` switch to allow them to be reachable to the outside world.
+It is a small topology with 2 Arista `ceos` devices connected between each other, and are also connected to a `cloud` and `mgmt` switch to allow them to be reachable to the outside world.
 
-The **Mgmt Address** shows the IP address information for their management interfaces. The setup and configuration of those are explained in the *Docs*.
+The **Mgmt Address** shows the IP address information for their management interfaces. You can find more information in the [node configuration section](docs/NODE_CONFIGURATION.md).
 
-You can start the nodes of the entire project one by one, for example:
+You can start one by one the nodes of the project, for example:
 
 ![Start Project](imgs/labby_start_project.png)
 
@@ -105,7 +104,11 @@ You can connect to the nodes via SSH (if IP address for management is set and is
 
 ![Connect Router](imgs/labby_connect_router.png)
 
-And like this there are many more features...
+And there are more features as well...
+
+- Ad-hoc configuration rendering and push
+- Automated console configuration bootstrap, this means to start a node and run the configuration dialog to push Day 0 conifguration for the device be reachable via SSH for example. **Note:** this feature might need some more love.
+- Automatic `build` of a network lab in a declarative way. Using the `labby build` command, more information can be found at [build network labs section](docs/BUILD_NETWORK_LABS.md).
 
 ### 4.1 Labby Configuration file
 
@@ -139,7 +142,7 @@ The idea behind this structure is to provide flexibility to use multiple provide
 
 A *provider* is just a representation of a Network Simulation systems, like a GNS3 server for example.
 
-An *environment* serves as a construct that holds attributes and multiple *providers*.
+An *environment* serves as a construct that holds attributes of multiple *providers*.
 
 ### 4.3 Projects, Nodes, Templates and Links
 
@@ -148,23 +151,26 @@ Each **provider** provides **projects** which should be seen as network labs. Th
 Using the GNS3 provider as an example:
 
 - A `labby project` is a network topology in GNS3. It needs to start in order to access it.
-- A `labby node` is a network object. This can be a router, switch, container, among others in GNS3.
+- A `labby node` is a network object. This can be a router, switch or container, among others in GNS3.
 - A `labby template` is the base settings to be able to **create a node**. Is where the main information of the **node** is inherited.
 - A `labby link` is a network link in GNS3. It provides a way to connect between 2 nodes and can provide functionality like packet loss or jitter on the link.
 
-Labby is CLI tool to interact with all these entities.
+Labby serves as a CLI tool that interacts with all these entities.
 
 ### 4.4 Labby state file
 
-`labby` relies havily on the state of the current **provider** to get information about the objects that interacts with.
+`labby` relies havily on the state of the current **provider** to get information about the objects that interacts with. Now, not all the necessary attributes of an object can be retrieved from the **provider**, so `labby` uses a **state file**.
 
-Now, labby augments these objects by providing extra attributes and storing them at a central location (`$HOME/.config/labby/.labby_state.json`).
+Labby augments these objects by providing extra attributes, like `labels` for example, and stores them at an specific location (`$HOME/.config/labby/.labby_state.json`).
 
-These are:
+Some of these attributes are:
 
-- `labels` which is of an array type, and these can be added at the moment of creation or update.
+- `labels` An array of metadata useful to categorize an object (`project`, `node` or `link`).
 - `mgmt_port` Management interface of the **node**, useful for generating bootstrap configuration for the node.
 - `mgmt_ip` Management IP Address of the **node**, useful for generating bootstrap configuration and also connecting to the node.
+- `template` Name reference of the node **template** used to create it.
+- `net_os`, `model` and `version` are attributes of the node and its operating system. It is needed to differentiate configuration templates for example.
+- `config_managed` is a boolean attribute which lets you know if the device can be managed by `labby` or not.
 
 The attributes are generally added at the time of the object creation, but they can also be added at a later stage if needed (this is normally done with `labby update` command).
 

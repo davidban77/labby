@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "labby"
-version = "0.1.0"
+version = "0.2.0"
 description = "CLI tool to build Network Labs in an automated way"
 authors = ["David Flores <davidflores7_8@hotmail.com>"]
 license = "MIT"
