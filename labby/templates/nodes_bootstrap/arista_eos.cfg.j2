@@ -8,6 +8,9 @@ no shutdown
 interface {{ mgmt_port }}
 ip address {{ mgmt_addr }}
 no shutdown
+{% if mgmt_gw %}
+ip route 0.0.0.0 0.0.0.0 {{ mgmt_gw }}
+{% endif %}
 exit
 wr mem
 exit

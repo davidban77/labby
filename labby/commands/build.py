@@ -32,6 +32,7 @@ def bootstrap_nodes(
     delay_multiplier: int = 1,
     render_only: bool = False,
 ):
+    # pylint: disable=too-many-branches
     """Runs the bootstrap tasks for all devices in the project.
 
     Args:
@@ -106,6 +107,12 @@ def bootstrap_nodes(
                     )
                     continue
 
+                # Retrieval of gateway for the management interface
+                if project_data.mgmt_network.get("gateway"):
+                    _gw = str(IPNetwork(project_data.mgmt_network["gateway"]).ip)
+                else:
+                    _gw = None
+
                 cfg_data = render_from_file(
                     path=str(cfg_template.parent),
                     template=cfg_template.name,
@@ -113,6 +120,7 @@ def bootstrap_nodes(
                     **dict(
                         mgmt_port=device.mgmt_port,
                         mgmt_addr=device.mgmt_addr,
+                        mgmt_gw=_gw,
                         user=user,
                         password=password,
                         node_name=node_name,

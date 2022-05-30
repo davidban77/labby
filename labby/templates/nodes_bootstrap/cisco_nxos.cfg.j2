@@ -13,6 +13,10 @@ interface {{ mgmt_port }}
 ip address {{ mgmt_addr | ipaddr(render='address') }} {{ mgmt_addr | ipaddr(render='netmask') }}
 no shutdown
 !
+{% if mgmt_gw %}
+ip route 0.0.0.0 0.0.0.0 {{ mgmt_gw }}
+!
+{% endif %}
 exit
 exit
 copy running-config startup-config
