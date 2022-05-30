@@ -235,7 +235,7 @@ typing-extensions = {version = ">=3.7.4.3", markers = "python_version < \"3.8\""
 
 [[package]]
 name = "gns3fy"
-version = "1.0.0rc2"
+version = "1.0.0rc3"
 description = "Python SDK around GNS3 Server REST API"
 category = "main"
 optional = false
@@ -1041,8 +1041,8 @@ gitpython = [
     {file = "GitPython-3.1.27.tar.gz", hash = "sha256:1c885ce809e8ba2d88a29befeb385fcea06338d3640712b59ca623c220bb5704"},
 ]
 gns3fy = [
-    {file = "gns3fy-1.0.0rc2-py3-none-any.whl", hash = "sha256:96034e7815f5ba820755107bce0ce4ff0b83532bb70bd443bccb92731f78c5e0"},
-    {file = "gns3fy-1.0.0rc2.tar.gz", hash = "sha256:5bd4b473c709987c1feae3de5a42a63eed3088e58d43cdb3033b3a2f606b9633"},
+    {file = "gns3fy-1.0.0rc3-py3-none-any.whl", hash = "sha256:6922a3c9b35e5c93da193b1895027b1aedfe734469d92537ed237f4bf95c730e"},
+    {file = "gns3fy-1.0.0rc3.tar.gz", hash = "sha256:54d7d5b248f74bf9f3018f7bd75578bb8d052c272ae77b78a9d1209a4d889024"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},

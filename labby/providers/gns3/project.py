@@ -423,7 +423,7 @@ class GNS3Project(LabbyProject):
         )
         time.sleep(2)
         if filters:
-            _link.apply_metric(**filters)
+            _link.apply_filters(**filters)
 
         console.log(f"[b]({self.name})({_link.name})[/] Link created", style="good")
         state_file.apply_link_data(_link, self)

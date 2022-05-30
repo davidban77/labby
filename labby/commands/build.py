@@ -30,6 +30,7 @@ def bootstrap_nodes(
     password: str,
     boot_delay: int = 5,
     delay_multiplier: int = 1,
+    render_only: bool = False,
 ):
     """Runs the bootstrap tasks for all devices in the project.
 
@@ -40,6 +41,7 @@ def bootstrap_nodes(
         password (str): The password to use for the devices.
         boot_delay (int, optional): The boot delay to use for the devices. Defaults to 5.
         delay_multiplier (int, optional): The delay multiplier to use for the devices. Defaults to 1.
+        render_only (bool): Flag to render the configuration only. Defaults to False.
     """
     for node_spec in project_data.nodes_spec:
 
@@ -119,7 +121,12 @@ def bootstrap_nodes(
             utils.console.log(f"[b]({project.name})({device.name})[/] Bootstrap config rendered", style="good")
 
             # Run node bootstrap config process
-            device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
+            if render_only:
+                utils.console.rule(title=f"Start of bootstrap config: [b cyan]{device.name}")
+                utils.console.print(cfg_data, highlight=True)
+                utils.console.rule(title=f"End of bootstrap config: [b cyan]{device.name}")
+            else:
+                device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 def config_nodes(
@@ -245,11 +252,11 @@ def labby_project(
     project_file: Path = typer.Option(
         Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
     ),
-    user: str = typer.Option(
-        ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
-    password: str = typer.Option(
-        ..., "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
     ),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     delay_multiplier: int = typer.Option(
@@ -278,10 +285,11 @@ def labby_project(
         bootstrap_nodes(
             project=prj,
             project_data=project_data,
-            user=user,
-            password=password,
+            user=user if user else project_data.mgmt_creds.user,
+            password=password if password else project_data.mgmt_creds.password,
             boot_delay=boot_delay,
             delay_multiplier=delay_multiplier,
+            render_only=False,
         )
 
     # Configure nodes
@@ -315,16 +323,17 @@ def bootstrap(
     project_file: Path = typer.Option(
         Path("labby_project.yml"), "--project-file", "-f", help="Project file", envvar="LABBY_PROJECT_FILE"
     ),
-    user: str = typer.Option(
-        ..., "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
+    user: Optional[str] = typer.Option(
+        None, "--user", "-u", help="Initial user to configure on the system.", envvar="LABBY_NODE_USER"
     ),
-    password: str = typer.Option(
-        ..., "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
+    password: Optional[str] = typer.Option(
+        None, "--password", "-w", help="Initial password to configure on the system.", envvar="LABBY_NODE_PASSWORD"
     ),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     delay_multiplier: int = typer.Option(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
+    render_only: bool = typer.Option(False, help="Indicates wether the bootstrap config should only be rendered."),
 ):
     """
     Runs the bootstrap config process on the devices of a Project.
@@ -338,10 +347,11 @@ def bootstrap(
     bootstrap_nodes(
         project=prj,
         project_data=project_data,
-        user=user,
-        password=password,
+        user=user if user else project_data.mgmt_creds.user,
+        password=password if password else project_data.mgmt_creds.password,
         boot_delay=boot_delay,
         delay_multiplier=delay_multiplier,
+        render_only=render_only,
     )
 
 
