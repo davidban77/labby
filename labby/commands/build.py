@@ -231,6 +231,14 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
                 labels=link_info.get("labels", []),
             )
 
+    # Show the details of the project
+    project.get(nodes_refresh=True, links_refresh=True)
+    utils.console.log(project)
+    utils.console.log()
+    utils.console.log(project.render_nodes_summary())
+    utils.console.log()
+    utils.console.log(project.render_links_summary())
+
 
 @app.command(short_help="Builds a Project in a declarative way.", name="project")
 def labby_project(
