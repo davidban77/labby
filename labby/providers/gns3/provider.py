@@ -12,7 +12,7 @@ from gns3fy.server import Server
 from labby.providers.gns3.template import GNS3NodeTemplate
 from labby.models import LabbyProvider
 from labby.utils import console
-from labby import lock_file
+from labby import state_file
 from labby.providers.gns3.project import GNS3Project
 from labby.providers.gns3.utils import bool_status, project_status, string_status, template_type
 
@@ -28,6 +28,8 @@ class GNS3Provider(LabbyProvider):
         user: Optional[str] = None,
         password: Optional[str] = None,
         verify_cert: bool = False,
+        timeout: int = 5,
+        retries: int = 2,
     ):
         """GNS3 provider class.
 
@@ -38,9 +40,18 @@ class GNS3Provider(LabbyProvider):
             user (Optional[str], optional): User to login to GNS3 server
             password (Optional[str], optional): Password to login to GNS3 server
             verify_cert (bool, optional): Verify the server's SSL certificate (default: False)
+            timeout (int, optional): Timeout to reach GNS3 server (default: 5)
+            retries (int, optional): Retries to reack GNS3 server (default: 2)
         """
         super().__init__(name=name, kind=kind)
-        self._base: Server = Server(url=server_url, user=user, cred=password, verify=verify_cert)
+        self._base: Server = Server(
+            url=server_url,
+            user=user,
+            cred=password,
+            verify=verify_cert,
+            timeout=timeout,
+            retries=retries,
+        )
 
     def search_project(self, project_name: str) -> Optional[GNS3Project]:
         """Search a project in the GNS3 server.
@@ -56,12 +67,12 @@ class GNS3Provider(LabbyProvider):
             return None
 
         # Retrive info from lock file
-        project_lock_file_data = lock_file.get_project_data(project_name)
-        if project_lock_file_data is None:
+        project_state_file_data = state_file.get_project_data(project_name)
+        if project_state_file_data is None:
             _project = GNS3Project(project_name, r_gns3_project)
-            lock_file.apply_project_data(_project)
+            state_file.apply_project_data(_project)
         else:
-            labels = project_lock_file_data["labels"]
+            labels = project_state_file_data["labels"]
             _project = GNS3Project(project_name, r_gns3_project, labels=labels)
         console.log(_project)
 
@@ -89,7 +100,7 @@ class GNS3Provider(LabbyProvider):
         time.sleep(2)
         # console.log(project)
         console.log(f"[b]({project_name})[/] Project created", style="good")
-        lock_file.apply_project_data(project)
+        state_file.apply_project_data(project)
         return project
 
     def search_template(self, template_name: str) -> Optional[GNS3NodeTemplate]:
@@ -202,8 +213,8 @@ class GNS3Provider(LabbyProvider):
                 continue
 
             # Get labels from lock file
-            project_lock_file_data = lock_file.get_project_data(prj.name)  # type: ignore
-            project_labels = project_lock_file_data["labels"] if project_lock_file_data else []
+            project_state_file_data = state_file.get_project_data(prj.name)  # type: ignore
+            project_labels = project_state_file_data["labels"] if project_state_file_data else []
 
             # Skip project if labels are not present
             if labels:

@@ -10,8 +10,13 @@ from typing import Any, Dict, List
 
 import typer
 
+from labby.commands.common import (
+    get_labby_objs_from_link,
+    get_labby_objs_from_node,
+    get_labby_objs_from_node_template,
+    get_labby_objs_from_project,
+)
 from labby import utils
-from labby import config
 
 app = typer.Typer(help="Updates a Network Provider Lab Resource")
 project_app = typer.Typer(help="Updates a Network Provider Project")
@@ -97,11 +102,8 @@ def project_attr(
     """
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Update project
     prj.update(**{attr: parsed_value})
@@ -117,14 +119,12 @@ def project_labels(
 
     Example:
 
-    > labby update project labels --project lab01 --labels "lab1,lab2"
+    > labby update project labels --project lab01 "lab-router,lab-edge"
     """
     extracted_labels: List[str] = labels.split(",")
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Update project
     prj.update(labels=extracted_labels)
@@ -149,16 +149,8 @@ def node_attr(
     """
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    device = prj.search_node(name=node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Update node
     device.update(**{attr: parsed_value})
@@ -182,11 +174,8 @@ def node_template(
     """
     parsed_value = parse_value(value, bool_flag, int_flag, float_flag)
 
-    provider = config.get_provider()
-    tplt = provider.search_template(template_name)
-    if not tplt:
-        utils.console.log(f"Node Template [cyan i]{template_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from node's template
+    _, tplt = get_labby_objs_from_node_template(template_name=template_name)
 
     # Update node template
     tplt.update(**{attr: parsed_value})
@@ -219,17 +208,14 @@ def link_filter(
 
     filters: Dict[str, Any] = dict({attr: parsed_value})
 
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    enlace = prj.search_link(node_a, port_a, node_b, port_b)
-    if not enlace:
-        utils.console.log(
-            f"Link [cyan i]{node_a}: {port_a} == {node_b}: {port_b}[/] not found. Nothing to do...", style="error"
-        )
-        raise typer.Exit(1)
+    # Get Labby objects from project and link definition
+    _, _, enlace = get_labby_objs_from_link(
+        project_name=project_name,
+        node_a=node_a,
+        port_a=port_a,
+        node_b=node_b,
+        port_b=port_b,
+    )
 
     # Update link
     enlace.apply_metric(**filters)

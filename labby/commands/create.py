@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
+from labby.commands.common import get_labby_objs_from_project
 from labby import utils, config
 
 
@@ -59,6 +60,10 @@ def node(
     template_name: str = typer.Option(..., "--template", "-t", help="Node template"),
     mgmt_port: Optional[str] = typer.Option(None, help="Management Interface used on the device"),
     mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
+    config_managed: Optional[bool] = typer.Option(True, help="If device can be configured through labby."),
+    net_os: Optional[str] = typer.Option(None, help="Network Operating system."),
+    model: Optional[str] = typer.Option(None, help="Network Model."),
+    version: Optional[str] = typer.Option(None, help="Network Operating system version."),
     label: Optional[List[str]] = typer.Option(None, help="Add labels to created node"),
 ):
     """
@@ -68,20 +73,29 @@ def node(
 
     > labby create node r1 --project lab01 --template "Arista EOS vEOS 4.25.0FX" --label mpls_pe
 
+    This will create a node with the attributes reference by template name format: <vendor> <os> <model> <version>
+    You can still update the attributes needed with the optional attributes, like `--net-os`.
+
     To verify available node templates you can run:
 
     > labby get node template-list
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     labels = [] if not label else label
 
     # Create node
     device = prj.create_node(
-        name=node_name, template=template_name, labels=labels, mgmt_port=mgmt_port, mgmt_addr=mgmt_addr
+        name=node_name,
+        template=template_name,
+        labels=labels,
+        mgmt_port=mgmt_port,
+        mgmt_addr=mgmt_addr,
+        config_managed=config_managed,
+        net_os=net_os,
+        model=model,
+        version=version,
     )
     utils.console.log(device)
 
@@ -110,11 +124,10 @@ def link(
             filters = dict({filter_type: int(filter_value)})
         else:
             filters = dict({filter_type: filter_value})
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
+
     labels = [] if not label else label
 
     # Create link

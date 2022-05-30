@@ -17,7 +17,7 @@ from labby.providers.gns3.node import GNS3Node
 from labby.providers.gns3.link import GNS3Link
 from labby.providers.gns3.utils import bool_status, link_status, node_status, node_net_os, template_type, project_status
 from labby.utils import console
-from labby import lock_file
+from labby import state_file
 
 
 def get_link_name(node_a: str, port_a: str, node_b: str, port_b: str) -> str:
@@ -95,9 +95,13 @@ class GNS3Project(LabbyProject):
                     if not _node.template:
                         raise ValueError(f"Node template could not be resolved: {_node}")
                 kwargs: Dict[str, Any] = {}
-                node_lock_file_data = lock_file.get_node_data(_node.name, self.name)
-                if node_lock_file_data:
-                    kwargs.update(**node_lock_file_data)
+                node_state_file_data = state_file.get_node_data(_node.name, self.name)
+                if node_state_file_data:
+                    kwargs.update(**node_state_file_data)
+                    # To avoid duplicate template keys from state file
+                    if _node.template and kwargs.get("template"):
+                        kwargs.pop("template")
+
                 self.nodes.update(
                     {
                         _node.name: GNS3Node(
@@ -113,9 +117,9 @@ class GNS3Project(LabbyProject):
                     if not _link.name:
                         raise ValueError(f"Link name could not be resolved {_link}")
                 kwargs = {}
-                link_lock_file_data = lock_file.get_link_data(_link.name, self.name)
-                if link_lock_file_data:
-                    kwargs.update(**link_lock_file_data)
+                link_state_file_data = state_file.get_link_data(_link.name, self.name)
+                if link_state_file_data:
+                    kwargs.update(**link_state_file_data)
                 self.links.update({_link.name: GNS3Link(name=_link.name, project_name=self.name, link=_link, **kwargs)})
 
     def to_initial_state(self):
@@ -222,7 +226,7 @@ class GNS3Project(LabbyProject):
         # Refresh
         self.get(nodes_refresh=True, links_refresh=True)
         console.log(f"[b]({self.name})[/] Project updated", style="good")
-        # self._update_labby_project_attrs(refresh=True)
+        state_file.apply_project_data(self)
 
     def delete(self) -> bool:
         """Delete project.
@@ -240,7 +244,7 @@ class GNS3Project(LabbyProject):
             self.nodes = {}
             self.links = {}
             console.log(f"[b]({self.name})[/] Project deleted", style="good")
-            lock_file.delete_project_data(self.name)
+            state_file.delete_project_data(self.name)
             return True
 
         console.log(f"[b]({self.name})[/] Project could not be deleted", style="warning")
@@ -288,6 +292,9 @@ class GNS3Project(LabbyProject):
         mgmt_addr: Optional[str] = None,
         mgmt_port: Optional[str] = None,
         config_managed: bool = True,
+        net_os: Optional[str] = None,
+        model: Optional[str] = None,
+        version: Optional[str] = None,
         **kwargs,
     ) -> GNS3Node:
         """Create node.
@@ -321,6 +328,9 @@ class GNS3Project(LabbyProject):
             mgmt_addr=mgmt_addr,
             mgmt_port=mgmt_port,
             config_managed=config_managed,
+            net_os=net_os,
+            model=model,
+            version=version,
             **kwargs,
         )
 
@@ -333,7 +343,7 @@ class GNS3Project(LabbyProject):
         console.log(f"[b]({self.name})({node.name})[/] Node created", style="good")
 
         # Apply node to lock file
-        lock_file.apply_node_data(node, self)
+        state_file.apply_node_data(node, self)
 
         # Refresh Nornir object
         self.init_nornir()
@@ -357,12 +367,12 @@ class GNS3Project(LabbyProject):
         node = self.nodes.get(name)
 
         if node is not None:
-            # Refresh lock data
-            node_lock_file_data = lock_file.get_node_data(name, self.name)
-            if node_lock_file_data is not None:
-                node.labels = node_lock_file_data.get("labels", [])
-                node.mgmt_addr = node_lock_file_data.get("mgmt_addr")
-                node.mgmt_port = node_lock_file_data.get("mgmt_port")
+            # Refresh with state data
+            node_state_file_data = state_file.get_node_data(name, self.name)
+            if node_state_file_data is not None:
+                for attr in state_file.NODE_STATE_ATTRS:
+                    if attr in node_state_file_data:
+                        setattr(node, attr, node_state_file_data[attr])
 
             # Refresh nornir object on host
             if node.nornir is None:
@@ -416,7 +426,7 @@ class GNS3Project(LabbyProject):
             _link.apply_metric(**filters)
 
         console.log(f"[b]({self.name})({_link.name})[/] Link created", style="good")
-        lock_file.apply_link_data(_link, self)
+        state_file.apply_link_data(_link, self)
         return _link
 
     def search_link(self, node_a: str, port_a: str, node_b: str, port_b: str) -> Optional[GNS3Link]:
@@ -442,9 +452,9 @@ class GNS3Project(LabbyProject):
         link = self.links.get(f"{_gns3_link.name}")
 
         if link is not None:
-            link_lock_file_data = lock_file.get_link_data(link.name, self.name)
-            if link_lock_file_data is not None:
-                link.labels = link_lock_file_data.get("labels", [])
+            link_state_file_data = state_file.get_link_data(link.name, self.name)
+            if link_state_file_data is not None:
+                link.labels = link_state_file_data.get("labels", [])
 
         return link
 

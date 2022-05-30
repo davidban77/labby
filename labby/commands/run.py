@@ -14,9 +14,10 @@ from nornir.core.helpers.jinja_helper import render_from_file
 from nornir_utils.plugins.functions import print_result
 
 from labby.commands.build import config_task
+from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_project
 from labby.project_data import sync_project_data
 from labby.nornir_tasks import save_task
-from labby import utils, config
+from labby import utils
 
 
 app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
@@ -68,11 +69,8 @@ def launch(project_name: str = typer.Argument(..., help="Project name", envvar="
     Example:
     > labby run project-launch --project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Launch project on browser
     typer.launch(prj.get_web_url())
@@ -82,6 +80,10 @@ def launch(project_name: str = typer.Argument(..., help="Project name", envvar="
 def bootstrap(
     node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
+    render: bool = typer.Option(False, "--render", "-r", help="Renders configuration only."),
+    render_output: Optional[Path] = typer.Option(
+        None, "--render-output", "-ro", help="Specifies file to send rendered output. Works only with --render set."
+    ),
     boot_delay: int = typer.Option(5, help="Time in seconds to wait on device boot if it has not been started"),
     bconfig: Optional[Path] = typer.Option(None, "--config", "-c", help="Bootstrap configuration file."),
     user: Optional[str] = typer.Option(
@@ -94,6 +96,7 @@ def bootstrap(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
 ):
+    # pylint: disable=too-many-locals
     r"""
     Sets a bootstrap config on a Node.
 
@@ -107,20 +110,8 @@ def bootstrap(
 
     > labby run node bootstrap -p lab01 --user netops --password netops123 r1
     """
-    # Get network lab provider
-    provider = config.get_provider()
-
-    # Get project
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to bootstrap
-    device = prj.search_node(node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Render bootstrap config
     if bconfig:
@@ -143,7 +134,7 @@ def bootstrap(
             )
             raise typer.Exit(code=1)
         # Check all other parameters are set
-        if any(param is None for param in [user, password]):
+        if any(param is None for param in [user, password]) and not render:
             utils.console.log("All arguments must be set: user, password", style="error")
             raise typer.Exit(code=1)
 
@@ -163,8 +154,18 @@ def bootstrap(
         )
         utils.console.log(f"[b]({prj.name})({device.name})[/] Bootstrap config rendered", style="good")
 
-    # Run node bootstrap config process
-    device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
+    if render:
+        if render_output:
+            render_output.write_text(cfg_data)
+            utils.console.log(f"[b]({prj.name})({device.name})[/] Config saved at [b]{render_output}", style="good")
+        else:
+            utils.console.rule(title=f"Start of bootstrap config: [b cyan]{device.name}")
+            utils.console.print(cfg_data, highlight=True)
+            utils.console.rule(title=f"End of bootstrap config: [b cyan]{device.name}")
+
+    else:
+        # Run node bootstrap config process
+        device.bootstrap(config=cfg_data, boot_delay=boot_delay, delay_multiplier=delay_multiplier)
 
 
 @node_app.command(name="config", short_help="Configures a Node.")
@@ -173,6 +174,10 @@ def node_config(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     config_template: Path = typer.Option(..., "--template", "-t", help="Config template file"),
     vars_file: Path = typer.Option(..., "--vars", "-v", help="Variables YAML file. For example: vars.yml"),
+    render: bool = typer.Option(False, "--render", "-r", help="Renders configuration only."),
+    render_output: Optional[Path] = typer.Option(
+        None, "--render-output", "-ro", help="Specifies file to send rendered output. Works only with --render set."
+    ),
     user: Optional[str] = typer.Option(
         None, "--user", "-u", help="User to use for the node connection", envvar="LABBY_NODE_USER"
     ),
@@ -184,6 +189,7 @@ def node_config(
         1, help="Delay multiplier to apply to boot/config delay before timeouts. Applicable over console connection."
     ),
 ):
+    # pylint: disable=too-many-locals
     """
     Configures a Node.
 
@@ -194,20 +200,8 @@ def node_config(
 
     > labby run node config r1 -p lab01 --user netops --template bgp.conf.j2 --vars r1.yml --console
     """
-    # Get network lab provider
-    provider = config.get_provider()
-
-    # Get project
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-
-    # Get node to configure
-    device = prj.search_node(node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, prj, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Check all other parameters are set
     if device.net_os is None:
@@ -227,7 +221,7 @@ def node_config(
         )
         raise typer.Exit(code=1)
 
-    if any(param is None for param in [user, password]):
+    if any(param is None for param in [user, password]) and not render:
         utils.console.log("All arguments must be set: user, password", style="error")
         raise typer.Exit(code=1)
 
@@ -241,17 +235,28 @@ def node_config(
     )
     utils.console.log(f"[b]({prj.name})({device.name})[/] Node config rendered", style="good")
 
+    # Render node configuration
+    if render:
+        if render_output:
+            render_output.write_text(cfg_data)
+            utils.console.log(f"[b]({prj.name})({device.name})[/] Config saved at [b]{render_output}", style="good")
+        else:
+            utils.console.rule(title=f"Start of config: [b cyan]{device.name}")
+            utils.console.print(cfg_data, highlight=True)
+            utils.console.rule(title=f"End of config: [b cyan]{device.name}")
+
     # Apply node configuration
-    if console:
-        applied = device.apply_config_over_console(
-            config=cfg_data, user=user, password=password, delay_multiplier=delay_multiplier
-        )
     else:
-        applied = device.apply_config(config=cfg_data, user=user, password=password)
-    if applied:
-        utils.console.log(f"[b]({prj.name})({device.name})[/] Node config applied", style="good")
-    else:
-        utils.console.log(f"[b]({prj.name})({device.name})[/] Node config not applied", style="error")
+        if console:
+            applied = device.apply_config_over_console(
+                config=cfg_data, user=user, password=password, delay_multiplier=delay_multiplier
+            )
+        else:
+            applied = device.apply_config(config=cfg_data, user=user, password=password)
+        if applied:
+            utils.console.log(f"[b]({prj.name})({device.name})[/] Node config applied", style="good")
+        else:
+            utils.console.log(f"[b]({prj.name})({device.name})[/] Node config not applied", style="error")
 
 
 @project_app.command(name="nodes-save", short_help="Save Nodes Configuration from a project file.")

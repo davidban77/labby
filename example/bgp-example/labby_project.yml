@@ -7,7 +7,11 @@ main:
   labels: ["telemetry"]
   template: "./templates/main.j2"
   # NOTE: Needed when building Nornir inventory
-  mgmt_network: 192.168.0.100/28
+  mgmt_network:
+    network: 192.168.0.0/24
+    gateway: 192.168.0.1/24
+    # Optional to further specify the management IP range
+    ip_range: [192.168.0.16, 192.168.0.63]
   mgmt_creds:
     user: "netops"
     password: "netops123"

@@ -10,8 +10,8 @@ from typing import Optional
 
 import typer
 
+from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_project
 from labby import utils
-from labby import config
 
 
 app = typer.Typer(help="Runs Start/Boot actions on Network Provider Lab Resources")
@@ -37,11 +37,8 @@ def project(
     Example:
     > labby start project lab01 --start-nodes one_by_one --delay 20
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project definition
+    _, prj = get_labby_objs_from_project(project_name=project_name)
 
     # Start project
     prj.start(start_nodes=start_nodes, nodes_delay=delay)
@@ -59,15 +56,8 @@ def node(
 
     > labby start node r1 --project lab01
     """
-    provider = config.get_provider()
-    prj = provider.search_project(project_name=project_name)
-    if not prj:
-        utils.console.log(f"Project [cyan i]{project_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
-    device = prj.search_node(name=node_name)
-    if not device:
-        utils.console.log(f"Node [cyan i]{node_name}[/] not found. Nothing to do...", style="error")
-        raise typer.Exit(1)
+    # Get Labby objects from project and node definition
+    _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
     # Start node
     device.start()
