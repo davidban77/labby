@@ -54,7 +54,7 @@ def build(context, tag=REPOSITORY_TAG, target=TARGET, no_cache=False):
 
 
 @task(
-    help={"tag": "Overrides the prefedined tag. For example: 'nautobot:latest-dev'"},
+    help={"tag": "Overrides the prefedined tag. For example: 'labby:latest-dev'"},
 )
 def push(context, tag=REPOSITORY_TAG):
     """Push Labby container image to registry."""
@@ -68,7 +68,7 @@ def push(context, tag=REPOSITORY_TAG):
             **ENVVARS,
         },
         exit_on_failure=True,
-        task_name="pushing nautobot dev image",
+        task_name="pushing labby image",
     )
 
 
