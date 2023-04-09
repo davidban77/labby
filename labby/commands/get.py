@@ -20,10 +20,12 @@ from labby.commands.common import (
 from labby import utils, config
 
 
-app = typer.Typer(help="Retrieves information on resources of a Network Provider Lab")
-project_app = typer.Typer(help="Retrieves Lab Projects Resources")
-node_app = typer.Typer(help="Retrieves Lab Nodes Resources")
-link_app = typer.Typer(help="Retrieves Lab Links Resources")
+app = typer.Typer(
+    help="[b orange1]Retrieves[/b orange1] information on a [i]resource[/i] from a [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link]"
+)
+project_app = typer.Typer(help="Retrieves Lab [b i]Projects[/b i] Resources")
+node_app = typer.Typer(help="Retrieves Lab [b i]Nodes[/b i] Resources")
+link_app = typer.Typer(help="Retrieves Lab [b i]Links[/b i] Resources")
 
 app.add_typer(project_app, name="project")
 app.add_typer(node_app, name="node")

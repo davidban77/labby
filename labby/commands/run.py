@@ -20,7 +20,9 @@ from labby.nornir_tasks import save_task
 from labby import utils
 
 
-app = typer.Typer(help="Runs actions on Network Provider Lab Resources")
+app = typer.Typer(
+    help="[b orange1]Runs actions[/b orange1] on[link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link] resources"
+)
 project_app = typer.Typer(help="Runs actions on a Network Provider Project")
 node_app = typer.Typer(help="Runs actions on a Network Provider Node")
 

@@ -4,145 +4,11 @@ on: [push, pull_request]
 
 
 jobs:
-  black:
+  linters:
     runs-on: ubuntu-latest
-    steps:
-      # Checkout the code from the repo
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      # Setup the python version, and dependencies
-      - name: Set Up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      # Installing and configuring poetry
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.1.12
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cache venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies (if no cache)
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-      # Job
-      - name: Run black formatting check
-        run: poetry run invoke check.black
-
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the code from the repo
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      # Setup the python version, and dependencies
-      - name: Set Up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      # Installing and configuring poetry
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.1.12
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cache venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies (if no cache)
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-      # Job
-      - name: Run flake8
-        run: poetry run invoke check.flake8
-
-  pydocstyle:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the code from the repo
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      # Setup the python version, and dependencies
-      - name: Set Up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      # Installing and configuring poetry
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.1.12
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cache venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies (if no cache)
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-      # Job
-      - name: Run pydocstyle
-        run: poetry run invoke check.pydocstyle
-
-  bandit:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the code from the repo
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      # Setup the python version, and dependencies
-      - name: Set Up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      # Installing and configuring poetry
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.1.12
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cache venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies (if no cache)
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-
-      # Job
-      - name: Run bandit
-        run: poetry run invoke check.bandit
-
-  pylint:
-    runs-on: ubuntu-latest
-    needs:
-      - "bandit"
-      - "pydocstyle"
-      - "flake8"
-      - "black"
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       # Checkout the code from the repo
       - name: Checkout repo
@@ -156,7 +22,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.1.12
+          version: 1.4.2
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
@@ -169,18 +35,17 @@ jobs:
       - name: Install dependencies (if no cache)
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction
-
       # Job
-      - name: Run pylint
-        run: poetry run invoke check.pylint
+      - name: Run all linters
+        run: poetry run tasks check all
 
   tests:
     runs-on: ubuntu-latest
     needs:
-      - "pylint"
+      - "linters"
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       # Checkout the code from the repo
       - name: Checkout repo
@@ -194,7 +59,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.1.12
+          version: 1.4.2
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
@@ -207,21 +72,6 @@ jobs:
       - name: Install dependencies (if no cache)
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction
-
       # Job
       - name: Run tests
-        run: poetry run invoke check.pytest
-
-      # # Running tests
-      # - name: Running tests
-      #   run: poetry run pytest tests/ -v
-      # - name: Running tests (with coverage)
-      #   run: poetry run pytest --cov-report=xml --cov=gns3fy tests
-
-      # # Codecov coverage
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v2
-      #   with:
-      #     fail_ci_if_error: true
-      #- name: Upload to codecov
-      #  run: poetry run pytest --cov-report=xml --cov=gns3fy tests/
+        run: poetry run tasks check pytest

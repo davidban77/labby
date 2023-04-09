@@ -23,18 +23,21 @@ console = Console(color_system="auto", log_path=False, record=True, theme=custom
 
 def banner():
     # pylint: disable=anomalous-backslash-in-string
+    # pylint: disable=consider-using-f-string
     """A function to print out the banner for labby to the terminal."""
     console.print(
-        f"""
+        r"""
 [green]
   _       _     _
  | | __ _| |__ | |__  _   _
  | |/ _` | '_ \| '_ \| | | |
  | | (_| | |_) | |_) | |_| |
  |_|\__,_|_.__/|_.__/ \__, |
-                      |___/  [bold]v{__version__}[/bold]
+                      |___/  [bold]v{0}[/bold]
 [/green]
-        """
+        """.format(
+            __version__
+        )
     )
     return "=>"
 

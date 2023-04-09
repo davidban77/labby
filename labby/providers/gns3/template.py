@@ -24,11 +24,11 @@ def dissect_gns3_template_name(template_name: str) -> Optional[Dict[str, str]]:
         if config.DEBUG:
             console.log(f"Node template name not matching Labby GNS3 standard: {template_name}.", style="warning")
         return None
-    node_data = dict(
-        net_os=f"{match.groupdict()['vendor'].lower()}_{match.groupdict()['os'].lower()}",
-        model=match.groupdict()["model"].lower(),
-        version=match.groupdict()["version"],
-    )
+    node_data = {
+        "net_os": f"{match.groupdict()['vendor'].lower()}_{match.groupdict()['os'].lower()}",
+        "model": match.groupdict()["model"].lower(),
+        "version": match.groupdict()["version"],
+    }
     return node_data
 
 

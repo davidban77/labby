@@ -14,7 +14,9 @@ from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_
 from labby import utils
 
 
-app = typer.Typer(help="Runs Start/Boot actions on Network Provider Lab Resources")
+app = typer.Typer(
+    help="Runs [b orange1]Start/Boot[/b orange1] actions on [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link] resources"
+)
 
 
 class StartNodes(str, Enum):

@@ -11,7 +11,9 @@ from labby.commands.common import get_labby_objs_from_node, get_labby_objs_from_
 from labby import utils
 
 
-app = typer.Typer(help="Runs Stop/Halt actions on Network Provider Lab Resources")
+app = typer.Typer(
+    help="Runs [b orange1]Stop/Halt[/b orange1] actions on [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link] resources"
+)
 
 
 @app.command(short_help="Stops a project")

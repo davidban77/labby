@@ -11,10 +11,12 @@ from labby.commands.common import get_labby_objs_from_node
 from labby import utils
 
 
-app = typer.Typer(help="Runs Restart actions on Network Provider Lab Resources")
+app = typer.Typer(
+    help="[b orange1]Run restart[/b orange1] actions on a [i]resource[/i] from a [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link]"
+)
 
 
-@app.command(short_help="Restarts a node")
+@app.command(short_help="[b i]Restarts[/b i] a node")
 def node(
     node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
