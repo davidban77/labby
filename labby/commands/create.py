@@ -61,7 +61,9 @@ def node(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     template_name: str = typer.Option(..., "--template", "-t", help="Node template"),
     mgmt_port: Optional[str] = typer.Option(None, help="Management Interface used on the device"),
-    mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. [cyan]192.168.77.77/24[/cyan]"),
+    mgmt_addr: Optional[str] = typer.Option(
+        None, help="IP Prefix to configure on mgmt_port. i.e. [cyan]192.168.77.77/24[/cyan]"
+    ),
     config_managed: Optional[bool] = typer.Option(True, help="If device can be configured through labby."),
     net_os: Optional[str] = typer.Option(None, help="Network Operating system."),
     model: Optional[str] = typer.Option(None, help="Network Model."),

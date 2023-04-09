@@ -43,4 +43,4 @@ jobs:
         run: poetry install --no-interaction
       # Job
       - name: Build Docker Images
-        run: tasks docker build
+        run: poetry run tasks docker build

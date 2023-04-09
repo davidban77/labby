@@ -4,7 +4,7 @@
 import os
 import subprocess  # nosec
 import shlex
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from pathlib import Path
 
 import toml
@@ -68,7 +68,7 @@ def is_truthy(arg: Any) -> bool:
 
 def run_cmd(
     exec_cmd: str,
-    envvars: dict[str, str] = ENVVARS,
+    envvars: Dict[str, str] = ENVVARS,
     cwd: Optional[str] = None,
     timeout: Optional[int] = None,
     # shell: bool = False,
@@ -79,7 +79,7 @@ def run_cmd(
 
     Args:
         exec_cmd (str): Command to execute
-        envvars (dict, optional): Environment variables. Defaults to ENVVARS.
+        envvars (Dict, optional): Environment variables. Defaults to ENVVARS.
         cwd (str, optional): Working directory. Defaults to None.
         timeout (int, optional): Timeout in seconds. Defaults to None.
         capture_output (bool, optional): Capture stdout and stderr. Defaults to True.
