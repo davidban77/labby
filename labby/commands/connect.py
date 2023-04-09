@@ -14,10 +14,10 @@ from labby.commands.common import get_labby_objs_from_node
 from labby import utils
 
 
-app = typer.Typer(help="Connects to a Network Resource")
+app = typer.Typer(help="[b orange1]Connects[/b orange1] to a Network Resource")
 
 
-@app.command(short_help="Connects to a node via SSH or Telnet/Console.")
+@app.command(short_help="Connects to a node via [cyan]ssh[/cyan] or [cyan]telnet[/cyan].")
 def node(
     node_name: str = typer.Argument(..., help="Node name."),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
@@ -37,12 +37,6 @@ def node(
     # Get Labby objects from project and node definition
     _, _, device = get_labby_objs_from_node(project_name=project_name, node_name=node_name)
 
-    if device.mgmt_addr is None and console is False:
-        utils.console.log(
-            f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
-        )
-        raise typer.Exit(code=1)
-
     if not user and not console:
         utils.console.log("Parameter '--user' must be set", style="error")
         raise typer.Exit(code=1)
@@ -52,4 +46,9 @@ def node(
         server_host = utils.dissect_url(device._base._connector.base_url)[1]  # type: ignore
         os.system(f"telnet {server_host} {device.console}")  # nosec
     else:
+        if device.mgmt_addr is None:
+            utils.console.log(
+                f"Node [cyan i]{node_name}[/] mgmt_addr parameter must be set. Run update command", style="error"
+            )
+            raise typer.Exit(code=1)
         os.system(f"ssh {user}@{IPNetwork(device.mgmt_addr).ip}")  # nosec

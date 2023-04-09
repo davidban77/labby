@@ -2,21 +2,20 @@
 # pylint: disable=too-many-arguments
 # pylint: disable=dangerous-default-value
 import sys
+import typer
 from rich.table import Table
-from invoke import task
-from tasks.common import render_bool, console, run_cmd
+from tasks.common import run_cmd, render_bool, console
+
+
+app = typer.Typer(help="[b i blue]Linters[/b i blue] and [b i blue]Testers[/b i blue] tasks")
 
 
 # ------------------------------------------------------------------------------
-# Linters and checkers
+# Linters and testers
 # ------------------------------------------------------------------------------
-@task(
-    help={
-        "autoformat": "Apply formatting recommendations automatically, rather than failing if formatting is incorrect.",
-    }
-)
-def black(context, autoformat=False, exit_on_failure=False):
-    """Check Python code style with Black."""
+@app.command(rich_help_panel="Linters")
+def black(autoformat: bool = False):
+    """Check Python code style with [b i orange1]Black[/b i orange1]."""
     if autoformat:
         black_command = "black"
     else:
@@ -24,56 +23,54 @@ def black(context, autoformat=False, exit_on_failure=False):
 
     command = f"{black_command} ."
 
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="black")
+    return run_cmd(exec_cmd=command, task_name="black")
 
 
-@task
-def flake8(context, exit_on_failure=True):
+@app.command(rich_help_panel="Linters")
+def flake8():
     """Check for PEP8 compliance and other style issues."""
-    command = "flake8 ."
-
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="flake8")
+    return run_cmd(exec_cmd="flake8 .", task_name="flake8")
 
 
-@task
-def pydocstyle(context, exit_on_failure=True):
-    """Run pydocstyle to validate docstring formatting adheres to NTC defined standards."""
-    command = "find . -name '*.py' -not -path '*/.venv/*' | xargs pydocstyle"
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pydocstyle")
+@app.command(rich_help_panel="Linters")
+def pydocstyle():
+    """Run [b i orange1]pydocstyle[/b i orange1] to validate docstrings formatting."""
+    return run_cmd(exec_cmd="pydocstyle", task_name="pydocstyle")
 
 
-@task
-def bandit(context, exit_on_failure=True):
-    """Run bandit to validate basic static code security analysis."""
-    command = "bandit --configfile pyproject.toml --recursive ."
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="bandit")
+@app.command(rich_help_panel="Linters")
+def bandit():
+    """Run [b i orange1]bandit[/b i orange1] to validate basic static code security analysis."""
+    return run_cmd(exec_cmd="bandit --configfile pyproject.toml --recursive .", task_name="bandit")
 
 
-@task
-def pylint(context, exit_on_failure=True):
-    """Run pylint code analysis."""
-    command = 'find . -name "*.py" -not -path "*/.venv/*" | xargs pylint --rcfile pyproject.toml'
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pylint")
+@app.command(rich_help_panel="Linters")
+def pylint():
+    """Run [b i orange1]pylint[/b i orange1] code analysis."""
+    # command = 'find . -name "*.py" -not -path "*/.venv/*" | xargs pylint --rcfile pyproject.toml'
+    command = "pylint --recursive true ."
+    return run_cmd(exec_cmd=command, task_name="pylint")
 
 
-@task
-def linters(context):
-    """Run all linters."""
+@app.command(rich_help_panel="Linters", name="all")
+def linters():
+    """Run [b i cyan]all[/b i cyan] linters."""
     console.log("Running all linters", style="info")
 
-    # Creates hash of tests executed along with their end status (True success, False failed)
+    # Creates mapping of tests executed along with their end status (True success, False failed)
     tests_execute = {
-        "black": black(context, exit_on_failure=False).ok,
-        "flake8": flake8(context, exit_on_failure=False).ok,
-        "pylint": pylint(context, exit_on_failure=False).ok,
-        "pydocstyle": pydocstyle(context, exit_on_failure=False).ok,
-        "bandit": bandit(context, exit_on_failure=False).ok,
+        "black": black(),
+        "flake8": flake8(),
+        "pylint": pylint(),
+        "pydocstyle": pydocstyle(),
+        "bandit": bandit(),
     }
 
     # Presents results in a Rich table
     table = Table("Test", "Result Ok?", show_lines=True)
     for test, _result in tests_execute.items():
-        table.add_row(test, render_bool(_result))
+        bool_result = _result.returncode == 0
+        table.add_row(test, render_bool(bool_result))
     console.print(table)
 
     console.log("All tests have executed", style="info")
@@ -81,9 +78,9 @@ def linters(context):
         sys.exit(1)
 
 
-@task
-def pytest(context, exit_on_failure=True):
-    """Check tests."""
+@app.command(rich_help_panel="Testers")
+def pytest():
+    """Run tests."""
     command = "pytest"
 
-    return run_cmd(context, exec_cmd=command, exit_on_failure=exit_on_failure, task_name="pytest")
+    return run_cmd(exec_cmd=command, task_name="pytest")

@@ -20,7 +20,9 @@ from labby.project_data import ProjectData, get_project_from_file
 from labby.nornir_tasks import config_task
 
 
-app = typer.Typer(help="Builds a complete Network Provider Lab in a declarative way.")
+app = typer.Typer(
+    help="[link=https://github.com/davidban77/labby/blob/develop/docs/BUILD_NETWORK_LABS.md][b orange1]Builds[/b orange1] a complete Network Provider Lab in a declarative way[/link]."
+)
 
 
 def bootstrap_nodes(
@@ -45,13 +47,11 @@ def bootstrap_nodes(
         render_only (bool): Flag to render the configuration only. Defaults to False.
     """
     for node_spec in project_data.nodes_spec:
-
         # Skip devices that are not going to be configured
         if node_spec.get("config_managed", True) is False:
             continue
 
         for node_name in node_spec.get("nodes", []):
-
             device = project.search_node(name=node_name)
 
             # Validate devices exists in the project
@@ -194,7 +194,6 @@ def build_topology(project: LabbyProject, project_data: ProjectData):
     index = 0
     for node_spec in project_data.nodes_spec:
         for node_name in node_spec.get("nodes", []):
-
             device = project.search_node(name=node_name)
 
             # Validate devices exists in the project

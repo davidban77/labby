@@ -1,13 +1,16 @@
 """Development related tasks for docker."""
 # pylint: disable=too-many-arguments
 # pylint: disable=dangerous-default-value
-from invoke import task
+import typer
 from tasks.common import console, run_cmd, PYTHON_VER, LABBY_VERSION, ENVVARS
 
 
 REGISTRY = ENVVARS.get("REGISTRY", "davidban77")
 TARGET = ENVVARS.get("TARGET", "labby")
 REPOSITORY_TAG = f"{REGISTRY}/{TARGET}:v{LABBY_VERSION}-py{PYTHON_VER}"
+
+
+app = typer.Typer(help="Run Docker commands.")
 
 
 def docker_build(tag: str, docker_file_target: str, no_cache: bool = False) -> str:
@@ -28,60 +31,52 @@ def docker_build(tag: str, docker_file_target: str, no_cache: bool = False) -> s
     return command
 
 
-@task(
-    help={
-        "tag": "Overrides the prefedined tag. For example: 'davidban77/labby:latest'",
-        "target": "Overrides the prefedined target. For example: 'labby'",
-        "no-cache": "Flag to indicate wether or not to use cache. Defaults to False",
-    },
-)
-def build(context, tag=REPOSITORY_TAG, target=TARGET, no_cache=False):
+@app.command()
+def build(
+    tag: str = typer.Option(REPOSITORY_TAG, "--tag", help="Docker image tag"),
+    target: str = typer.Option(TARGET, "--target", help="Dockerfile target to build"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Flag to specify if cache should be ignored"),
+):
     """Build a new Labby container image."""
     console.log(
         f"Building new image [bi]Labby: {LABBY_VERSION} - Python: {PYTHON_VER} - Target: {target}", style="info"
     )
     return run_cmd(
-        context=context,
         exec_cmd=docker_build(tag=tag, docker_file_target=target, no_cache=no_cache),
         envvars={
             "PYTHON_VER": PYTHON_VER,
             "LABBY_VERSION": LABBY_VERSION,
             **ENVVARS,
         },
-        exit_on_failure=True,
         task_name=f"build {target} image",
     )
 
 
-@task(
-    help={"tag": "Overrides the prefedined tag. For example: 'labby:latest-dev'"},
-)
-def push(context, tag=REPOSITORY_TAG):
+@app.command()
+def push(
+    tag: str = typer.Option(REPOSITORY_TAG, "--tag", help="Docker image tag"),
+):
     """Push Labby container image to registry."""
     console.log(f"Pushing new image [i bold]Labby: {LABBY_VERSION} - Python: {PYTHON_VER} - Tag: {tag}", style="info")
     return run_cmd(
-        context=context,
         exec_cmd=f"docker push {tag}",
         envvars={
             "PYTHON_VER": PYTHON_VER,
             "LABBY_VERSION": LABBY_VERSION,
             **ENVVARS,
         },
-        exit_on_failure=True,
         task_name="pushing labby image",
     )
 
 
-@task(
-    help={"user": "User to login to container registry."},
-)
-def login(context, user=""):
+@app.command()
+def login(
+    user: str = typer.Option("", "--user", help="User to connect to registry"),
+):
     """User to connect to registry."""
     console.log("Connecting to registry", style="info")
     return run_cmd(
-        context=context,
         exec_cmd=f"docker login -u {user}",
         envvars=ENVVARS,
-        exit_on_failure=True,
         task_name="login to registry",
     )

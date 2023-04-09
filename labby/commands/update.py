@@ -18,7 +18,9 @@ from labby.commands.common import (
 )
 from labby import utils
 
-app = typer.Typer(help="Updates a Network Provider Lab Resource")
+app = typer.Typer(
+    help="[b orange1]Updates[/b orange1] a [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link] resource"
+)
 project_app = typer.Typer(help="Updates a Network Provider Project")
 node_app = typer.Typer(help="Updates a Network Provider Node")
 link_app = typer.Typer(help="Updates a Network Provider Link")

@@ -14,7 +14,9 @@ from labby.commands.common import get_labby_objs_from_project
 from labby import utils, config
 
 
-app = typer.Typer(help="Creates a Resource on Network Provider Lab")
+app = typer.Typer(
+    help="[b orange1]Creates[/b orange1] a [i]resource[/i] on a [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link]"
+)
 
 
 class LinkFilter(str, Enum):
@@ -29,7 +31,7 @@ class LinkFilter(str, Enum):
     bpf_expression = "bpf_expression"
 
 
-@app.command(short_help="Creates a project")
+@app.command(short_help="Creates a [b i]project[/b i] on a network provider lab")
 def project(
     project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT"),
     label: Optional[List[str]] = typer.Option(None, help="Add labels to created project"),
@@ -53,13 +55,13 @@ def project(
     utils.console.log(prj)
 
 
-@app.command(short_help="Creates a node")
+@app.command(short_help="Creates a [b i]node[/b i] on a network provider lab")
 def node(
     node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     template_name: str = typer.Option(..., "--template", "-t", help="Node template"),
     mgmt_port: Optional[str] = typer.Option(None, help="Management Interface used on the device"),
-    mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. 192.168.77.77/24"),
+    mgmt_addr: Optional[str] = typer.Option(None, help="IP Prefix to configure on mgmt_port. i.e. [cyan]192.168.77.77/24[/cyan]"),
     config_managed: Optional[bool] = typer.Option(True, help="If device can be configured through labby."),
     net_os: Optional[str] = typer.Option(None, help="Network Operating system."),
     model: Optional[str] = typer.Option(None, help="Network Model."),
@@ -100,7 +102,7 @@ def node(
     utils.console.log(device)
 
 
-@app.command(short_help="Creates a link")
+@app.command(short_help="Creates a [b i]link[/b i] on a network provider lab")
 def link(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     node_a: str = typer.Option(..., "--node-a", "-na", help="Node name from ENDPOINT A"),

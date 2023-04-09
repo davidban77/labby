@@ -245,7 +245,6 @@ def run_bootstrap(
     with utils.console.status(
         f"[b]({node.project.name})({node.name})[/] Running initial boot sequence", spinner="aesthetic"
     ) as status:
-
         if node.net_os == "arista_eos":
             arista_eos_boot(
                 node_name=node.name,
@@ -397,7 +396,6 @@ def run_action(
     with utils.console.status(
         f"[b]({node.project.name})({node.name})[/] Sending command over console", spinner="aesthetic"
     ) as status:
-
         if node.net_os == "arista_eos":
             connector = EOSDriver(**node_console_settings)
             try:

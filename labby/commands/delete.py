@@ -11,10 +11,12 @@ from labby.commands.common import get_labby_objs_from_link, get_labby_objs_from_
 from labby import utils
 
 
-app = typer.Typer(help="Deletes a Resource on Network Provider Lab")
+app = typer.Typer(
+    help="[b orange1]Deletes[/b orange1] a [i]resource[/i] on a [link=https://github.com/davidban77/labby/blob/develop/README.md#42-environments-and-providers]Network Provider Lab[/link]"
+)
 
 
-@app.command(short_help="Deletes a project")
+@app.command(short_help="Deletes a [b i]project[/b i] on a network provider lab")
 def project(project_name: str = typer.Argument(..., help="Project name", envvar="LABBY_PROJECT")):
     """
     Deletes a Project.
@@ -31,7 +33,7 @@ def project(project_name: str = typer.Argument(..., help="Project name", envvar=
     prj.delete()
 
 
-@app.command(short_help="Deletes a node")
+@app.command(short_help="Deletes a [b i]node[/b i] on a network provider lab")
 def node(
     node_name: str = typer.Argument(..., help="Node name"),
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
@@ -51,7 +53,7 @@ def node(
     device.delete()
 
 
-@app.command(short_help="Deletes a link")
+@app.command(short_help="Deletes a [b i]link[/b i] on a network provider lab")
 def link(
     project_name: str = typer.Option(..., "--project", "-p", help="Project name", envvar="LABBY_PROJECT"),
     node_a: str = typer.Option(..., "--node-a", "-na", help="Node name from ENDPOINT A"),

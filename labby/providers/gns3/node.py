@@ -52,11 +52,11 @@ def dissect_gns3_template_name(template_name: str) -> Optional[Dict[str, str]]:
         if config.DEBUG:
             console.log(f"Node template name not matching Labby GNS3 standard: {template_name}.", style="warning")
         return None
-    node_data = dict(
-        net_os=f"{match.groupdict()['vendor'].lower()}_{match.groupdict()['os'].lower()}",
-        model=match.groupdict()["model"].lower(),
-        version=match.groupdict()["version"],
-    )
+    node_data = {
+        "net_os": f"{match.groupdict()['vendor'].lower()}_{match.groupdict()['os'].lower()}",
+        "model": match.groupdict()["model"].lower(),
+        "version": match.groupdict()["version"],
+    }
     return node_data
 
 
@@ -166,7 +166,7 @@ class GNS3Node(LabbyNode):
                 )
                 raise typer.Exit(1)
             try:
-                _ = IPv4Interface(self.mgmt_addr)
+                _ = IPv4Interface(address=self.mgmt_addr)
             except Exception as err:
                 raise ValueError(f"{err}") from err
 
@@ -281,7 +281,6 @@ class GNS3Node(LabbyNode):
         # Update state file attributes
         if any(attr in kwargs for attr in state_file.NODE_STATE_ATTRS):
             for attr in state_file.NODE_STATE_ATTRS:
-
                 # Update labels
                 if attr == "labels" and kwargs.get("labels"):
                     if isinstance(kwargs["labels"], list):

@@ -2,19 +2,18 @@
 # pylint: disable=too-many-arguments
 # pylint: disable=dangerous-default-value
 import os
-import sys
-from typing import Any, Dict
+import subprocess  # nosec
+import shlex
+from typing import Any, Optional
 from pathlib import Path
 
 import toml
 from dotenv import dotenv_values
-from invoke.context import Context
-from invoke.runners import Result
 from rich.console import Console
 from rich.theme import Theme
 
 # Load environment variables from .env file and from the OS environment
-ENVVARS = {**dotenv_values(".env"), **dotenv_values("./deployments/envs/creds.env"), **os.environ}
+ENVVARS = {**dotenv_values(".env"), **os.environ}
 
 custom_theme = Theme({"info": "cyan", "warning": "bold magenta", "error": "bold red", "good": "bold green"})
 
@@ -30,14 +29,24 @@ if not PYTHON_VER:
     PYTHON_VER = parsed_toml["tool"]["poetry"]["dependencies"]["python"].replace("^", "")
 
 
-def strtobool(value: Any) -> bool:
-    """Return whether the provided string (or any value really) represents true. Otherwise false."""
-    if not value:
+def strtobool(val: str) -> bool:
+    """Convert a string representation of truth to true (1) or false (0).
+
+    Args:
+        val (str): String representation of truth.
+
+    Returns:
+        bool: True or False
+    """
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if val in ("n", "no", "f", "false", "off", "0"):
         return False
-    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
+    raise ValueError(f"invalid truth value {val}")
 
 
-def is_truthy(arg):
+def is_truthy(arg: Any) -> bool:
     """Convert "truthy" strings into Booleans.
 
     Examples:
@@ -52,51 +61,49 @@ def is_truthy(arg):
     """
     if isinstance(arg, bool):
         return arg
+    if arg is None:
+        return False
     return bool(strtobool(arg))
 
 
 def run_cmd(
-    context: Context,
     exec_cmd: str,
-    envvars: Dict[str, str] = {},
-    hide: Any = None,
-    exit_on_failure: bool = True,
+    envvars: dict[str, str] = ENVVARS,
+    cwd: Optional[str] = None,
+    timeout: Optional[int] = None,
+    # shell: bool = False,
+    capture_output: bool = False,
     task_name: str = "",
-) -> Result:
-    """Run invoke task commands.
+) -> subprocess.CompletedProcess:
+    """Run a command and return the result.
 
     Args:
-        context (Context): Invoke Context object.
-        exec_cmd (str): Command to execute.
-        envvars (Dict[str, str], optional): Environment variable to pass. Defaults to {}.
-        exit_on_failure (bool, optional): Flag to indicate if the execution should exit if it fails. Defaults to True.
-
-    Exits:
-        It exits program execution if flag `exit_on_failure` is set to True and the command ends with code != 0.
+        exec_cmd (str): Command to execute
+        envvars (dict, optional): Environment variables. Defaults to ENVVARS.
+        cwd (str, optional): Working directory. Defaults to None.
+        timeout (int, optional): Timeout in seconds. Defaults to None.
+        capture_output (bool, optional): Capture stdout and stderr. Defaults to True.
+        task_name (str, optional): Name of the task. Defaults to "".
 
     Returns:
-        Result: A container for information about the result of a command execution.
+        subprocess.CompletedProcess: Result of the command
     """
-    console.log(f"Running command [orange1 i]{exec_cmd}", style="info")
-    result: Result = context.run(
-        exec_cmd,
-        pty=True,
-        warn=True,
+    console.log(f"Running command: [orange1 i]{exec_cmd}", style="info")
+    result = subprocess.run(  # nosec
+        shlex.split(exec_cmd),
         env=envvars,
-        hide=hide,
+        cwd=cwd,
+        timeout=timeout,
+        # shell=shell
+        capture_output=capture_output,
+        text=True,
+        check=False,
     )
-    console.log(f"End of command: [orange1 i]{exec_cmd}", style="info")
-
-    if exit_on_failure and not result.ok:
-        console.log(f"Error has occurred\n{result.stderr}", style="error")
-        sys.exit(result.return_code)
-
-    # Pretty print it
     task_name = task_name if task_name else exec_cmd
-    if result.ok:
-        console.log(f"Successfully ran {task_name}", style="good")
+    if result.returncode == 0:
+        console.log(f"Successfully ran: [i]{task_name}", style="good")
     else:
-        console.log(f"Issues encountered running {task_name}", style="warning")
+        console.log(f"Issues encountered running: [i]{task_name}", style="warning")
     console.rule(f"End of task: [b i]{task_name}", style="info")
     console.print()
     return result

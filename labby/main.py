@@ -34,21 +34,23 @@ from labby import __version__
 InventoryPluginRegister.register("LabbyNornirInventory", LabbyNornirInventory)
 
 
-app = typer.Typer(help=f"{utils.banner()} Awesome Network Lab Management Tool!")
+app = typer.Typer(
+    help=f"{utils.banner()} Awesome Network Lab Management Tool!", add_completion=False, rich_markup_mode="rich"
+)
 state = {"verbose": False}
 
 # app.add_typer(labby.commands.projects.app, name="project")
-app.add_typer(labby.commands.run.app, name="run")
-app.add_typer(labby.commands.get.app, name="get")
-app.add_typer(labby.commands.start.app, name="start")
-app.add_typer(labby.commands.restart.app, name="restart")
-app.add_typer(labby.commands.stop.app, name="stop")
-app.add_typer(labby.commands.create.app, name="create")
-app.add_typer(labby.commands.delete.app, name="delete")
-app.add_typer(labby.commands.update.app, name="update")
-app.add_typer(labby.commands.configuration.app, name="config")
-app.add_typer(labby.commands.build.app, name="build")
-app.add_typer(labby.commands.connect.app, name="connect")
+app.add_typer(labby.commands.configuration.app, name="config", rich_help_panel="Labby Setup")
+app.add_typer(labby.commands.get.app, name="get", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.start.app, name="start", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.restart.app, name="restart", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.stop.app, name="stop", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.create.app, name="create", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.delete.app, name="delete", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.update.app, name="update", rich_help_panel="Labby Provider Actions")
+app.add_typer(labby.commands.build.app, name="build", rich_help_panel="Labby Orchestration")
+app.add_typer(labby.commands.run.app, name="run", rich_help_panel="Labby Ops")
+app.add_typer(labby.commands.connect.app, name="connect", rich_help_panel="Labby Ops")
 
 
 def version_callback(value: bool):
@@ -95,7 +97,7 @@ def main(
             if not config_file.is_file():
                 utils.console.print("[red]Configuration specified is not a file[/]")
                 raise typer.Exit(code=1)
-    ctx.obj = dict(config_file=config_file)
+    ctx.obj = {"config_file": config_file}
 
     # Load .env variables
     load_dotenv()
@@ -115,7 +117,7 @@ def main(
         raise typer.Exit(1) from err
 
 
-@app.command(short_help="Initialises Labby Configuration file.")
+@app.command(short_help="Initialises Labby Configuration file.", rich_help_panel="Labby Setup")
 def init(
     cli_global: bool = typer.Option(
         False,
@@ -159,14 +161,15 @@ def init(
     provider_url = Prompt.ask("[cyan]Network Lab Provider server URL")
 
     # Environment data
-    config_data: Dict[str, Any] = dict(main={}, environment={})
+    config_data: Dict[str, Any] = {"main": {}, "environment": {}}
 
     config_data["main"]["environment"] = environment
-    config_data["environment"][environment] = dict(
-        description=environment_description,
-        provider=provider_name,
-        providers={provider_name: dict(server_url=provider_url, kind=provider_type)},
-    )
+
+    config_data["environment"][environment] = {
+        "description": environment_description,
+        "provider": provider_name,
+        "providers": {provider_name: {"server_url": provider_url, "kind": provider_type}},
+    }
 
     rendered_data = toml.dumps(config_data)
     utils.console.print(
