@@ -48,7 +48,7 @@ def bandit():
 def pylint():
     """Run [b i orange1]pylint[/b i orange1] code analysis."""
     # command = 'find . -name "*.py" -not -path "*/.venv/*" | xargs pylint --rcfile pyproject.toml'
-    command = "pylint --recursive true ."
+    command = "pylint --recursive true --ignore=.venv ."
     return run_cmd(exec_cmd=command, task_name="pylint")
 
 
